@@ -1,0 +1,23 @@
+08:14:09 - Starting servent [28|localhost|1100]
+08:14:09 - Pausing for 50000 ms
+08:14:09 - First node in Chord system.
+08:14:20 - Got message [48|1200|0||NEW_NODE|1100|28]
+08:14:21 - Sending message [28|1100|0||WELCOME|1200|48]
+08:14:22 - Got message [48|1200|1||UPDATE|1100|28]
+08:14:23 - Sending message [48|1200|1|1100|UPDATE|1200|48]
+08:14:29 - Got message [4|1300|0||NEW_NODE|1100|28]
+08:14:30 - Sending message [28|1100|2||WELCOME|1300|4]
+08:14:31 - Got message [4|1300|1||UPDATE|1100|28]
+08:14:32 - Sending message [4|1300|3|1100|UPDATE|1200|48]
+08:14:40 - Got message [24|1400|2||NEW_NODE|1100|28]
+08:14:41 - Sending message [28|1100|4||WELCOME|1400|24]
+08:14:42 - Got message [24|1400|1||UPDATE|1100|28]
+08:14:43 - Sending message [24|1400|5|1100|UPDATE|1200|48]
+08:14:55 - Got message [0|1600|2|1300,1400|UPDATE|1100|28]
+08:14:56 - Sending message [0|1600|6|1300,1400,1100|UPDATE|1200|48]
+08:14:59 - Pausing for 10000 ms
+08:15:00 - Sending message [28|1100|7|2:5|PUT|1200|48]
+08:15:00 - Got message [24|1400|3|25:3|PUT|1100|28]
+08:15:04 - Got message [0|1600|4|25|ASK_GET|1100|28]
+08:15:06 - Sending message [28|1100|8|25:3|TELL_GET|1600|0]
+08:15:09 - Stopping...
