@@ -43,6 +43,8 @@ public class AppConfig {
 	}
 	
 	public static boolean INITIALIZED = false;
+
+	public static String BOOTSTRAP_IP;
 	public static int BOOTSTRAP_PORT;
 	public static int SERVENT_COUNT;
 	
@@ -78,7 +80,15 @@ public class AppConfig {
 			timestampedErrorPrint("Couldn't open properties file. Exiting...");
 			System.exit(0);
 		}
-		
+
+
+		try {
+			BOOTSTRAP_IP = properties.getProperty("bs.ip");
+		} catch (NumberFormatException e) {
+			timestampedErrorPrint("Problem reading bootstrap_ip. Exiting...");
+			System.exit(0);
+		}
+
 		try {
 			BOOTSTRAP_PORT = Integer.parseInt(properties.getProperty("bs.port"));
 		} catch (NumberFormatException e) {

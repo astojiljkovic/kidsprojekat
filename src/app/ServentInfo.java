@@ -42,4 +42,7 @@ public class ServentInfo implements Serializable {
 		return "[" + chordId + "|" + ipAddress + "|" + listenerPort + "]";
 	}
 
+	public String getTeam() {
+		return team;
+	}
 }

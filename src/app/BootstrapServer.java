@@ -12,8 +12,26 @@ import java.util.Scanner;
 
 public class BootstrapServer {
 
+	class ServentLocation {
+		private final String ip;
+		private final int port;
+
+		public ServentLocation(String ip, int port) {
+			this.ip = ip;
+			this.port = port;
+		}
+
+		public String getIp() {
+			return ip;
+		}
+
+		public int getPort() {
+			return port;
+		}
+	}
+
 	private volatile boolean working = true;
-	private List<Integer> activeServents;
+	private List<ServentLocation> activeServents;
 	
 	private class CLIWorker implements Runnable {
 		@Override
@@ -73,17 +91,19 @@ public class BootstrapServer {
 				 * or -1 if he is the first one.
 				 */
 				if (message.equals("Hail")) {
+					String newServentIp = socketScanner.nextLine();
 					int newServentPort = socketScanner.nextInt();
 					
-					System.out.println("got " + newServentPort);
+					System.out.println("got " + newServentIp + ":" + newServentPort);
 					PrintWriter socketWriter = new PrintWriter(newServentSocket.getOutputStream());
 					
 					if (activeServents.size() == 0) {
 						socketWriter.write(String.valueOf(-1) + "\n");
-						activeServents.add(newServentPort); //first one doesn't need to confirm
+						activeServents.add(new ServentLocation(newServentIp, newServentPort)); //first one doesn't need to confirm
 					} else {
-						int randServent = activeServents.get(rand.nextInt(activeServents.size()));
-						socketWriter.write(String.valueOf(randServent) + "\n");
+						ServentLocation randServent = activeServents.get(rand.nextInt(activeServents.size()));
+						socketWriter.write(String.valueOf(randServent.getPort()) + "\n");
+						socketWriter.write(randServent.getIp() + "\n");
 					}
 					
 					socketWriter.flush();
@@ -92,11 +112,12 @@ public class BootstrapServer {
 					/**
 					 * When a servent is confirmed not to be a collider, we add him to the list.
 					 */
+					String newServentIp = socketScanner.nextLine();
 					int newServentPort = socketScanner.nextInt();
 					
 					System.out.println("adding " + newServentPort);
 					
-					activeServents.add(newServentPort);
+					activeServents.add(new ServentLocation(newServentIp, newServentPort));
 					newServentSocket.close();
 				}
 				

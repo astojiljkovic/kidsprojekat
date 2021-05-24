@@ -16,29 +16,42 @@ public class BasicMessage implements Message {
 
 	private static final long serialVersionUID = -9075856313609777945L;
 	private final MessageType type;
+
+//	Sender info
+	private final String senderIp;
 	private final int senderPort;
+	private final String senderTeam;
+
+//	 Receiver info
+	private final String receiverIp;
 	private final int receiverPort;
 	private final String messageText;
 	
 	//This gives us a unique id - incremented in every natural constructor.
-	private static AtomicInteger messageCounter = new AtomicInteger(0);
+	private static final AtomicInteger messageCounter = new AtomicInteger(0);
 	private final int messageId;
 	
-	public BasicMessage(MessageType type, int senderPort, int receiverPort) {
+	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort) {
 		this.type = type;
+		this.senderIp = senderIp;
 		this.senderPort = senderPort;
+		this.senderTeam = senderTeam;
+		this.receiverIp = receiverIp;
 		this.receiverPort = receiverPort;
 		this.messageText = "";
-		
+
 		this.messageId = messageCounter.getAndIncrement();
 	}
 	
-	public BasicMessage(MessageType type, int senderPort, int receiverPort, String messageText) {
+	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String messageText) {
 		this.type = type;
+		this.senderIp = senderIp;
 		this.senderPort = senderPort;
+		this.senderTeam = senderTeam;
+		this.receiverIp = receiverIp;
 		this.receiverPort = receiverPort;
 		this.messageText = messageText;
-		
+
 		this.messageId = messageCounter.getAndIncrement();
 	}
 	
@@ -54,9 +67,19 @@ public class BasicMessage implements Message {
 	
 	@Override
 	public String getReceiverIpAddress() {
-		return "localhost";
+		return receiverIp;
 	}
-	
+
+	@Override
+	public String getSenderTeam() {
+		return senderTeam;
+	}
+
+	@Override
+	public String getSenderIp() {
+		return senderIp;
+	}
+
 	@Override
 	public int getSenderPort() {
 		return senderPort;

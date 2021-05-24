@@ -23,10 +23,21 @@ import java.io.Serializable;
  */
 public interface Message extends Serializable {
 
+//	Sender info
+	/**
+	 * Sender ip. Use this to reply.
+	 */
+	String getSenderIp();
+
 	/**
 	 * Port number on which the sender of this message listens for new messages. Use this to reply.
 	 */
 	int getSenderPort();
+
+	/**
+	 * Team name of the sender.
+	 */
+	String getSenderTeam();
 	
 	/**
 	 * Port number of the receiver of the message.

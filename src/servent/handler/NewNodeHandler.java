@@ -25,7 +25,9 @@ public class NewNodeHandler implements MessageHandler {
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.NEW_NODE) {
 			int newNodePort = clientMessage.getSenderPort();
-			ServentInfo newNodeInfo = new ServentInfo("localhost", newNodePort);
+			String newNodeIp = clientMessage.getSenderIp();
+			String newNodeTeam = clientMessage.getSenderTeam();
+			ServentInfo newNodeInfo = new ServentInfo(newNodeIp, newNodePort, newNodeTeam);
 			
 			//check if the new node collides with another existing node.
 			if (AppConfig.chordState.isCollision(newNodeInfo.getChordId())) {

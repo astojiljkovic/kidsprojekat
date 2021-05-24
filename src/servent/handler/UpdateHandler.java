@@ -22,7 +22,7 @@ public class UpdateHandler implements MessageHandler {
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.UPDATE) {
 			if (clientMessage.getSenderPort() != AppConfig.myServentInfo.getListenerPort()) {
-				ServentInfo newNodInfo = new ServentInfo("localhost", clientMessage.getSenderPort());
+				ServentInfo newNodInfo = new ServentInfo(clientMessage.getSenderIp(), clientMessage.getSenderPort(), clientMessage.getSenderTeam());
 				List<ServentInfo> newNodes = new ArrayList<>();
 				newNodes.add(newNodInfo);
 				
