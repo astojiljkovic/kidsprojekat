@@ -2,9 +2,7 @@ package app;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -56,13 +54,13 @@ public class BootstrapServer {
 		activeServents = new ArrayList<>();
 	}
 	
-	public void doBootstrap(int bsPort) {
+	public void doBootstrap(String bsIp, int bsPort) {
 		Thread cliThread = new Thread(new CLIWorker());
 		cliThread.start();
 		
 		ServerSocket listenerSocket = null;
 		try {
-			listenerSocket = new ServerSocket(bsPort);
+			listenerSocket = new ServerSocket(bsPort, 5, InetAddress.getByName(bsIp));
 			listenerSocket.setSoTimeout(1000);
 		} catch (IOException e1) {
 			AppConfig.timestampedErrorPrint("Problem while opening listener socket.");
@@ -148,6 +146,6 @@ public class BootstrapServer {
 		AppConfig.timestampedStandardPrint("Bootstrap server started on port: " + bsPort);
 		
 		BootstrapServer bs = new BootstrapServer();
-		bs.doBootstrap(bsPort);
+		bs.doBootstrap("localhost", bsPort);
 	}
 }

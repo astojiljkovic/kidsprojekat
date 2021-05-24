@@ -31,12 +31,12 @@ public class AskGetHandler implements MessageHandler {
 						value = valueMap.get(key);
 					}
 					
-					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo.getListenerPort(), clientMessage.getSenderPort(),
+					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo.getIpAddress(), AppConfig.myServentInfo.getListenerPort(), AppConfig.myServentInfo.getTeam(), clientMessage.getSenderIp(), clientMessage.getSenderPort(),
 															key, value);
 					MessageUtil.sendMessage(tgm);
 				} else {
 					ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(key);
-					AskGetMessage agm = new AskGetMessage(clientMessage.getSenderPort(), nextNode.getListenerPort(), clientMessage.getMessageText());
+					AskGetMessage agm = new AskGetMessage(clientMessage.getSenderIp(), clientMessage.getSenderPort(), clientMessage.getSenderTeam(), nextNode.getIpAddress(), nextNode.getListenerPort(), clientMessage.getMessageText());
 					MessageUtil.sendMessage(agm);
 				}
 			} catch (NumberFormatException e) {

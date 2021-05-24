@@ -27,22 +27,29 @@ public class UpdateHandler implements MessageHandler {
 				newNodes.add(newNodInfo);
 				
 				AppConfig.chordState.addNodes(newNodes);
+
+				//Create ip:port:team
+				String currentNodeInfo = AppConfig.myServentInfo.getIpAddress() + ":" + String.valueOf(AppConfig.myServentInfo.getListenerPort()) + ":" + AppConfig.myServentInfo.getTeam();
+
 				String newMessageText = "";
 				if (clientMessage.getMessageText().equals("")) {
-					newMessageText = String.valueOf(AppConfig.myServentInfo.getListenerPort());
+					newMessageText = currentNodeInfo;
 				} else {
-					newMessageText = clientMessage.getMessageText() + "," + AppConfig.myServentInfo.getListenerPort();
+					newMessageText = clientMessage.getMessageText() + "," + currentNodeInfo;
 				}
-				Message nextUpdate = new UpdateMessage(clientMessage.getSenderPort(), AppConfig.chordState.getNextNodePort(),
+				Message nextUpdate = new UpdateMessage(clientMessage.getSenderIp(), clientMessage.getSenderPort(), clientMessage.getSenderTeam(), AppConfig.chordState.getNextNodeIp(), AppConfig.chordState.getNextNodePort(),
 						newMessageText);
 				MessageUtil.sendMessage(nextUpdate);
 			} else {
-				String messageText = clientMessage.getMessageText();
-				String[] ports = messageText.split(",");
+				String messageText = clientMessage.getMessageText(); //ip:port:team,ip:port:team,ip:port:team...
+				String[] ipPortTeams = messageText.split(",");
 				
 				List<ServentInfo> allNodes = new ArrayList<>();
-				for (String port : ports) {
-					allNodes.add(new ServentInfo("localhost", Integer.parseInt(port)));
+				for (String ipPortTeam : ipPortTeams) {
+					String ip = ipPortTeam.split(":")[0];
+					String port = ipPortTeam.split(":")[1];
+					String team = ipPortTeam.split(":")[2];
+					allNodes.add(new ServentInfo(ip, Integer.parseInt(port), team));
 				}
 				AppConfig.chordState.addNodes(allNodes);
 			}

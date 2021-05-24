@@ -1,6 +1,7 @@
 package servent;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -38,7 +39,7 @@ public class SimpleServentListener implements Runnable, Cancellable {
 	public void run() {
 		ServerSocket listenerSocket = null;
 		try {
-			listenerSocket = new ServerSocket(AppConfig.myServentInfo.getListenerPort(), 100);
+			listenerSocket = new ServerSocket(AppConfig.myServentInfo.getListenerPort(), 100, InetAddress.getByName(AppConfig.myServentInfo.getIpAddress()));
 			/*
 			 * If there is no connection after 1s, wake up and see if we should terminate.
 			 */

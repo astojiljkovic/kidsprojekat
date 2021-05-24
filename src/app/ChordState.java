@@ -105,7 +105,7 @@ public class ChordState {
 			Socket bsSocket = new Socket("localhost", AppConfig.BOOTSTRAP_PORT);
 			
 			PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
-			bsWriter.write("New\n" + AppConfig.myServentInfo.getListenerPort() + "\n");
+			bsWriter.write("New\n" + AppConfig.myServentInfo.getIpAddress() + "\n" + AppConfig.myServentInfo.getListenerPort() + "\n");
 			
 			bsWriter.flush();
 			bsSocket.close();
@@ -126,6 +126,10 @@ public class ChordState {
 	
 	public int getNextNodePort() {
 		return successorTable[0].getListenerPort();
+	}
+
+	public String getNextNodeIp() {
+		return successorTable[0].getIpAddress();
 	}
 	
 	public ServentInfo getPredecessor() {

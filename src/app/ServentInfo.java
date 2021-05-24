@@ -39,7 +39,7 @@ public class ServentInfo implements Serializable {
 	
 	@Override
 	public String toString() {
-		return "[" + chordId + "|" + ipAddress + "|" + listenerPort + "]";
+		return "[" + chordId + "|" + ipAddress + "|" + listenerPort + "|" + team + "]";
 	}
 
 	public String getTeam() {
