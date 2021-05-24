@@ -105,7 +105,7 @@ public class AppConfig {
 		}
 		
 		String portProperty = "servent"+serventId+".port";
-		
+
 		int serventPort = -1;
 		
 		try {
@@ -114,8 +114,18 @@ public class AppConfig {
 			timestampedErrorPrint("Problem reading " + portProperty + ". Exiting...");
 			System.exit(0);
 		}
+
+		String teamProperty = "servent"+serventId+".team";
+		String serventTeam = "";
+
+		try {
+			serventTeam = properties.getProperty(teamProperty);
+		} catch (NumberFormatException e) {
+			timestampedErrorPrint("Problem reading " + teamProperty + ". Exiting...");
+			System.exit(0);
+		}
 		
-		myServentInfo = new ServentInfo("localhost", serventPort);
+		myServentInfo = new ServentInfo("localhost", serventPort, serventTeam);
 	}
 	
 }
