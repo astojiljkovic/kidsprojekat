@@ -39,13 +39,13 @@ public class SimpleServentListener implements Runnable, Cancellable {
 	public void run() {
 		ServerSocket listenerSocket = null;
 		try {
-			listenerSocket = new ServerSocket(AppConfig.myServentInfo.getListenerPort(), 100, InetAddress.getByName(AppConfig.myServentInfo.getIpAddress()));
+			listenerSocket = new ServerSocket(AppConfig.myServentInfo.getNetworkLocation().getPort(), 100, InetAddress.getByName(AppConfig.myServentInfo.getNetworkLocation().getIp()));
 			/*
 			 * If there is no connection after 1s, wake up and see if we should terminate.
 			 */
 			listenerSocket.setSoTimeout(1000);
 		} catch (IOException e) {
-			AppConfig.timestampedErrorPrint("Couldn't open listener socket on: " + AppConfig.myServentInfo.getListenerPort());
+			AppConfig.timestampedErrorPrint("Couldn't open listener socket on: " + AppConfig.myServentInfo.getNetworkLocation().getPort());
 			System.exit(0);
 		}
 		

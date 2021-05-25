@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import app.ChordState;
+import app.ServentInfo;
 
 /**
  * A default message implementation. This should cover most situations.
@@ -18,13 +19,11 @@ public class BasicMessage implements Message {
 	private final MessageType type;
 
 //	Sender info
-	private final String senderIp;
-	private final int senderPort;
+	private final NetworkLocation senderLocation;
 	private final String senderTeam;
 
 //	 Receiver info
-	private final String receiverIp;
-	private final int receiverPort;
+	private final NetworkLocation receiverLocation;
 	private final String messageText;
 	
 	//This gives us a unique id - incremented in every natural constructor.
@@ -33,11 +32,9 @@ public class BasicMessage implements Message {
 	
 	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort) {
 		this.type = type;
-		this.senderIp = senderIp;
-		this.senderPort = senderPort;
+		this.senderLocation = new NetworkLocation(senderIp, senderPort);
 		this.senderTeam = senderTeam;
-		this.receiverIp = receiverIp;
-		this.receiverPort = receiverPort;
+		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
 		this.messageText = "";
 
 		this.messageId = messageCounter.getAndIncrement();
@@ -45,11 +42,9 @@ public class BasicMessage implements Message {
 	
 	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String messageText) {
 		this.type = type;
-		this.senderIp = senderIp;
-		this.senderPort = senderPort;
+		this.senderLocation = new NetworkLocation(senderIp, senderPort);
 		this.senderTeam = senderTeam;
-		this.receiverIp = receiverIp;
-		this.receiverPort = receiverPort;
+		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
 		this.messageText = messageText;
 
 		this.messageId = messageCounter.getAndIncrement();
@@ -60,14 +55,18 @@ public class BasicMessage implements Message {
 		return type;
 	}
 	
+//	@Override
+//	public int getReceiverPort() {
+//		return receiverPort;
+//	}
+//
+//	@Override
+//	public String getReceiverIpAddress() {
+//		return receiverIp;
+//	}
 	@Override
-	public int getReceiverPort() {
-		return receiverPort;
-	}
-	
-	@Override
-	public String getReceiverIpAddress() {
-		return receiverIp;
+	public NetworkLocation getReceiverLocation() {
+		return receiverLocation;
 	}
 
 	@Override
@@ -76,13 +75,8 @@ public class BasicMessage implements Message {
 	}
 
 	@Override
-	public String getSenderIp() {
-		return senderIp;
-	}
-
-	@Override
-	public int getSenderPort() {
-		return senderPort;
+	public NetworkLocation getSenderLocation() {
+		return senderLocation;
 	}
 
 	@Override
@@ -96,7 +90,7 @@ public class BasicMessage implements Message {
 	}
 	
 	/**
-	 * Comparing messages is based on their unique id and the original sender port.
+	 * Comparing messages is based on their unique id and the original sender location.
 	 */
 	@Override
 	public boolean equals(Object obj) {
@@ -104,7 +98,7 @@ public class BasicMessage implements Message {
 			BasicMessage other = (BasicMessage)obj;
 			
 			if (getMessageId() == other.getMessageId() &&
-				getSenderPort() == other.getSenderPort()) {
+					getSenderLocation().equals(other.getSenderLocation())) {
 				return true;
 			}
 		}
@@ -118,17 +112,24 @@ public class BasicMessage implements Message {
 	 */
 	@Override
 	public int hashCode() {
-		return Objects.hash(getMessageId(), getSenderPort());
+		return Objects.hash(getMessageId(), getSenderLocation());
 	}
 	
 	/**
 	 * Returns the message in the format: <code>[sender_id|sender_port|message_id|text|type|receiver_port|receiver_id]</code>
 	 */
+//	@Override
+//	public String toString() {
+//		return "[" + ChordState.chordHash(getSenderPort()) + "|" + getSenderPort() + "|" + getMessageId() + "|" +
+//					getMessageText() + "|" + getMessageType() + "|" +
+//					getReceiverPort() + "|" + ChordState.chordHash(getReceiverPort()) + "]";
+//	}
+
 	@Override
 	public String toString() {
-		return "[" + ChordState.chordHash(getSenderPort()) + "|" + getSenderPort() + "|" + getMessageId() + "|" +
-					getMessageText() + "|" + getMessageType() + "|" +
-					getReceiverPort() + "|" + ChordState.chordHash(getReceiverPort()) + "]";
-	}
+		return "[" + getSenderLocation() + "|" + getMessageId() + "|" +
+				getMessageText() + "|" + getMessageType() + "|" +
+				getReceiverLocation() + "]";
 
+	}
 }

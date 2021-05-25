@@ -25,7 +25,7 @@ public class ServentInitializer implements Runnable {
 			//Hail\n
 			//address\n
 			//port\n
-			bsWriter.write("Hail\n" + AppConfig.myServentInfo.getIpAddress() + "\n" + AppConfig.myServentInfo.getListenerPort() + "\n");
+			bsWriter.write("Hail\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
 			bsWriter.flush();
 			
 			Scanner bsScanner = new Scanner(bsSocket.getInputStream());
@@ -62,7 +62,7 @@ public class ServentInitializer implements Runnable {
 			String someServentIp = someServentLocation.split(":")[0];
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
 
-			NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo.getIpAddress(), AppConfig.myServentInfo.getListenerPort(), AppConfig.myServentInfo.getTeam(), someServentIp, someServentPort);
+			NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), someServentIp, someServentPort);
 			MessageUtil.sendMessage(nnm);
 		}
 	}

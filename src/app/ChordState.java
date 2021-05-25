@@ -97,7 +97,7 @@ public class ChordState {
 	 */
 	public void init(WelcomeMessage welcomeMsg) {
 		//set a temporary pointer to next node, for sending of update message
-		successorTable[0] = new ServentInfo(welcomeMsg.getSenderIp(), welcomeMsg.getSenderPort(), welcomeMsg.getSenderTeam());
+		successorTable[0] = new ServentInfo(welcomeMsg.getSenderLocation().getIp(), welcomeMsg.getSenderLocation().getPort(), welcomeMsg.getSenderTeam());
 		this.valueMap = welcomeMsg.getValues();
 		
 		//tell bootstrap this node is not a collider
@@ -105,7 +105,7 @@ public class ChordState {
 			Socket bsSocket = new Socket("localhost", AppConfig.BOOTSTRAP_PORT);
 			
 			PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
-			bsWriter.write("New\n" + AppConfig.myServentInfo.getIpAddress() + "\n" + AppConfig.myServentInfo.getListenerPort() + "\n");
+			bsWriter.write("New\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
 			
 			bsWriter.flush();
 			bsSocket.close();
@@ -125,11 +125,11 @@ public class ChordState {
 	}
 	
 	public int getNextNodePort() {
-		return successorTable[0].getListenerPort();
+		return successorTable[0].getNetworkLocation().getPort();
 	}
 
 	public String getNextNodeIp() {
-		return successorTable[0].getIpAddress();
+		return successorTable[0].getNetworkLocation().getIp();
 	}
 	
 	public ServentInfo getPredecessor() {
@@ -334,7 +334,7 @@ public class ChordState {
 			valueMap.put(key, value);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
-			PutMessage pm = new PutMessage(AppConfig.myServentInfo.getIpAddress(), AppConfig.myServentInfo.getListenerPort(), AppConfig.myServentInfo.getTeam(), nextNode.getIpAddress(), nextNode.getListenerPort(), key, value);
+			PutMessage pm = new PutMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), nextNode.getNetworkLocation().getIp(), nextNode.getNetworkLocation().getPort(), key, value);
 			MessageUtil.sendMessage(pm);
 		}
 	}
@@ -357,7 +357,7 @@ public class ChordState {
 		}
 		
 		ServentInfo nextNode = getNextNodeForKey(key);
-		AskGetMessage agm = new AskGetMessage(AppConfig.myServentInfo.getIpAddress(), AppConfig.myServentInfo.getListenerPort(), AppConfig.myServentInfo.getTeam(), nextNode.getIpAddress(), nextNode.getListenerPort(), String.valueOf(key));
+		AskGetMessage agm = new AskGetMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), nextNode.getNetworkLocation().getIp(), nextNode.getNetworkLocation().getPort(), String.valueOf(key));
 		MessageUtil.sendMessage(agm);
 		
 		return -2;

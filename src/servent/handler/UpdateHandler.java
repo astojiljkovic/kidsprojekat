@@ -21,15 +21,15 @@ public class UpdateHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.UPDATE) {
-			if (clientMessage.getSenderPort() != AppConfig.myServentInfo.getListenerPort()) {
-				ServentInfo newNodInfo = new ServentInfo(clientMessage.getSenderIp(), clientMessage.getSenderPort(), clientMessage.getSenderTeam());
+			if (clientMessage.getSenderLocation().getPort() != AppConfig.myServentInfo.getNetworkLocation().getPort() || !clientMessage.getSenderLocation().getIp().equals(AppConfig.myServentInfo.getNetworkLocation().getIp())) {
+				ServentInfo newNodInfo = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam());
 				List<ServentInfo> newNodes = new ArrayList<>();
 				newNodes.add(newNodInfo);
 				
 				AppConfig.chordState.addNodes(newNodes);
 
 				//Create ip:port:team
-				String currentNodeInfo = AppConfig.myServentInfo.getIpAddress() + ":" + String.valueOf(AppConfig.myServentInfo.getListenerPort()) + ":" + AppConfig.myServentInfo.getTeam();
+				String currentNodeInfo = AppConfig.myServentInfo.getNetworkLocation().getIp() + ":" + String.valueOf(AppConfig.myServentInfo.getNetworkLocation().getPort()) + ":" + AppConfig.myServentInfo.getTeam();
 
 				String newMessageText = "";
 				if (clientMessage.getMessageText().equals("")) {
@@ -37,7 +37,7 @@ public class UpdateHandler implements MessageHandler {
 				} else {
 					newMessageText = clientMessage.getMessageText() + "," + currentNodeInfo;
 				}
-				Message nextUpdate = new UpdateMessage(clientMessage.getSenderIp(), clientMessage.getSenderPort(), clientMessage.getSenderTeam(), AppConfig.chordState.getNextNodeIp(), AppConfig.chordState.getNextNodePort(),
+				Message nextUpdate = new UpdateMessage(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam(), AppConfig.chordState.getNextNodeIp(), AppConfig.chordState.getNextNodePort(),
 						newMessageText);
 				MessageUtil.sendMessage(nextUpdate);
 			} else {

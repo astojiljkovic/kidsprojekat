@@ -1,5 +1,6 @@
 package servent.message;
 
+import java.awt.image.AffineTransformOp;
 import java.io.Serializable;
 
 /**
@@ -25,29 +26,39 @@ public interface Message extends Serializable {
 
 //	Sender info
 	/**
+	 * Sender location. Use this to reply.
+	 */
+	NetworkLocation getSenderLocation();
+	/**
 	 * Sender ip. Use this to reply.
 	 */
-	String getSenderIp();
+//	String getSenderIp();
+//
+//	/**
+//	 * Port number on which the sender of this message listens for new messages. Use this to reply.
+//	 */
+//	int getSenderPort();
 
-	/**
-	 * Port number on which the sender of this message listens for new messages. Use this to reply.
-	 */
-	int getSenderPort();
+
 
 	/**
 	 * Team name of the sender.
 	 */
 	String getSenderTeam();
-	
+
 	/**
-	 * Port number of the receiver of the message.
+	 * Receiver location
 	 */
-	int getReceiverPort();
-	
-	/**
-	 * IP address of the receiver.
-	 */
-	String getReceiverIpAddress();
+	NetworkLocation getReceiverLocation();
+//	/**
+//	 * Port number of the receiver of the message.
+//	 */
+//	int getReceiverPort();
+//
+//	/**
+//	 * IP address of the receiver.
+//	 */
+//	String getReceiverIpAddress();
 	
 	/**
 	 * Message type. Mainly used to decide which handler will work on this message.

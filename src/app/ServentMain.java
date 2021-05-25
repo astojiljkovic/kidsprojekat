@@ -35,7 +35,7 @@ public class ServentMain {
 		AppConfig.readConfig(serventListFile, serventId);
 		
 		try {
-			portNumber = AppConfig.myServentInfo.getListenerPort();
+			portNumber = AppConfig.myServentInfo.getNetworkLocation().getPort();
 			
 			if (portNumber < 1000 || portNumber > 2000) {
 				throw new NumberFormatException();
