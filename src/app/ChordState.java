@@ -53,10 +53,11 @@ public class ChordState {
 
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
-		return 61 * value % CHORD_SIZE;
+		int absValue = Math.abs(value); // TODO: 25.5.21. Fix dirty cheat for positive values
+		return 61 * absValue % CHORD_SIZE;
 	}
 	
-	private int chordLevel; //log_2(CHORD_SIZE)
+	private final int chordLevel; //log_2(CHORD_SIZE)
 	
 	private ServentInfo[] successorTable;
 	private ServentInfo predecessorInfo;
@@ -67,16 +68,17 @@ public class ChordState {
 	private Map<String, String> valueMap;
 	
 	public ChordState() {
-		this.chordLevel = 1;
+		int tmpChordLvl = 1;
 		int tmp = CHORD_SIZE;
 		while (tmp != 2) {
 			if (tmp % 2 != 0) { //not a power of 2
 				throw new NumberFormatException();
 			}
 			tmp /= 2;
-			this.chordLevel++;
+			tmpChordLvl++;
 		}
-		
+		this.chordLevel = tmpChordLvl;
+
 		successorTable = new ServentInfo[chordLevel];
 		for (int i = 0; i < chordLevel; i++) {
 			successorTable[i] = null;
@@ -112,10 +114,6 @@ public class ChordState {
 			e.printStackTrace();
 		}
 	}
-	
-//	public int getChordLevel() {
-//		return chordLevel;
-//	}
 	
 	public ServentInfo[] getSuccessorTable() {
 		return successorTable;
@@ -327,7 +325,7 @@ public class ChordState {
 //		String base64EncodedFilename = Base64.getEncoder().encodeToString(fileName.getBytes());
 
 		int key = chordHash(fileName.hashCode());
-		System.out.print("Bananica se dodaje, key: " + key);
+		System.out.println("Bananica se dodaje, key: " + key);
 
 		if (isKeyMine(key)) {
 			valueMap.put(fileName, content);
@@ -347,24 +345,6 @@ public class ChordState {
 	 *		   </ul>
 	 */
 	public String getValueForCLI(String fileName) {
-//		int key = chordHash(fileName.hashCode());
-//
-//		if (isKeyMine(key)) {
-//			if (valueMap.containsKey(fileName)) {
-//				return valueMap.get(fileName);
-//			} else {
-//				return "-1";
-//			}
-//		}
-//
-//		ServentInfo nextNode = getNextNodeForKey(key);
-//		AskGetMessage agm = new AskGetMessage(myServentInfo, nextNode, fileName);
-//		MessageUtil.sendMessage(agm);
-//
-//		return "-2";
-
-//		return getValueForServent(fileName, myServentInfo);
-
 		String localVal = getLocalValue(fileName);
 
 		if (localVal.equals("-1") || !localVal.equals("-2")) {
@@ -396,19 +376,4 @@ public class ChordState {
 		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName);
 		MessageUtil.sendMessage(agm);
 	}
-
-	public String getValueForServent(String fileName, ServentInfo servent) {
-		int key = chordHash(fileName.hashCode());
-		String localVal = getLocalValue(fileName);
-
-		if (localVal.equals("-1") || !localVal.equals("-2")) {
-			return localVal;
-		}
-
-		ServentInfo nextNode = getNextNodeForKey(key);
-		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName);
-		MessageUtil.sendMessage(agm);
-		return "-2";
-	}
-
 }
