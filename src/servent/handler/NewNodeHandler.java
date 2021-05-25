@@ -48,38 +48,38 @@ public class NewNodeHandler implements MessageHandler {
 				
 				AppConfig.chordState.setPredecessor(newNodeInfo);
 
-				List<SillyGitFile> myValues = AppConfig.storage.getAllFiles();
-				List<SillyGitFile> hisValues = new ArrayList<>();
+				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredFilesPaths();
+				List<String> hisFilePaths = new ArrayList<>();
 
 				int myId = AppConfig.myServentInfo.getChordId();
 				int hisPredId = hisPred.getChordId();
 				int newNodeId = newNodeInfo.getChordId();
 				
-				for (SillyGitFile gitFile : myValues) {
-					int entryKey = AppConfig.chordState.chordHash(gitFile.getPathInWorkDir().hashCode()); // TODO: 25.5.21. Move hashing from here
+				for (String storedFilePath : myStoredFilePaths) {
+					int entryKey = AppConfig.chordState.chordHash(storedFilePath.hashCode()); // TODO: 25.5.21. Move hashing from here
 					if (hisPredId == myId) { //i am first and he is second
 						if (myId < newNodeId) {
 							if (entryKey <= newNodeId && entryKey > myId) {
-								hisValues.add(gitFile);
+								hisFilePaths.add(storedFilePath);
 							}
 						} else {
 							if (entryKey <= newNodeId || entryKey > myId) {
-								hisValues.add(gitFile);
+								hisFilePaths.add(storedFilePath);
 							}
 						}
 					}
 					if (hisPredId < myId) { //my old predecesor was before me
 						if (entryKey <= newNodeId) {
-							hisValues.add(gitFile);
+							hisFilePaths.add(storedFilePath);
 						}
 					} else { //my old predecesor was after me
 						if (hisPredId > newNodeId) { //new node overflow
 							if (entryKey <= newNodeId || entryKey > hisPredId) {
-								hisValues.add(gitFile);
+								hisFilePaths.add(storedFilePath);
 							}
 						} else { //no new node overflow
 							if (entryKey <= newNodeId && entryKey > hisPredId) {
-								hisValues.add(gitFile);
+								hisFilePaths.add(storedFilePath);
 							}
 						}
 						
@@ -87,15 +87,16 @@ public class NewNodeHandler implements MessageHandler {
 					
 				}
 
-				// remove hist values from my list
-				myValues = myValues.stream().filter(sillyGitFile -> {
-					return hisValues.stream().noneMatch(sillyGitFile1 -> sillyGitFile1.getPathInWorkDir().equals(sillyGitFile.getPathInWorkDir()));
-				}).collect(Collectors.toList());
+				// remove his values from my list
+//				myStoredFilePaths = myStoredFilePaths.stream().filter(myFilePath -> {
+//					return hisFilePaths.stream().noneMatch(hisFilePath -> myFilePath.equals(hisFilePath));
+//				}).collect(Collectors.toList());
 
-				AppConfig.storage.setAllFiles(myValues);
+				List<SillyGitFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
+//				AppConfig.storage.setAllFiles(myStoredFilePaths);
 
 				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
-				for(SillyGitFile sgf: hisValues) {
+				for(SillyGitFile sgf: hisFiles) {
 					mapToSend.put(sgf.getPathInWorkDir(), sgf.getContent());
 				}
 				

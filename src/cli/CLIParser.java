@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import app.AppConfig;
 import app.Cancellable;
 import app.Logger;
 import cli.command.CLICommand;
-import cli.command.DHTGetCommand;
+import cli.command.PullCommand;
 import cli.command.AddCommand;
 import cli.command.InfoCommand;
 import cli.command.PauseCommand;
@@ -46,7 +45,7 @@ public class CLIParser implements Runnable, Cancellable {
 		commandList.add(new InfoCommand());
 		commandList.add(new PauseCommand());
 		commandList.add(new SuccessorInfo());
-		commandList.add(new DHTGetCommand());
+		commandList.add(new PullCommand());
 		commandList.add(new AddCommand());
 		commandList.add(new StopCommand(this, listener));
 	}
