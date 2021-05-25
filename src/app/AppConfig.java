@@ -20,8 +20,7 @@ import java.util.stream.Stream;
 public class AppConfig {
 
 	public static WorkDirectory workDirectory;
-
-	public static File storageDir;
+	public static Storage storage;
 
 	/**
 	 * Convenience access for this servent's information
@@ -150,7 +149,7 @@ public class AppConfig {
 			System.exit(0);
 		}
 
-		storageDir = new File(serventStorageDir);
+		File storageDir = new File(serventStorageDir);
 
 		if (storageDir.exists()) {
 			storageDir.delete();
@@ -160,6 +159,8 @@ public class AppConfig {
 			Logger.timestampedErrorPrint("Cannot create storageDir dir " + storageDir.getAbsolutePath() + ". Exiting...");
 			System.exit(0);
 		}
+
+		storage = new Storage(storageDir);
 
 		String teamProperty = "servent"+serventId+".team";
 		String serventTeam = "";

@@ -1,8 +1,10 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.DataNotOnOurNodeException;
 import app.Logger;
 import app.ServentInfo;
+import app.storage.FileDoesntExistException;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.TellGetMessage;
@@ -22,45 +24,40 @@ public class AskGetHandler implements MessageHandler {
 			try {
 				String fileName = clientMessage.getMessageText();
 
-				ServentInfo requester = clientMessage.getSender();
+//				ServentInfo requester = clientMessage.getSender();
 
-				String localVal = AppConfig.chordState.getLocalValue(fileName);
-
-				if (localVal.equals("-1")) {
+//				String localVal = null;
+				try {
+					String localVal = AppConfig.chordState.getLocalValue(fileName);
 					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
+							fileName, localVal);
+					MessageUtil.sendMessage(tgm);
+				} catch (FileDoesntExistException e) {
+						TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
 							fileName, "FAJL_NE_POSTOJI");
 					MessageUtil.sendMessage(tgm);
-					return;
-				}
-
-				if (localVal.equals("-2")) {
+//					e.printStackTrace();
+				} catch (DataNotOnOurNodeException e) {
 					AppConfig.chordState.sendAskGetMessage(fileName, clientMessage.getSender());
-					return;
+//					e.printStackTrace();
 				}
 
-				TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-						fileName, localVal);
-				MessageUtil.sendMessage(tgm);
-
-//				int key = Integer.parseInt(clientMessage.getMessageText()); //TODO: pobrisi kad proverimo
-//				String fileName = clientMessage.getMessageText();
-//
-//				if (AppConfig.chordState.isKeyMine(key)) {
-//					Map<Integer, Integer> valueMap = AppConfig.chordState.getValueMap();
-//					int value = -1;
-//
-//					if (valueMap.containsKey(key)) {
-//						value = valueMap.get(key);
-//					}
-//
+//				if (localVal.equals("-1")) {
 //					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-//															key, value);
+//							fileName, "FAJL_NE_POSTOJI");
 //					MessageUtil.sendMessage(tgm);
-//				} else {
-//					ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(key);
-//					AskGetMessage agm = new AskGetMessage(clientMessage.getSender(), nextNode, clientMessage.getMessageText());
-//					MessageUtil.sendMessage(agm);
+//					return;
 //				}
+
+//				if (localVal.equals("-2")) {
+//					AppConfig.chordState.sendAskGetMessage(fileName, clientMessage.getSender());
+//					return;
+//				}
+
+//				TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
+//						fileName, localVal);
+//				MessageUtil.sendMessage(tgm);
+
 			} catch (NumberFormatException e) {
 				Logger.timestampedErrorPrint("Got ask get with bad text: " + clientMessage.getMessageText());
 			}

@@ -2,6 +2,8 @@ package servent.handler;
 
 import app.AppConfig;
 import app.Logger;
+import app.SillyGitFile;
+import app.storage.FileAlreadyAddedException;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -21,7 +23,12 @@ public class AddHandler implements MessageHandler {
 				String fileName = splitText[0];
 				String content = splitText[1];
 
-				AppConfig.chordState.addFile(fileName, content);
+				SillyGitFile sgf = new SillyGitFile(fileName, content);
+				try {
+					AppConfig.chordState.addFile(sgf);
+				} catch (FileAlreadyAddedException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
+					Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
+				}
 			} else {
 				Logger.timestampedErrorPrint("Got add message with bad text: " + clientMessage.getMessageText());
 			}

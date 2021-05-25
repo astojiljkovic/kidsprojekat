@@ -6,12 +6,15 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import app.storage.FileAlreadyAddedException;
+import app.storage.FileDoesntExistException;
 import servent.message.AskGetMessage;
 import servent.message.AddMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
 import static app.AppConfig.myServentInfo;
+import static app.AppConfig.storage;
 
 /**
  * This class implements all the logic required for Chord to function.
@@ -65,7 +68,7 @@ public class ChordState {
 	//we DO NOT use this to send messages, but only to construct the successor table
 	private List<ServentInfo> allNodeInfo;
 	
-	private Map<String, String> valueMap;
+//	private Map<String, String> valueMap;
 	
 	public ChordState() {
 		int tmpChordLvl = 1;
@@ -85,7 +88,7 @@ public class ChordState {
 		}
 		
 		predecessorInfo = null;
-		valueMap = new HashMap<>();
+//		valueMap = new HashMap<>();
 		allNodeInfo = new ArrayList<>();
 	}
 	
@@ -97,7 +100,16 @@ public class ChordState {
 	public void init(WelcomeMessage welcomeMsg) {
 		//set a temporary pointer to next node, for sending of update message
 		successorTable[0] = welcomeMsg.getSender();
-		this.valueMap = welcomeMsg.getValues();
+//		this.valueMap = welcomeMsg.getValues();
+
+		for(Map.Entry<String, String> entry: welcomeMsg.getValues().entrySet()) {
+			SillyGitFile sgf = new SillyGitFile(entry.getKey(), entry.getValue());
+			try {
+				storage.add(sgf);
+			} catch (FileAlreadyAddedException e) {
+				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgf.getPathInWorkDir() + " " + sgf.getContent());
+			}
+		}
 		
 		//tell bootstrap this node is not a collider
 		try {
@@ -131,13 +143,13 @@ public class ChordState {
 		this.predecessorInfo = newNodeInfo;
 	}
 
-	public Map<String, String> getValueMap() {
-		return valueMap;
-	}
-	
-	public void setValueMap(Map<String, String> valueMap) {
-		this.valueMap = valueMap;
-	}
+//	public Map<String, String> getValueMap() {
+//		return valueMap;
+//	}
+//
+//	public void setValueMap(Map<String, String> valueMap) {
+//		this.valueMap = valueMap;
+//	}
 	
 	public boolean isCollision(int chordId) {
 		if (chordId == myServentInfo.getChordId()) {
@@ -320,18 +332,19 @@ public class ChordState {
 	/**
 	 * The Chord put operation. Stores locally if key is ours, otherwise sends it on.
 	 */
-	public void addFile(String fileName, String content) {
+	public void addFile(SillyGitFile sgf) throws FileAlreadyAddedException {
 //		String base64EncodedContent = Base64.getEncoder().encodeToString(content);
 //		String base64EncodedFilename = Base64.getEncoder().encodeToString(fileName.getBytes());
 
-		int key = chordHash(fileName.hashCode());
+		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		System.out.println("Bananica se dodaje, key: " + key);
 
-		if (isKeyMine(key)) {
-			valueMap.put(fileName, content);
+		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+			AppConfig.storage.add(sgf);
+//			valueMap.put(fileName, content);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
-			AddMessage pm = new AddMessage(myServentInfo, nextNode, fileName, content);
+			AddMessage pm = new AddMessage(myServentInfo, nextNode, sgf.getPathInWorkDir(), sgf.getContent());
 			MessageUtil.sendMessage(pm);
 		}
 	}
@@ -344,29 +357,37 @@ public class ChordState {
 	 *			<li>-2 if we asked someone else</li>
 	 *		   </ul>
 	 */
-	public String getValueForCLI(String fileName) {
-		String localVal = getLocalValue(fileName);
+	public String getValueForCLI(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
+		try {
+			String localVal = getLocalValue(fileName);
 
-		if (localVal.equals("-1") || !localVal.equals("-2")) {
 			return localVal;
+//			if (localVal.equals("-1") || !localVal.equals("-2")) {
+//				return localVal;
+//			}
+		} catch (DataNotOnOurNodeException e) {
+			sendAskGetMessage(fileName, myServentInfo);
+			throw new DataNotOnOurNodeException();
 		}
 
-		sendAskGetMessage(fileName, myServentInfo);
-		return "-2";
+//		sendAskGetMessage(fileName, myServentInfo);
+//		return "-2";
 	}
 
-	public String getLocalValue(String fileName) {
+	public String getLocalValue(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
 		int key = chordHash(fileName.hashCode());
 
 		if (isKeyMine(key)) {
-			if (valueMap.containsKey(fileName)) {
-				return valueMap.get(fileName);
-			} else {
-				return "-1";
-			}
+			return storage.get(fileName).getContent();
+//			if (valueMap.containsKey(fileName)) {
+//				return valueMap.get(fileName);
+//			} else {
+//				return "-1";
+//			}
 		}
 
-		return "-2";
+		throw new DataNotOnOurNodeException();
+//		return "-2";
 	}
 
 	public void sendAskGetMessage(String fileName, ServentInfo servent) {

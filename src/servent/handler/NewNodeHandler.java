@@ -1,12 +1,16 @@
 package servent.handler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import app.AppConfig;
 import app.Logger;
 import app.ServentInfo;
+import app.SillyGitFile;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.NewNodeMessage;
@@ -43,51 +47,70 @@ public class NewNodeHandler implements MessageHandler {
 				}
 				
 				AppConfig.chordState.setPredecessor(newNodeInfo);
-				
-				Map<String, String> myValues = AppConfig.chordState.getValueMap();
-				Map<String, String> hisValues = new HashMap<>();
+
+				List<SillyGitFile> myValues = AppConfig.storage.getAllFiles();
+//				Map<String, String> myValues = AppConfig.chordState.getValueMap();
+				List<SillyGitFile> hisValues = new ArrayList<>();
+//				Map<String, String> hisValues = new HashMap<>();
 				
 				int myId = AppConfig.myServentInfo.getChordId();
 				int hisPredId = hisPred.getChordId();
 				int newNodeId = newNodeInfo.getChordId();
 				
-				for (Entry<String, String> valueEntry : myValues.entrySet()) {
-					int entryKey = AppConfig.chordState.chordHash(valueEntry.getKey().hashCode()); // TODO: 25.5.21. Move hashing from here
+				for (SillyGitFile gitFile : myValues) {
+					int entryKey = AppConfig.chordState.chordHash(gitFile.getPathInWorkDir().hashCode()); // TODO: 25.5.21. Move hashing from here
 					if (hisPredId == myId) { //i am first and he is second
 						if (myId < newNodeId) {
 							if (entryKey <= newNodeId && entryKey > myId) {
-								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
+								hisValues.add(gitFile);
+//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						} else {
 							if (entryKey <= newNodeId || entryKey > myId) {
-								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
+								hisValues.add(gitFile);
+//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						}
 					}
 					if (hisPredId < myId) { //my old predecesor was before me
 						if (entryKey <= newNodeId) {
-							hisValues.put(valueEntry.getKey(), valueEntry.getValue());
+							hisValues.add(gitFile);
+//							hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 						}
 					} else { //my old predecesor was after me
 						if (hisPredId > newNodeId) { //new node overflow
 							if (entryKey <= newNodeId || entryKey > hisPredId) {
-								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
+								hisValues.add(gitFile);
+//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						} else { //no new node overflow
 							if (entryKey <= newNodeId && entryKey > hisPredId) {
-								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
+								hisValues.add(gitFile);
+//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						}
 						
 					}
 					
 				}
-				for (String key : hisValues.keySet()) { //remove his values from my map
-					myValues.remove(key);
+
+				// remove hist values from my list
+				myValues = myValues.stream().filter(sillyGitFile -> {
+					return hisValues.stream().noneMatch(sillyGitFile1 -> sillyGitFile1.getPathInWorkDir().equals(sillyGitFile.getPathInWorkDir()));
+				}).collect(Collectors.toList());
+
+				AppConfig.storage.setAllFiles(myValues);
+//				for (String key : hisValues.keySet()) { //remove his values from my map
+//					myValues.remove(key);
+//				}
+//				AppConfig.chordState.setValueMap(myValues);
+
+				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
+				for(SillyGitFile sgf: hisValues) {
+					mapToSend.put(sgf.getPathInWorkDir(), sgf.getContent());
 				}
-				AppConfig.chordState.setValueMap(myValues);
 				
-				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisValues);
+				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, mapToSend);
 				MessageUtil.sendMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(newNodeInfo.getChordId());
