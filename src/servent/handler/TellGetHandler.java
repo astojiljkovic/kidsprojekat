@@ -27,18 +27,6 @@ public class TellGetHandler implements MessageHandler {
 				} else {
 					Logger.timestampedStandardPrint(clientMessage.getMessageText());
 				}
-
-//				try {
-//					int key = Integer.parseInt(parts[0]);
-//					int value = Integer.parseInt(parts[1]);
-//					if (value == -1) {
-//						AppConfig.timestampedStandardPrint("No such key: " + key);
-//					} else {
-//						AppConfig.timestampedStandardPrint(clientMessage.getMessageText());
-//					}
-//				} catch (NumberFormatException e) {
-//					AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
-//				}
 			} else {
 				Logger.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
 			}

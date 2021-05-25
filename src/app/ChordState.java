@@ -41,19 +41,6 @@ import static app.AppConfig.storage;
  */
 public class ChordState {
 
-	public static String byteToString(byte b) {
-		byte[] masks = { -128, 64, 32, 16, 8, 4, 2, 1 };
-		StringBuilder builder = new StringBuilder();
-		for (byte m : masks) {
-			if ((b & m) == m) {
-				builder.append('1');
-			} else {
-				builder.append('0');
-			}
-		}
-		return builder.toString();
-	}
-
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
 		int absValue = Math.abs(value); // TODO: 25.5.21. Fix dirty cheat for positive values
@@ -142,14 +129,6 @@ public class ChordState {
 	public void setPredecessor(ServentInfo newNodeInfo) {
 		this.predecessorInfo = newNodeInfo;
 	}
-
-//	public Map<String, String> getValueMap() {
-//		return valueMap;
-//	}
-//
-//	public void setValueMap(Map<String, String> valueMap) {
-//		this.valueMap = valueMap;
-//	}
 	
 	public boolean isCollision(int chordId) {
 		if (chordId == myServentInfo.getChordId()) {
@@ -341,7 +320,6 @@ public class ChordState {
 
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
 			AppConfig.storage.add(sgf);
-//			valueMap.put(fileName, content);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
 			AddMessage pm = new AddMessage(myServentInfo, nextNode, sgf.getPathInWorkDir(), sgf.getContent());
@@ -359,19 +337,11 @@ public class ChordState {
 	 */
 	public String getValueForCLI(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
 		try {
-			String localVal = getLocalValue(fileName);
-
-			return localVal;
-//			if (localVal.equals("-1") || !localVal.equals("-2")) {
-//				return localVal;
-//			}
+			return getLocalValue(fileName);
 		} catch (DataNotOnOurNodeException e) {
 			sendAskGetMessage(fileName, myServentInfo);
 			throw new DataNotOnOurNodeException();
 		}
-
-//		sendAskGetMessage(fileName, myServentInfo);
-//		return "-2";
 	}
 
 	public String getLocalValue(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
@@ -379,15 +349,9 @@ public class ChordState {
 
 		if (isKeyMine(key)) {
 			return storage.get(fileName).getContent();
-//			if (valueMap.containsKey(fileName)) {
-//				return valueMap.get(fileName);
-//			} else {
-//				return "-1";
-//			}
 		}
 
 		throw new DataNotOnOurNodeException();
-//		return "-2";
 	}
 
 	public void sendAskGetMessage(String fileName, ServentInfo servent) {

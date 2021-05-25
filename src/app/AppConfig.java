@@ -177,9 +177,6 @@ public class AppConfig {
 
 
 	private static void deleteDirectoryJava8(Path path) throws IOException {
-
-//		Path path = Paths.get(dir);
-
 		// read java doc, Files.walk need close the resources.
 		// try-with-resources to ensure that the stream's open directories are closed
 		try (Stream<Path> walk = Files.walk(path)) {

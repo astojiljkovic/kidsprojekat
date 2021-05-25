@@ -24,9 +24,6 @@ public class AskGetHandler implements MessageHandler {
 			try {
 				String fileName = clientMessage.getMessageText();
 
-//				ServentInfo requester = clientMessage.getSender();
-
-//				String localVal = null;
 				try {
 					String localVal = AppConfig.chordState.getLocalValue(fileName);
 					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
@@ -36,27 +33,9 @@ public class AskGetHandler implements MessageHandler {
 						TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
 							fileName, "FAJL_NE_POSTOJI");
 					MessageUtil.sendMessage(tgm);
-//					e.printStackTrace();
 				} catch (DataNotOnOurNodeException e) {
 					AppConfig.chordState.sendAskGetMessage(fileName, clientMessage.getSender());
-//					e.printStackTrace();
 				}
-
-//				if (localVal.equals("-1")) {
-//					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-//							fileName, "FAJL_NE_POSTOJI");
-//					MessageUtil.sendMessage(tgm);
-//					return;
-//				}
-
-//				if (localVal.equals("-2")) {
-//					AppConfig.chordState.sendAskGetMessage(fileName, clientMessage.getSender());
-//					return;
-//				}
-
-//				TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-//						fileName, localVal);
-//				MessageUtil.sendMessage(tgm);
 
 			} catch (NumberFormatException e) {
 				Logger.timestampedErrorPrint("Got ask get with bad text: " + clientMessage.getMessageText());

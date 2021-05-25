@@ -49,10 +49,8 @@ public class NewNodeHandler implements MessageHandler {
 				AppConfig.chordState.setPredecessor(newNodeInfo);
 
 				List<SillyGitFile> myValues = AppConfig.storage.getAllFiles();
-//				Map<String, String> myValues = AppConfig.chordState.getValueMap();
 				List<SillyGitFile> hisValues = new ArrayList<>();
-//				Map<String, String> hisValues = new HashMap<>();
-				
+
 				int myId = AppConfig.myServentInfo.getChordId();
 				int hisPredId = hisPred.getChordId();
 				int newNodeId = newNodeInfo.getChordId();
@@ -63,30 +61,25 @@ public class NewNodeHandler implements MessageHandler {
 						if (myId < newNodeId) {
 							if (entryKey <= newNodeId && entryKey > myId) {
 								hisValues.add(gitFile);
-//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						} else {
 							if (entryKey <= newNodeId || entryKey > myId) {
 								hisValues.add(gitFile);
-//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						}
 					}
 					if (hisPredId < myId) { //my old predecesor was before me
 						if (entryKey <= newNodeId) {
 							hisValues.add(gitFile);
-//							hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 						}
 					} else { //my old predecesor was after me
 						if (hisPredId > newNodeId) { //new node overflow
 							if (entryKey <= newNodeId || entryKey > hisPredId) {
 								hisValues.add(gitFile);
-//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						} else { //no new node overflow
 							if (entryKey <= newNodeId && entryKey > hisPredId) {
 								hisValues.add(gitFile);
-//								hisValues.put(valueEntry.getKey(), valueEntry.getValue());
 							}
 						}
 						
@@ -100,10 +93,6 @@ public class NewNodeHandler implements MessageHandler {
 				}).collect(Collectors.toList());
 
 				AppConfig.storage.setAllFiles(myValues);
-//				for (String key : hisValues.keySet()) { //remove his values from my map
-//					myValues.remove(key);
-//				}
-//				AppConfig.chordState.setValueMap(myValues);
 
 				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
 				for(SillyGitFile sgf: hisValues) {
