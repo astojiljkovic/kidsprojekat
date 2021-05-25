@@ -15,20 +15,29 @@ public class TellGetHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.TELL_GET) {
-			String parts[] = clientMessage.getMessageText().split(":");
+			String []parts = clientMessage.getMessageText().split("<=>");
 			
 			if (parts.length == 2) {
-				try {
-					int key = Integer.parseInt(parts[0]);
-					int value = Integer.parseInt(parts[1]);
-					if (value == -1) {
-						AppConfig.timestampedStandardPrint("No such key: " + key);
-					} else {
-						AppConfig.timestampedStandardPrint(clientMessage.getMessageText());
-					}
-				} catch (NumberFormatException e) {
-					AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
+				String fileName = parts[0];
+				String content = parts[1];
+
+				if (content.equals("FILE_NE_POSTOJI")) {
+					AppConfig.timestampedStandardPrint("No such file with name: " + fileName);
+				} else {
+					AppConfig.timestampedStandardPrint(clientMessage.getMessageText());
 				}
+
+//				try {
+//					int key = Integer.parseInt(parts[0]);
+//					int value = Integer.parseInt(parts[1]);
+//					if (value == -1) {
+//						AppConfig.timestampedStandardPrint("No such key: " + key);
+//					} else {
+//						AppConfig.timestampedStandardPrint(clientMessage.getMessageText());
+//					}
+//				} catch (NumberFormatException e) {
+//					AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
+//				}
 			} else {
 				AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
 			}

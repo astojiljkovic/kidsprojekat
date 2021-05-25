@@ -14,7 +14,7 @@ import servent.handler.AskGetHandler;
 import servent.handler.MessageHandler;
 import servent.handler.NewNodeHandler;
 import servent.handler.NullHandler;
-import servent.handler.PutHandler;
+import servent.handler.AddHandler;
 import servent.handler.SorryHandler;
 import servent.handler.TellGetHandler;
 import servent.handler.UpdateHandler;
@@ -79,8 +79,8 @@ public class SimpleServentListener implements Runnable, Cancellable {
 				case UPDATE:
 					messageHandler = new UpdateHandler(clientMessage);
 					break;
-				case PUT:
-					messageHandler = new PutHandler(clientMessage);
+				case ADD:
+					messageHandler = new AddHandler(clientMessage);
 					break;
 				case ASK_GET:
 					messageHandler = new AskGetHandler(clientMessage);

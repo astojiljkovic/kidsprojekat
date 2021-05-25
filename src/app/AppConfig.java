@@ -3,10 +3,15 @@ package app;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 /**
  * This class contains all the global application configuration stuff.
@@ -15,8 +20,13 @@ import java.util.Properties;
  */
 public class AppConfig {
 
-	public static File workDir;
-	public static File storageDir;
+	private static File workDir;
+
+	public static File fileForRelativePathToWorkDir(String fileName) {
+		return new File(workDir, fileName);
+	}
+
+	private static File storageDir;
 
 	/**
 	 * Convenience access for this servent's information
@@ -141,7 +151,12 @@ public class AppConfig {
 		workDir = new File(serventWorkDir);
 
 		if (workDir.exists()) {
-			workDir.delete();
+			try {
+				deleteDirectoryJava8(workDir.toPath());
+			} catch (Exception e) {
+				timestampedErrorPrint("Cannot delete work dir " + workDir.getAbsolutePath() + ". Exiting...");
+				System.exit(0);
+			}
 		}
 		if (!workDir.mkdir()) {
 			timestampedErrorPrint("Cannot create work dir " + workDir.getAbsolutePath() + ". Exiting...");
@@ -181,5 +196,28 @@ public class AppConfig {
 		
 		myServentInfo = new ServentInfo("localhost", serventPort, serventTeam);
 	}
-	
+
+
+	private static void deleteDirectoryJava8(Path path) throws IOException {
+
+//		Path path = Paths.get(dir);
+
+		// read java doc, Files.walk need close the resources.
+		// try-with-resources to ensure that the stream's open directories are closed
+		try (Stream<Path> walk = Files.walk(path)) {
+			walk
+					.sorted(Comparator.reverseOrder())
+					.forEach(AppConfig::deleteDirectoryJava8Extract);
+		}
+
+	}
+
+	// extract method to handle exception in lambda
+	private static void deleteDirectoryJava8Extract(Path path) {
+		try {
+			Files.delete(path);
+		} catch (IOException e) {
+			System.err.printf("Unable to delete this path : %s%n%s", path, e);
+		}
+	}
 }

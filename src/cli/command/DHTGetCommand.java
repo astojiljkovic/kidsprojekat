@@ -12,13 +12,13 @@ public class DHTGetCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		try {
-			int key = Integer.parseInt(args);
+			String key = args; // TODO: 25.5.21. Remove key 
 			
-			int val = AppConfig.chordState.getValue(key);
+			String val = AppConfig.chordState.getValueForCLI(key);
 			
-			if (val == -2) {
+			if (val.equals("-2")) {
 				AppConfig.timestampedStandardPrint("Please wait...");
-			} else if (val == -1) {
+			} else if (val.equals("-1")) {
 				AppConfig.timestampedStandardPrint("No such key: " + key);
 			} else {
 				AppConfig.timestampedStandardPrint(key + ": " + val);

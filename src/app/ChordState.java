@@ -2,17 +2,12 @@ package app;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import servent.message.AskGetMessage;
-import servent.message.PutMessage;
+import servent.message.AddMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
@@ -69,7 +64,7 @@ public class ChordState {
 	//we DO NOT use this to send messages, but only to construct the successor table
 	private List<ServentInfo> allNodeInfo;
 	
-	private Map<Integer, Integer> valueMap;
+	private Map<String, String> valueMap;
 	
 	public ChordState() {
 		this.chordLevel = 1;
@@ -118,21 +113,13 @@ public class ChordState {
 		}
 	}
 	
-	public int getChordLevel() {
-		return chordLevel;
-	}
+//	public int getChordLevel() {
+//		return chordLevel;
+//	}
 	
 	public ServentInfo[] getSuccessorTable() {
 		return successorTable;
 	}
-	
-//	public int getNextNodePort() {
-//		return successorTable[0].getNetworkLocation().getPort();
-//	}
-//
-//	public String getNextNodeIp() {
-//		return successorTable[0].getNetworkLocation().getIp();
-//	}
 
 	public ServentInfo getSuccessorInfo() {
 		return successorTable[0];
@@ -146,11 +133,11 @@ public class ChordState {
 		this.predecessorInfo = newNodeInfo;
 	}
 
-	public Map<Integer, Integer> getValueMap() {
+	public Map<String, String> getValueMap() {
 		return valueMap;
 	}
 	
-	public void setValueMap(Map<Integer, Integer> valueMap) {
+	public void setValueMap(Map<String, String> valueMap) {
 		this.valueMap = valueMap;
 	}
 	
@@ -335,12 +322,18 @@ public class ChordState {
 	/**
 	 * The Chord put operation. Stores locally if key is ours, otherwise sends it on.
 	 */
-	public void putValue(int key, int value) {
+	public void addFile(String fileName, String content) {
+//		String base64EncodedContent = Base64.getEncoder().encodeToString(content);
+//		String base64EncodedFilename = Base64.getEncoder().encodeToString(fileName.getBytes());
+
+		int key = chordHash(fileName.hashCode());
+		System.out.print("Bananica se dodaje, key: " + key);
+
 		if (isKeyMine(key)) {
-			valueMap.put(key, value);
+			valueMap.put(fileName, content);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
-			PutMessage pm = new PutMessage(myServentInfo, nextNode, key, value);
+			AddMessage pm = new AddMessage(myServentInfo, nextNode, fileName, content);
 			MessageUtil.sendMessage(pm);
 		}
 	}
@@ -353,20 +346,69 @@ public class ChordState {
 	 *			<li>-2 if we asked someone else</li>
 	 *		   </ul>
 	 */
-	public int getValue(int key) {
+	public String getValueForCLI(String fileName) {
+//		int key = chordHash(fileName.hashCode());
+//
+//		if (isKeyMine(key)) {
+//			if (valueMap.containsKey(fileName)) {
+//				return valueMap.get(fileName);
+//			} else {
+//				return "-1";
+//			}
+//		}
+//
+//		ServentInfo nextNode = getNextNodeForKey(key);
+//		AskGetMessage agm = new AskGetMessage(myServentInfo, nextNode, fileName);
+//		MessageUtil.sendMessage(agm);
+//
+//		return "-2";
+
+//		return getValueForServent(fileName, myServentInfo);
+
+		String localVal = getLocalValue(fileName);
+
+		if (localVal.equals("-1") || !localVal.equals("-2")) {
+			return localVal;
+		}
+
+		sendAskGetMessage(fileName, myServentInfo);
+		return "-2";
+	}
+
+	public String getLocalValue(String fileName) {
+		int key = chordHash(fileName.hashCode());
+
 		if (isKeyMine(key)) {
-			if (valueMap.containsKey(key)) {
-				return valueMap.get(key);
+			if (valueMap.containsKey(fileName)) {
+				return valueMap.get(fileName);
 			} else {
-				return -1;
+				return "-1";
 			}
 		}
-		
+
+		return "-2";
+	}
+
+	public void sendAskGetMessage(String fileName, ServentInfo servent) {
+		int key = chordHash(fileName.hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
-		AskGetMessage agm = new AskGetMessage(myServentInfo, nextNode, String.valueOf(key));
+
+		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName);
 		MessageUtil.sendMessage(agm);
-		
-		return -2;
+	}
+
+	public String getValueForServent(String fileName, ServentInfo servent) {
+		int key = chordHash(fileName.hashCode());
+		String localVal = getLocalValue(fileName);
+
+		if (localVal.equals("-1") || !localVal.equals("-2")) {
+			return localVal;
+		}
+
+		ServentInfo nextNode = getNextNodeForKey(key);
+		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName);
+		MessageUtil.sendMessage(agm);
+		return "-2";
 	}
 
 }
