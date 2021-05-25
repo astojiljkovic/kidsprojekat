@@ -13,8 +13,7 @@ import servent.message.AddMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
-import static app.AppConfig.myServentInfo;
-import static app.AppConfig.storage;
+import static app.AppConfig.*;
 
 /**
  * This class implements all the logic required for Chord to function.
@@ -335,11 +334,13 @@ public class ChordState {
 	 *			<li>-2 if we asked someone else</li>
 	 *		   </ul>
 	 */
-	public String getValueForCLI(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
+	public String getValueForCLI(String filePath) throws FileDoesntExistException, DataNotOnOurNodeException {
 		try {
-			return getLocalValue(fileName);
+			String content = getLocalValue(filePath);
+			workDirectory.addFile(new SillyGitFile(filePath, content));
+			return content;
 		} catch (DataNotOnOurNodeException e) {
-			sendAskGetMessage(fileName, myServentInfo);
+			sendAskGetMessage(filePath, myServentInfo);
 			throw new DataNotOnOurNodeException();
 		}
 	}

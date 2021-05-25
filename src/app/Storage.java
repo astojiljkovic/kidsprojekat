@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 public class Storage {
     private final File root;
 
-//    private List<SillyGitFile> sgfs = new ArrayList<>();
-
     public Storage(File root) {
         this.root = root;
     }
@@ -33,17 +31,6 @@ public class Storage {
             Logger.timestampedErrorPrint("Cannot write to storage " + fileForSillyFile.getPath());
             e.printStackTrace();
         }
-
-
-//        boolean exists = sgfs.stream().anyMatch(sillyGitFile -> {
-//            return sillyGitFile.getPathInWorkDir().equals(sgf.getPathInWorkDir());
-//        });
-//
-//        if (exists) {
-//            throw new FileAlreadyAddedException(sgf);
-//        }
-
-//        sgfs.add(sgf);
     }
 
     public SillyGitFile get(String pathInWorkDir) throws FileDoesntExistException {
@@ -61,14 +48,6 @@ public class Storage {
             e.printStackTrace();
             throw new UncheckedIOException(e);
         }
-
-//        try {
-//            return sgfs.stream().filter(sillyGitFile -> {
-//                return sillyGitFile.getPathInWorkDir().equals(pathInWorkDir);
-//            }).findFirst().orElseThrow();
-//        } catch (NoSuchElementException e) {
-//            throw new FileDoesntExistException(pathInWorkDir);
-//        }
     }
 
     public List<String> getAllStoredFilesPaths() {
@@ -77,15 +56,6 @@ public class Storage {
                     .map(path -> {
                         return root.toPath().relativize(path).toString();
                     }).collect(Collectors.toList());
-//                    .map(path -> {
-////                        try {
-////                            String content = Files.readString(path);
-////                            String relativePathToStorage = root.toPath().relativize(path).toString();
-////                            return new SillyGitFile(relativePathToStorage, content);
-////                        } catch (IOException e) {
-////                            throw new UncheckedIOException(e);
-////                        }
-//                    }).collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -110,10 +80,6 @@ public class Storage {
                 }).collect(Collectors.toList());
         return gitFiles;
     }
-        
-//    public void setAllFiles(List<SillyGitFile> sgfs) { //TODO: remove
-//        this.sgfs = sgfs;
-//    }
 
     private File fileForRelativePathToWorkDir(String fileName) {
         return new File(root, fileName);

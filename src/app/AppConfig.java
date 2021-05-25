@@ -152,7 +152,12 @@ public class AppConfig {
 		File storageDir = new File(serventStorageDir);
 
 		if (storageDir.exists()) {
-			storageDir.delete();
+			try {
+				deleteDirectoryJava8(storageDir.toPath());
+			} catch (Exception e) {
+				Logger.timestampedErrorPrint("Cannot delete storage dir " + storageDir.getAbsolutePath() + ". Exiting...");
+				System.exit(0);
+			}
 		}
 
 		if (!storageDir.mkdir()) {

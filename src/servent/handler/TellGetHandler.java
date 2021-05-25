@@ -2,6 +2,7 @@ package servent.handler;
 
 import app.AppConfig;
 import app.Logger;
+import app.SillyGitFile;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -19,13 +20,15 @@ public class TellGetHandler implements MessageHandler {
 			String []parts = clientMessage.getMessageText().split("<=>");
 			
 			if (parts.length == 2) {
-				String fileName = parts[0];
+				String filePath = parts[0];
 				String content = parts[1];
 
 				if (content.equals("FILE_NE_POSTOJI")) {
-					Logger.timestampedStandardPrint("No such file with name: " + fileName);
+					Logger.timestampedStandardPrint("No such file with name: " + filePath);
 				} else {
-					Logger.timestampedStandardPrint(clientMessage.getMessageText());
+					AppConfig.workDirectory.addFile(new SillyGitFile(filePath, content));
+					Logger.timestampedStandardPrint("Successfully pulled file " + filePath + " : " + content);
+//					Logger.timestampedStandardPrint(clientMessage.getMessageText());
 				}
 			} else {
 				Logger.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
