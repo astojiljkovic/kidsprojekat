@@ -16,6 +16,8 @@ import servent.message.PutMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
+import static app.AppConfig.myServentInfo;
+
 /**
  * This class implements all the logic required for Chord to function.
  * It has a static method <code>chordHash</code> which will calculate our chord ids.
@@ -105,7 +107,7 @@ public class ChordState {
 			Socket bsSocket = new Socket("localhost", AppConfig.BOOTSTRAP_PORT);
 			
 			PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
-			bsWriter.write("New\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
+			bsWriter.write("New\n" + myServentInfo.getNetworkLocation().getIp() + "\n" + myServentInfo.getNetworkLocation().getPort() + "\n");
 			
 			bsWriter.flush();
 			bsSocket.close();
@@ -124,12 +126,16 @@ public class ChordState {
 		return successorTable;
 	}
 	
-	public int getNextNodePort() {
-		return successorTable[0].getNetworkLocation().getPort();
-	}
+//	public int getNextNodePort() {
+//		return successorTable[0].getNetworkLocation().getPort();
+//	}
+//
+//	public String getNextNodeIp() {
+//		return successorTable[0].getNetworkLocation().getIp();
+//	}
 
-	public String getNextNodeIp() {
-		return successorTable[0].getNetworkLocation().getIp();
+	public ServentInfo getSuccessorInfo() {
+		return successorTable[0];
 	}
 	
 	public ServentInfo getPredecessor() {
@@ -149,7 +155,7 @@ public class ChordState {
 	}
 	
 	public boolean isCollision(int chordId) {
-		if (chordId == AppConfig.myServentInfo.getChordId()) {
+		if (chordId == myServentInfo.getChordId()) {
 			return true;
 		}
 		for (ServentInfo serventInfo : allNodeInfo) {
@@ -169,7 +175,7 @@ public class ChordState {
 		}
 		
 		int predecessorChordId = predecessorInfo.getChordId();
-		int myChordId = AppConfig.myServentInfo.getChordId();
+		int myChordId = myServentInfo.getChordId();
 		
 		if (predecessorChordId < myChordId) { //no overflow
 			if (key <= myChordId && key > predecessorChordId) {
@@ -191,7 +197,7 @@ public class ChordState {
 	 */
 	public ServentInfo getNextNodeForKey(int key) {
 		if (isKeyMine(key)) {
-			return AppConfig.myServentInfo;
+			return myServentInfo;
 		}
 		
 		//normally we start the search from our first successor
@@ -201,7 +207,7 @@ public class ChordState {
 		//then all nodes up to CHORD_SIZE will never be the owner,
 		//so we start the search from the first item in our table after CHORD_SIZE
 		//we know that such a node must exist, because otherwise we would own this key
-		if (key < AppConfig.myServentInfo.getChordId()) {
+		if (key < myServentInfo.getChordId()) {
 			int skip = 1;
 			while (successorTable[skip].getChordId() > successorTable[startInd].getChordId()) {
 				startInd++;
@@ -241,12 +247,12 @@ public class ChordState {
 		
 		int currentIncrement = 2;
 		
-		ServentInfo previousNode = AppConfig.myServentInfo;
+		ServentInfo previousNode = myServentInfo;
 		
 		//i is successorTable index
 		for(int i = 1; i < chordLevel; i++, currentIncrement *= 2) {
 			//we are looking for the node that has larger chordId than this
-			int currentValue = (AppConfig.myServentInfo.getChordId() + currentIncrement) % CHORD_SIZE;
+			int currentValue = (myServentInfo.getChordId() + currentIncrement) % CHORD_SIZE;
 			
 			int currentId = currentNode.getChordId();
 			int previousId = previousNode.getChordId();
@@ -305,7 +311,7 @@ public class ChordState {
 		List<ServentInfo> newList = new ArrayList<>();
 		List<ServentInfo> newList2 = new ArrayList<>();
 		
-		int myId = AppConfig.myServentInfo.getChordId();
+		int myId = myServentInfo.getChordId();
 		for (ServentInfo serventInfo : allNodeInfo) {
 			if (serventInfo.getChordId() < myId) {
 				newList2.add(serventInfo);
@@ -334,7 +340,7 @@ public class ChordState {
 			valueMap.put(key, value);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
-			PutMessage pm = new PutMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), nextNode.getNetworkLocation().getIp(), nextNode.getNetworkLocation().getPort(), key, value);
+			PutMessage pm = new PutMessage(myServentInfo, nextNode, key, value);
 			MessageUtil.sendMessage(pm);
 		}
 	}
@@ -357,7 +363,7 @@ public class ChordState {
 		}
 		
 		ServentInfo nextNode = getNextNodeForKey(key);
-		AskGetMessage agm = new AskGetMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), nextNode.getNetworkLocation().getIp(), nextNode.getNetworkLocation().getPort(), String.valueOf(key));
+		AskGetMessage agm = new AskGetMessage(myServentInfo, nextNode, String.valueOf(key));
 		MessageUtil.sendMessage(agm);
 		
 		return -2;

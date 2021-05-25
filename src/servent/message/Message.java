@@ -1,5 +1,7 @@
 package servent.message;
 
+import app.ServentInfo;
+
 import java.awt.image.AffineTransformOp;
 import java.io.Serializable;
 
@@ -24,23 +26,18 @@ import java.io.Serializable;
  */
 public interface Message extends Serializable {
 
-//	Sender info
-	/**
-	 * Sender location. Use this to reply.
-	 */
-	NetworkLocation getSenderLocation();
-	/**
-	 * Sender ip. Use this to reply.
-	 */
-//	String getSenderIp();
-//
+////	Sender info
 //	/**
-//	 * Port number on which the sender of this message listens for new messages. Use this to reply.
+//	 * Sender location. Use this to reply.
 //	 */
-//	int getSenderPort();
+	NetworkLocation getSenderLocation();
 
+//	ServentInfo getSender(); // TODO: 25.5.21. zameni getere 
+//	ServentInfo getReceiver();
 
-
+//
+//
+//
 	/**
 	 * Team name of the sender.
 	 */
@@ -50,16 +47,7 @@ public interface Message extends Serializable {
 	 * Receiver location
 	 */
 	NetworkLocation getReceiverLocation();
-//	/**
-//	 * Port number of the receiver of the message.
-//	 */
-//	int getReceiverPort();
-//
-//	/**
-//	 * IP address of the receiver.
-//	 */
-//	String getReceiverIpAddress();
-	
+
 	/**
 	 * Message type. Mainly used to decide which handler will work on this message.
 	 */

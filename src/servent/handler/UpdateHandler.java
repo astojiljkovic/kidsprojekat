@@ -37,7 +37,8 @@ public class UpdateHandler implements MessageHandler {
 				} else {
 					newMessageText = clientMessage.getMessageText() + "," + currentNodeInfo;
 				}
-				Message nextUpdate = new UpdateMessage(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam(), AppConfig.chordState.getNextNodeIp(), AppConfig.chordState.getNextNodePort(),
+				ServentInfo tmpMessageSenderServent = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam()); // TODO: 25.5.21. Ne koristi ovaj tmp 
+				Message nextUpdate = new UpdateMessage(tmpMessageSenderServent, AppConfig.chordState.getSuccessorInfo(),
 						newMessageText);
 				MessageUtil.sendMessage(nextUpdate);
 			} else {

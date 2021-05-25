@@ -19,36 +19,51 @@ public class BasicMessage implements Message {
 	private final MessageType type;
 
 //	Sender info
-	private final NetworkLocation senderLocation;
-	private final String senderTeam;
+	private final ServentInfo sender;
+//	private final NetworkLocation senderLocation;
+//	private final String senderTeam;
 
 //	 Receiver info
-	private final NetworkLocation receiverLocation;
+	private final ServentInfo receiver;
+//	private final NetworkLocation receiverLocation;
 	private final String messageText;
 	
 	//This gives us a unique id - incremented in every natural constructor.
 	private static final AtomicInteger messageCounter = new AtomicInteger(0);
-	private final int messageId;
-	
-	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort) {
-		this.type = type;
-		this.senderLocation = new NetworkLocation(senderIp, senderPort);
-		this.senderTeam = senderTeam;
-		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
-		this.messageText = "";
+	private final int messageId = messageCounter.getAndIncrement();
 
-		this.messageId = messageCounter.getAndIncrement();
+	public BasicMessage(MessageType type, ServentInfo sender, ServentInfo receiver) {
+		this(type, sender, receiver, "");
 	}
-	
-	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String messageText) {
+
+	public BasicMessage(MessageType type, ServentInfo sender, ServentInfo receiver, String messageText) {
 		this.type = type;
-		this.senderLocation = new NetworkLocation(senderIp, senderPort);
-		this.senderTeam = senderTeam;
-		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
+		this.sender = sender;
+		this.receiver = receiver;
 		this.messageText = messageText;
-
-		this.messageId = messageCounter.getAndIncrement();
 	}
+	
+//	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort) {
+//		this.type = type;
+//		this.sender = new ServentInfo(senderIp, senderPort, senderTeam);
+//		this.receiver = new ServentInfo(senderIp, senderPort, senderTeam);
+////		this.senderLocation = new NetworkLocation(senderIp, senderPort);
+////		this.senderTeam = senderTeam;
+//		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
+//		this.messageText = "";
+//
+//		this.messageId = messageCounter.getAndIncrement();
+//	}
+	
+//	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String messageText) {
+//		this.type = type;
+//		this.senderLocation = new NetworkLocation(senderIp, senderPort);
+//		this.senderTeam = senderTeam;
+//		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
+//		this.messageText = messageText;
+//
+//		this.messageId = messageCounter.getAndIncrement();
+//	}
 	
 	@Override
 	public MessageType getMessageType() {
@@ -66,17 +81,17 @@ public class BasicMessage implements Message {
 //	}
 	@Override
 	public NetworkLocation getReceiverLocation() {
-		return receiverLocation;
+		return receiver.getNetworkLocation();
 	}
 
 	@Override
 	public String getSenderTeam() {
-		return senderTeam;
+		return sender.getTeam();
 	}
 
 	@Override
 	public NetworkLocation getSenderLocation() {
-		return senderLocation;
+		return sender.getNetworkLocation();
 	}
 
 	@Override

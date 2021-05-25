@@ -30,13 +30,15 @@ public class AskGetHandler implements MessageHandler {
 					if (valueMap.containsKey(key)) {
 						value = valueMap.get(key);
 					}
-					
-					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo.getNetworkLocation().getIp(), AppConfig.myServentInfo.getNetworkLocation().getPort(), AppConfig.myServentInfo.getTeam(), clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(),
+
+					ServentInfo tmpServentFromClientSender = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), "TEAM NIJE ISTINA"); // TODO: 25.5.21.Ne pravi sender info ovako
+					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, tmpServentFromClientSender,
 															key, value);
 					MessageUtil.sendMessage(tgm);
 				} else {
 					ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(key);
-					AskGetMessage agm = new AskGetMessage(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam(), nextNode.getNetworkLocation().getIp(), nextNode.getNetworkLocation().getPort(), clientMessage.getMessageText());
+					ServentInfo senderInfo = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam()); // TODO: 25.5.21. Ne pravi sender info nego ga uzmi iz message
+					AskGetMessage agm = new AskGetMessage(senderInfo, nextNode, clientMessage.getMessageText());
 					MessageUtil.sendMessage(agm);
 				}
 			} catch (NumberFormatException e) {

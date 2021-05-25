@@ -1,6 +1,7 @@
 package servent.message;
 
 import java.util.Map;
+import app.ServentInfo;
 
 public class WelcomeMessage extends BasicMessage {
 
@@ -8,8 +9,8 @@ public class WelcomeMessage extends BasicMessage {
 
 	private Map<Integer, Integer> values;
 	
-	public WelcomeMessage(String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, Map<Integer, Integer> values) {
-		super(MessageType.WELCOME, senderIp, senderPort, senderTeam, receiverIp, receiverPort);
+	public WelcomeMessage(ServentInfo sender, ServentInfo receiver, Map<Integer, Integer> values) {
+		super(MessageType.WELCOME, sender, receiver);
 		
 		this.values = values;
 	}
