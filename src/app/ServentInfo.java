@@ -12,14 +12,10 @@ public class ServentInfo implements Serializable {
 
 	private static final long serialVersionUID = 5304170042791281555L;
 	private final NetworkLocation networkLocation;
-//	private final String ipAddress;
-//	private final int listenerPort;
 	private final String team;
 	private final int chordId;
 	
 	public ServentInfo(String ipAddress, int listenerPort, String team) {
-//		this.ipAddress = ipAddress;
-//		this.listenerPort = listenerPort;
 		this.networkLocation = new NetworkLocation(ipAddress, listenerPort);
 		this.team = team;
 
@@ -27,14 +23,6 @@ public class ServentInfo implements Serializable {
 		//hash(tim) ++ hash(ip:port)
 		// hash(tim:(ip:port))
 	}
-
-//	public String getIpAddress() {
-//		return ipAddress;
-//	}
-//
-//	public int getListenerPort() {
-//		return listenerPort;
-//	}
 
 	public NetworkLocation getNetworkLocation() {
 		return networkLocation;

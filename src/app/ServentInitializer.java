@@ -30,6 +30,7 @@ public class ServentInitializer implements Runnable {
 			
 			Scanner bsScanner = new Scanner(bsSocket.getInputStream());
 			String receivedFirstOrPort = String.valueOf(bsScanner.nextInt()); // -1 or PORT
+			bsScanner.nextLine();
 
 			if (receivedFirstOrPort.equals("-1")) { // we are first
 				retVal = receivedFirstOrPort;
@@ -59,6 +60,8 @@ public class ServentInitializer implements Runnable {
 		if (someServentLocation.equals("-1")) { //bootstrap gave us -1 -> we are first
 			AppConfig.timestampedStandardPrint("First node in Chord system.");
 		} else { //bootstrap gave us something else - let that node tell our successor that we are here
+			System.out.println("BRZI TEST: " + someServentLocation);
+
 			String someServentIp = someServentLocation.split(":")[0];
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
 

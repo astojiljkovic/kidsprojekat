@@ -113,7 +113,7 @@ public class BootstrapServer {
 					String newServentIp = socketScanner.nextLine();
 					int newServentPort = socketScanner.nextInt();
 					
-					System.out.println("adding " + newServentPort);
+					System.out.println("adding " + newServentIp + ":" + newServentPort);
 					
 					activeServents.add(new ServentLocation(newServentIp, newServentPort));
 					newServentSocket.close();
