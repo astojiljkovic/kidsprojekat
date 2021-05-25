@@ -21,8 +21,8 @@ public class UpdateHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.UPDATE) {
-			if (clientMessage.getSenderLocation().getPort() != AppConfig.myServentInfo.getNetworkLocation().getPort() || !clientMessage.getSenderLocation().getIp().equals(AppConfig.myServentInfo.getNetworkLocation().getIp())) {
-				ServentInfo newNodInfo = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam());
+			if (clientMessage.getSender().getNetworkLocation().equals(AppConfig.myServentInfo.getNetworkLocation()) == false) {
+				ServentInfo newNodInfo = clientMessage.getSender();
 				List<ServentInfo> newNodes = new ArrayList<>();
 				newNodes.add(newNodInfo);
 				
@@ -37,8 +37,8 @@ public class UpdateHandler implements MessageHandler {
 				} else {
 					newMessageText = clientMessage.getMessageText() + "," + currentNodeInfo;
 				}
-				ServentInfo tmpMessageSenderServent = new ServentInfo(clientMessage.getSenderLocation().getIp(), clientMessage.getSenderLocation().getPort(), clientMessage.getSenderTeam()); // TODO: 25.5.21. Ne koristi ovaj tmp 
-				Message nextUpdate = new UpdateMessage(tmpMessageSenderServent, AppConfig.chordState.getSuccessorInfo(),
+
+				Message nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.getSuccessorInfo(),
 						newMessageText);
 				MessageUtil.sendMessage(nextUpdate);
 			} else {

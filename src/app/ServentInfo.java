@@ -19,7 +19,12 @@ public class ServentInfo implements Serializable {
 		this.networkLocation = new NetworkLocation(ipAddress, listenerPort);
 		this.team = team;
 
-		this.chordId = ChordState.chordHash(listenerPort); // hash(ip:port) //TODO: Ne radi
+		if(team.equals("UNKNOWN")) {
+			this.chordId = -1;
+		}
+		else {
+			this.chordId = ChordState.chordHash(listenerPort); // hash(ip:port) //TODO: Ne radi
+		}
 		//hash(tim) ++ hash(ip:port)
 		// hash(tim:(ip:port))
 	}
@@ -34,7 +39,7 @@ public class ServentInfo implements Serializable {
 	
 	@Override
 	public String toString() {
-		return "[" + chordId + "|" + networkLocation + "|" + team + "]";
+		return "[" + chordId + "(" + team + ")" + "|" + networkLocation + "]";
 	}
 
 	public String getTeam() {

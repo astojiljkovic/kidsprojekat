@@ -9,8 +9,4 @@ public class AskGetMessage extends BasicMessage {
 	public AskGetMessage(ServentInfo sender, ServentInfo receiver, String text) {
 		super(MessageType.ASK_GET, sender, receiver, text);
 	}
-
-//	public AskGetMessage(String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String text) {
-//		super(MessageType.ASK_GET, senderIp, senderPort, senderTeam, receiverIp, receiverPort, text);
-//	}
 }

@@ -20,12 +20,9 @@ public class BasicMessage implements Message {
 
 //	Sender info
 	private final ServentInfo sender;
-//	private final NetworkLocation senderLocation;
-//	private final String senderTeam;
 
 //	 Receiver info
 	private final ServentInfo receiver;
-//	private final NetworkLocation receiverLocation;
 	private final String messageText;
 	
 	//This gives us a unique id - incremented in every natural constructor.
@@ -43,55 +40,19 @@ public class BasicMessage implements Message {
 		this.messageText = messageText;
 	}
 	
-//	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort) {
-//		this.type = type;
-//		this.sender = new ServentInfo(senderIp, senderPort, senderTeam);
-//		this.receiver = new ServentInfo(senderIp, senderPort, senderTeam);
-////		this.senderLocation = new NetworkLocation(senderIp, senderPort);
-////		this.senderTeam = senderTeam;
-//		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
-//		this.messageText = "";
-//
-//		this.messageId = messageCounter.getAndIncrement();
-//	}
-	
-//	public BasicMessage(MessageType type, String senderIp, int senderPort, String senderTeam, String receiverIp, int receiverPort, String messageText) {
-//		this.type = type;
-//		this.senderLocation = new NetworkLocation(senderIp, senderPort);
-//		this.senderTeam = senderTeam;
-//		this.receiverLocation = new NetworkLocation(receiverIp, receiverPort);
-//		this.messageText = messageText;
-//
-//		this.messageId = messageCounter.getAndIncrement();
-//	}
-	
 	@Override
 	public MessageType getMessageType() {
 		return type;
 	}
-	
-//	@Override
-//	public int getReceiverPort() {
-//		return receiverPort;
-//	}
-//
-//	@Override
-//	public String getReceiverIpAddress() {
-//		return receiverIp;
-//	}
+
 	@Override
-	public NetworkLocation getReceiverLocation() {
-		return receiver.getNetworkLocation();
+	public ServentInfo getSender() {
+		return sender;
 	}
 
 	@Override
-	public String getSenderTeam() {
-		return sender.getTeam();
-	}
-
-	@Override
-	public NetworkLocation getSenderLocation() {
-		return sender.getNetworkLocation();
+	public ServentInfo getReceiver() {
+		return receiver;
 	}
 
 	@Override
@@ -113,7 +74,7 @@ public class BasicMessage implements Message {
 			BasicMessage other = (BasicMessage)obj;
 			
 			if (getMessageId() == other.getMessageId() &&
-					getSenderLocation().equals(other.getSenderLocation())) {
+					getSender().getNetworkLocation().equals(other.getSender().getNetworkLocation())) {
 				return true;
 			}
 		}
@@ -127,24 +88,17 @@ public class BasicMessage implements Message {
 	 */
 	@Override
 	public int hashCode() {
-		return Objects.hash(getMessageId(), getSenderLocation());
+		return Objects.hash(getMessageId(), sender.getNetworkLocation());
 	}
 	
 	/**
 	 * Returns the message in the format: <code>[sender_id|sender_port|message_id|text|type|receiver_port|receiver_id]</code>
 	 */
-//	@Override
-//	public String toString() {
-//		return "[" + ChordState.chordHash(getSenderPort()) + "|" + getSenderPort() + "|" + getMessageId() + "|" +
-//					getMessageText() + "|" + getMessageType() + "|" +
-//					getReceiverPort() + "|" + ChordState.chordHash(getReceiverPort()) + "]";
-//	}
-
 	@Override
 	public String toString() {
-		return "[" + getSenderLocation() + "|" + getMessageId() + "|" +
+		return "[" + getSender().getChordId() + "(" + getSender().getTeam() + ")" + "|" + getSender().getNetworkLocation() + "|" + getMessageId() + "|" +
 				getMessageText() + "|" + getMessageType() + "|" +
-				getReceiverLocation() + "]";
-
+				getReceiver().getNetworkLocation() + "|" +
+				getReceiver().getChordId() + "(" + getReceiver().getTeam() + ")" + "]";
 	}
 }

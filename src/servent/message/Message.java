@@ -26,27 +26,8 @@ import java.io.Serializable;
  */
 public interface Message extends Serializable {
 
-////	Sender info
-//	/**
-//	 * Sender location. Use this to reply.
-//	 */
-	NetworkLocation getSenderLocation();
-
-//	ServentInfo getSender(); // TODO: 25.5.21. zameni getere 
-//	ServentInfo getReceiver();
-
-//
-//
-//
-	/**
-	 * Team name of the sender.
-	 */
-	String getSenderTeam();
-
-	/**
-	 * Receiver location
-	 */
-	NetworkLocation getReceiverLocation();
+	ServentInfo getSender(); 
+	ServentInfo getReceiver();
 
 	/**
 	 * Message type. Mainly used to decide which handler will work on this message.
