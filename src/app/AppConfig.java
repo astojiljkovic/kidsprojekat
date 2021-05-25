@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -20,40 +19,16 @@ import java.util.stream.Stream;
  */
 public class AppConfig {
 
-	private static File workDir;
+	public static WorkDirectory workDirectory;
 
-	public static File fileForRelativePathToWorkDir(String fileName) {
-		return new File(workDir, fileName);
-	}
-
-	private static File storageDir;
+	public static File storageDir;
 
 	/**
 	 * Convenience access for this servent's information
 	 */
 	public static ServentInfo myServentInfo;
 	
-	/**
-	 * Print a message to stdout with a timestamp
-	 * @param message message to print
-	 */
-	public static void timestampedStandardPrint(String message) {
-		DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-		Date now = new Date();
-		
-		System.out.println(timeFormat.format(now) + " - " + message);
-	}
-	
-	/**
-	 * Print a message to stderr with a timestamp
-	 * @param message message to print
-	 */
-	public static void timestampedErrorPrint(String message) {
-		DateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-		Date now = new Date();
-		
-		System.err.println(timeFormat.format(now) + " - " + message);
-	}
+
 	
 	public static boolean INITIALIZED = false;
 
@@ -90,7 +65,7 @@ public class AppConfig {
 			properties.load(new FileInputStream(new File(configName)));
 			
 		} catch (IOException e) {
-			timestampedErrorPrint("Couldn't open properties file. Exiting...");
+			Logger.timestampedErrorPrint("Couldn't open properties file. Exiting...");
 			System.exit(0);
 		}
 
@@ -98,21 +73,21 @@ public class AppConfig {
 		try {
 			BOOTSTRAP_IP = properties.getProperty("bs.ip");
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading bootstrap_ip. Exiting...");
+			Logger.timestampedErrorPrint("Problem reading bootstrap_ip. Exiting...");
 			System.exit(0);
 		}
 
 		try {
 			BOOTSTRAP_PORT = Integer.parseInt(properties.getProperty("bs.port"));
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading bootstrap_port. Exiting...");
+			Logger.timestampedErrorPrint("Problem reading bootstrap_port. Exiting...");
 			System.exit(0);
 		}
 		
 		try {
 			SERVENT_COUNT = Integer.parseInt(properties.getProperty("servent_count"));
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading servent_count. Exiting...");
+			Logger.timestampedErrorPrint("Problem reading servent_count. Exiting...");
 			System.exit(0);
 		}
 		
@@ -123,7 +98,7 @@ public class AppConfig {
 			chordState = new ChordState();
 			
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading chord_size. Must be a number that is a power of 2. Exiting...");
+			Logger.timestampedErrorPrint("Problem reading chord_size. Must be a number that is a power of 2. Exiting...");
 			System.exit(0);
 		}
 		
@@ -134,7 +109,7 @@ public class AppConfig {
 		try {
 			serventPort = Integer.parseInt(properties.getProperty(portProperty));
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading " + portProperty + ". Exiting...");
+			Logger.timestampedErrorPrint("Problem reading " + portProperty + ". Exiting...");
 			System.exit(0);
 		}
 
@@ -144,24 +119,26 @@ public class AppConfig {
 		try {
 			serventWorkDir = properties.getProperty(workDirProperty);
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading " + serventWorkDir + ". Exiting...");
+			Logger.timestampedErrorPrint("Problem reading " + serventWorkDir + ". Exiting...");
 			System.exit(0);
 		}
 
-		workDir = new File(serventWorkDir);
+		File workDir = new File(serventWorkDir);
 
 		if (workDir.exists()) {
 			try {
 				deleteDirectoryJava8(workDir.toPath());
 			} catch (Exception e) {
-				timestampedErrorPrint("Cannot delete work dir " + workDir.getAbsolutePath() + ". Exiting...");
+				Logger.timestampedErrorPrint("Cannot delete work dir " + workDir.getAbsolutePath() + ". Exiting...");
 				System.exit(0);
 			}
 		}
 		if (!workDir.mkdir()) {
-			timestampedErrorPrint("Cannot create work dir " + workDir.getAbsolutePath() + ". Exiting...");
+			Logger.timestampedErrorPrint("Cannot create work dir " + workDir.getAbsolutePath() + ". Exiting...");
 			System.exit(0);
 		}
+
+		workDirectory = new WorkDirectory(workDir);
 
 		String storageProperty = "servent"+serventId+".storage";
 		String serventStorageDir = "";
@@ -169,7 +146,7 @@ public class AppConfig {
 		try {
 			serventStorageDir = properties.getProperty(storageProperty);
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading " + storageProperty + ". Exiting...");
+			Logger.timestampedErrorPrint("Problem reading " + storageProperty + ". Exiting...");
 			System.exit(0);
 		}
 
@@ -180,7 +157,7 @@ public class AppConfig {
 		}
 
 		if (!storageDir.mkdir()) {
-			timestampedErrorPrint("Cannot create storageDir dir " + storageDir.getAbsolutePath() + ". Exiting...");
+			Logger.timestampedErrorPrint("Cannot create storageDir dir " + storageDir.getAbsolutePath() + ". Exiting...");
 			System.exit(0);
 		}
 
@@ -190,7 +167,7 @@ public class AppConfig {
 		try {
 			serventTeam = properties.getProperty(teamProperty);
 		} catch (NumberFormatException e) {
-			timestampedErrorPrint("Problem reading " + teamProperty + ". Exiting...");
+			Logger.timestampedErrorPrint("Problem reading " + teamProperty + ". Exiting...");
 			System.exit(0);
 		}
 		

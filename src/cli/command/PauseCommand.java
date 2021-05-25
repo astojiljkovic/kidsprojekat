@@ -1,6 +1,7 @@
 package cli.command;
 
 import app.AppConfig;
+import app.Logger;
 
 public class PauseCommand implements CLICommand {
 
@@ -20,7 +21,7 @@ public class PauseCommand implements CLICommand {
 				throw new NumberFormatException();
 			}
 
-			AppConfig.timestampedStandardPrint("Pausing for " + timeToSleep + " ms");
+			Logger.timestampedStandardPrint("Pausing for " + timeToSleep + " ms");
 			try {
 				Thread.sleep(timeToSleep);
 			} catch (InterruptedException e) {
@@ -28,7 +29,7 @@ public class PauseCommand implements CLICommand {
 			}
 			
 		} catch (NumberFormatException e) {
-			AppConfig.timestampedErrorPrint("Pause command should have one int argument, which is time in ms.");
+			Logger.timestampedErrorPrint("Pause command should have one int argument, which is time in ms.");
 		}
 	}
 

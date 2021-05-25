@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 
 import app.AppConfig;
 import app.Cancellable;
+import app.Logger;
 import servent.handler.AskGetHandler;
 import servent.handler.MessageHandler;
 import servent.handler.NewNodeHandler;
@@ -45,7 +46,7 @@ public class SimpleServentListener implements Runnable, Cancellable {
 			 */
 			listenerSocket.setSoTimeout(1000);
 		} catch (IOException e) {
-			AppConfig.timestampedErrorPrint("Couldn't open listener socket on: " + AppConfig.myServentInfo.getNetworkLocation().getPort());
+			Logger.timestampedErrorPrint("Couldn't open listener socket on: " + AppConfig.myServentInfo.getNetworkLocation().getPort());
 			System.exit(0);
 		}
 		

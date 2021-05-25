@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -22,12 +23,12 @@ public class AddHandler implements MessageHandler {
 
 				AppConfig.chordState.addFile(fileName, content);
 			} else {
-				AppConfig.timestampedErrorPrint("Got add message with bad text: " + clientMessage.getMessageText());
+				Logger.timestampedErrorPrint("Got add message with bad text: " + clientMessage.getMessageText());
 			}
 			
 			
 		} else {
-			AppConfig.timestampedErrorPrint("Put handler got a message that is not PUT");
+			Logger.timestampedErrorPrint("Put handler got a message that is not PUT");
 		}
 
 	}

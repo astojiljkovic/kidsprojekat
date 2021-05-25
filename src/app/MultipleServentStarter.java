@@ -66,8 +66,8 @@ public class MultipleServentStarter {
 		List<Process> serventProcesses = new ArrayList<>();
 		
 		AppConfig.readConfig(testName+"/servent_list.properties", 0);
-		
-		AppConfig.timestampedStandardPrint("Starting multiple servent runner. "
+
+		Logger.timestampedStandardPrint("Starting multiple servent runner. "
 				+ "If servents do not finish on their own, type \"stop\" to finish them");
 		
 		Process bsProcess = null;
@@ -123,8 +123,8 @@ public class MultipleServentStarter {
 				e.printStackTrace();
 			}
 		}
-		
-		AppConfig.timestampedStandardPrint("All servent processes finished. Type \"stop\" to halt bootstrap.");
+
+		Logger.timestampedStandardPrint("All servent processes finished. Type \"stop\" to halt bootstrap.");
 		try {
 			bsProcess.waitFor();
 		} catch (InterruptedException e) {

@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 
 /**
@@ -34,7 +35,7 @@ public class DelayedMessageSender implements Runnable {
 		}
 		
 		if (MessageUtil.MESSAGE_UTIL_PRINTING) {
-			AppConfig.timestampedStandardPrint("Sending message " + messageToSend);
+			Logger.timestampedStandardPrint("Sending message " + messageToSend);
 		}
 		
 		try {
@@ -46,7 +47,7 @@ public class DelayedMessageSender implements Runnable {
 			
 			sendSocket.close();
 		} catch (IOException e) {
-			AppConfig.timestampedErrorPrint("Couldn't send message: " + messageToSend.toString());
+			Logger.timestampedErrorPrint("Couldn't send message: " + messageToSend.toString());
 		}
 	}
 	

@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 
 /**
@@ -18,7 +19,7 @@ public class NullHandler implements MessageHandler {
 	
 	@Override
 	public void run() {
-		AppConfig.timestampedErrorPrint("Couldn't handle message: " + clientMessage);
+		Logger.timestampedErrorPrint("Couldn't handle message: " + clientMessage);
 	}
 
 }

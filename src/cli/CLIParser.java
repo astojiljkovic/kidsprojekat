@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import app.AppConfig;
 import app.Cancellable;
+import app.Logger;
 import cli.command.CLICommand;
 import cli.command.DHTGetCommand;
 import cli.command.AddCommand;
@@ -79,7 +80,7 @@ public class CLIParser implements Runnable, Cancellable {
 			}
 			
 			if (!found) {
-				AppConfig.timestampedErrorPrint("Unknown command: " + commandName);
+				Logger.timestampedErrorPrint("Unknown command: " + commandName);
 			}
 		}
 		

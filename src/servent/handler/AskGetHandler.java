@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.Logger;
 import app.ServentInfo;
 import servent.message.Message;
 import servent.message.MessageType;
@@ -61,11 +62,11 @@ public class AskGetHandler implements MessageHandler {
 //					MessageUtil.sendMessage(agm);
 //				}
 			} catch (NumberFormatException e) {
-				AppConfig.timestampedErrorPrint("Got ask get with bad text: " + clientMessage.getMessageText());
+				Logger.timestampedErrorPrint("Got ask get with bad text: " + clientMessage.getMessageText());
 			}
 			
 		} else {
-			AppConfig.timestampedErrorPrint("Ask get handler got a message that is not ASK_GET");
+			Logger.timestampedErrorPrint("Ask get handler got a message that is not ASK_GET");
 		}
 
 	}

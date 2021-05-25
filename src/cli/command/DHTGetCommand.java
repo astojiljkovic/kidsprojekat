@@ -1,6 +1,7 @@
 package cli.command;
 
 import app.AppConfig;
+import app.Logger;
 
 public class DHTGetCommand implements CLICommand {
 
@@ -17,14 +18,14 @@ public class DHTGetCommand implements CLICommand {
 			String val = AppConfig.chordState.getValueForCLI(key);
 			
 			if (val.equals("-2")) {
-				AppConfig.timestampedStandardPrint("Please wait...");
+				Logger.timestampedStandardPrint("Please wait...");
 			} else if (val.equals("-1")) {
-				AppConfig.timestampedStandardPrint("No such key: " + key);
+				Logger.timestampedStandardPrint("No such key: " + key);
 			} else {
-				AppConfig.timestampedStandardPrint(key + ": " + val);
+				Logger.timestampedStandardPrint(key + ": " + val);
 			}
 		} catch (NumberFormatException e) {
-			AppConfig.timestampedErrorPrint("Invalid argument for dht_get: " + args + ". Should be key, which is an int.");
+			Logger.timestampedErrorPrint("Invalid argument for dht_get: " + args + ". Should be key, which is an int.");
 		}
 	}
 

@@ -204,7 +204,7 @@ public class ChordState {
 		
 		for (int i = startInd + 1; i < successorTable.length; i++) {
 			if (successorTable[i] == null) {
-				AppConfig.timestampedErrorPrint("Couldn't find successor for " + key);
+				Logger.timestampedErrorPrint("Couldn't find successor for " + key);
 				break;
 			}
 			

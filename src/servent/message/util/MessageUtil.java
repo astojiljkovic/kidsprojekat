@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.net.Socket;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 
 /**
@@ -38,14 +39,14 @@ public class MessageUtil {
 			
 			socket.close();
 		} catch (IOException e) {
-			AppConfig.timestampedErrorPrint("Error in reading socket on " +
+			Logger.timestampedErrorPrint("Error in reading socket on " +
 					socket.getInetAddress() + ":" + socket.getPort());
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		
 		if (MESSAGE_UTIL_PRINTING) {
-			AppConfig.timestampedStandardPrint("Got message " + clientMessage);
+			Logger.timestampedStandardPrint("Got message " + clientMessage);
 		}
 				
 		return clientMessage;

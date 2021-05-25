@@ -1,6 +1,7 @@
 package cli.command;
 
 import app.AppConfig;
+import app.Logger;
 
 public class InfoCommand implements CLICommand {
 
@@ -11,7 +12,7 @@ public class InfoCommand implements CLICommand {
 
 	@Override
 	public void execute(String args) {
-		AppConfig.timestampedStandardPrint("My info: " + AppConfig.myServentInfo);
+		Logger.timestampedStandardPrint("My info: " + AppConfig.myServentInfo);
 	}
 
 }

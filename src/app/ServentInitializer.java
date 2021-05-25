@@ -54,11 +54,11 @@ public class ServentInitializer implements Runnable {
 		String someServentLocation = getSomeServentLocation();
 		
 		if (someServentLocation.equals("-2")) {
-			AppConfig.timestampedErrorPrint("Error in contacting bootstrap. Exiting...");
+			Logger.timestampedErrorPrint("Error in contacting bootstrap. Exiting...");
 			System.exit(0);
 		}
 		if (someServentLocation.equals("-1")) { //bootstrap gave us -1 -> we are first
-			AppConfig.timestampedStandardPrint("First node in Chord system.");
+			Logger.timestampedStandardPrint("First node in Chord system.");
 		} else { //bootstrap gave us something else - let that node tell our successor that we are here
 			System.out.println("BRZI TEST: " + someServentLocation);
 

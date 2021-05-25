@@ -2,6 +2,7 @@ package cli.command;
 
 import app.AppConfig;
 import app.ChordState;
+import app.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,18 +26,18 @@ public class AddCommand implements CLICommand {
 		if (splitArgs.length != 0) {
 			String pathToFile = args;
 
-			File fileToAdd = AppConfig.fileForRelativePathToWorkDir(pathToFile);
+			File fileToAdd = AppConfig.workDirectory.fileForRelativePathToWorkDir(pathToFile);
 			//Users/aleksa/Destkop/kids/chord/s0_work/bananica.txt -> bananica.txt
 			//Users/aleksa/Destkop/kids/chord/s0_work/folder1 -> folder1
 			
 			if (!fileToAdd.exists()) {
-				AppConfig.timestampedErrorPrint("Invalid file path - File doesn't exist " + fileToAdd.getAbsolutePath());
+				Logger.timestampedErrorPrint("Invalid file path - File doesn't exist " + fileToAdd.getAbsolutePath());
 				return;
 			}
 
 			try {
 				if (fileToAdd.isDirectory()) { // TODO: 25.5.21. Resi folder
-					AppConfig.timestampedErrorPrint("Invalid file path - Tried to add directory " + fileToAdd.getAbsolutePath());
+					Logger.timestampedErrorPrint("Invalid file path - Tried to add directory " + fileToAdd.getAbsolutePath());
 				} else {
 
 					String fileName = fileToAdd.getName();
@@ -45,10 +46,10 @@ public class AddCommand implements CLICommand {
 					AppConfig.chordState.addFile(fileName, content);
 				}
 			} catch (IOException e) {
-				AppConfig.timestampedErrorPrint("Problem reading content of file: " + fileToAdd.getAbsolutePath());
+				Logger.timestampedErrorPrint("Problem reading content of file: " + fileToAdd.getAbsolutePath());
 			}
 		} else {
-			AppConfig.timestampedErrorPrint("Invalid arguments for put");
+			Logger.timestampedErrorPrint("Invalid arguments for put");
 		}
 
 	}

@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -22,9 +23,9 @@ public class TellGetHandler implements MessageHandler {
 				String content = parts[1];
 
 				if (content.equals("FILE_NE_POSTOJI")) {
-					AppConfig.timestampedStandardPrint("No such file with name: " + fileName);
+					Logger.timestampedStandardPrint("No such file with name: " + fileName);
 				} else {
-					AppConfig.timestampedStandardPrint(clientMessage.getMessageText());
+					Logger.timestampedStandardPrint(clientMessage.getMessageText());
 				}
 
 //				try {
@@ -39,10 +40,10 @@ public class TellGetHandler implements MessageHandler {
 //					AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
 //				}
 			} else {
-				AppConfig.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
+				Logger.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
 			}
 		} else {
-			AppConfig.timestampedErrorPrint("Tell get handler got a message that is not TELL_GET");
+			Logger.timestampedErrorPrint("Tell get handler got a message that is not TELL_GET");
 		}
 	}
 

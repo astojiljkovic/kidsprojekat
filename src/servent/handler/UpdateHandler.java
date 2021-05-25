@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import app.AppConfig;
+import app.Logger;
 import app.ServentInfo;
 import servent.message.Message;
 import servent.message.MessageType;
@@ -55,7 +56,7 @@ public class UpdateHandler implements MessageHandler {
 				AppConfig.chordState.addNodes(allNodes);
 			}
 		} else {
-			AppConfig.timestampedErrorPrint("Update message handler got message that is not UPDATE");
+			Logger.timestampedErrorPrint("Update message handler got message that is not UPDATE");
 		}
 	}
 

@@ -17,7 +17,7 @@ public class ServentMain {
 	 */
 	public static void main(String[] args) {
 		if (args.length != 2) {
-			AppConfig.timestampedErrorPrint("Please provide servent list file and id of this servent.");
+			Logger.timestampedErrorPrint("Please provide servent list file and id of this servent.");
 		}
 		
 		int serventId = -1;
@@ -28,7 +28,7 @@ public class ServentMain {
 		try {
 			serventId = Integer.parseInt(args[1]);
 		} catch (NumberFormatException e) {
-			AppConfig.timestampedErrorPrint("Second argument should be an int. Exiting...");
+			Logger.timestampedErrorPrint("Second argument should be an int. Exiting...");
 			System.exit(0);
 		}
 		
@@ -41,11 +41,11 @@ public class ServentMain {
 				throw new NumberFormatException();
 			}
 		} catch (NumberFormatException e) {
-			AppConfig.timestampedErrorPrint("Port number should be in range 1000-2000. Exiting...");
+			Logger.timestampedErrorPrint("Port number should be in range 1000-2000. Exiting...");
 			System.exit(0);
 		}
-		
-		AppConfig.timestampedStandardPrint("Starting servent " + AppConfig.myServentInfo);
+
+		Logger.timestampedStandardPrint("Starting servent " + AppConfig.myServentInfo);
 		
 		SimpleServentListener simpleListener = new SimpleServentListener();
 		Thread listenerThread = new Thread(simpleListener);

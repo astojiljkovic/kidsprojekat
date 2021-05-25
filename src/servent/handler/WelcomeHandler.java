@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.AppConfig;
+import app.Logger;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.UpdateMessage;
@@ -26,7 +27,7 @@ public class WelcomeHandler implements MessageHandler {
 			MessageUtil.sendMessage(um);
 			
 		} else {
-			AppConfig.timestampedErrorPrint("Welcome handler got a message that is not WELCOME");
+			Logger.timestampedErrorPrint("Welcome handler got a message that is not WELCOME");
 		}
 
 	}

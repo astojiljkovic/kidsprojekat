@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import app.AppConfig;
+import app.Logger;
 import app.ServentInfo;
 import servent.message.Message;
 import servent.message.MessageType;
@@ -95,7 +96,7 @@ public class NewNodeHandler implements MessageHandler {
 			}
 			
 		} else {
-			AppConfig.timestampedErrorPrint("NEW_NODE handler got something that is not new node message.");
+			Logger.timestampedErrorPrint("NEW_NODE handler got something that is not new node message.");
 		}
 
 	}
