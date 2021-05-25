@@ -15,6 +15,9 @@ import java.util.Properties;
  */
 public class AppConfig {
 
+	public static File workDir;
+	public static File storageDir;
+
 	/**
 	 * Convenience access for this servent's information
 	 */
@@ -122,6 +125,47 @@ public class AppConfig {
 			serventPort = Integer.parseInt(properties.getProperty(portProperty));
 		} catch (NumberFormatException e) {
 			timestampedErrorPrint("Problem reading " + portProperty + ". Exiting...");
+			System.exit(0);
+		}
+
+		String workDirProperty = "servent"+serventId+".work_dir";
+		String serventWorkDir = "";
+
+		try {
+			serventWorkDir = properties.getProperty(workDirProperty);
+		} catch (NumberFormatException e) {
+			timestampedErrorPrint("Problem reading " + serventWorkDir + ". Exiting...");
+			System.exit(0);
+		}
+
+		workDir = new File(serventWorkDir);
+
+		if (workDir.exists()) {
+			workDir.delete();
+		}
+		if (!workDir.mkdir()) {
+			timestampedErrorPrint("Cannot create work dir " + workDir.getAbsolutePath() + ". Exiting...");
+			System.exit(0);
+		}
+
+		String storageProperty = "servent"+serventId+".storage";
+		String serventStorageDir = "";
+
+		try {
+			serventStorageDir = properties.getProperty(storageProperty);
+		} catch (NumberFormatException e) {
+			timestampedErrorPrint("Problem reading " + storageProperty + ". Exiting...");
+			System.exit(0);
+		}
+
+		storageDir = new File(serventStorageDir);
+
+		if (storageDir.exists()) {
+			storageDir.delete();
+		}
+
+		if (!storageDir.mkdir()) {
+			timestampedErrorPrint("Cannot create storageDir dir " + storageDir.getAbsolutePath() + ". Exiting...");
 			System.exit(0);
 		}
 
