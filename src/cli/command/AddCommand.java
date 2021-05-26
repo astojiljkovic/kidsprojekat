@@ -41,30 +41,6 @@ public class AddCommand implements CLICommand {
 			} catch (IOException e) {
 				Logger.timestampedErrorPrint("Problem reading content of file: " + e);
 			}
-
-//
-//			File fileToAdd = AppConfig.workDirectory.fileForRelativePathToWorkDir(pathToFile);
-//			//Users/aleksa/Destkop/kids/chord/s0_work/bananica.txt -> bananica.txt
-//			//Users/aleksa/Destkop/kids/chord/s0_work/folder1 -> folder1
-//
-//			if (!fileToAdd.exists()) {
-//				Logger.timestampedErrorPrint("Invalid file path - File doesn't exist " + fileToAdd.getAbsolutePath());
-//				return;
-//			}
-//
-//			try {
-//				if (fileToAdd.isDirectory()) { // TODO: 25.5.21. Resi folder
-//					Logger.timestampedErrorPrint("Invalid file path - Tried to add directory " + fileToAdd.getAbsolutePath());
-//				} else {
-//
-//					String fileName = fileToAdd.getName();
-//					String content = Files.readString(Path.of(fileToAdd.toURI()));
-//
-//					AppConfig.chordState.addFile(fileName, content);
-//				}
-//			} catch (IOException e) {
-//				Logger.timestampedErrorPrint("Problem reading content of file: " + fileToAdd.getAbsolutePath());
-//			}
 		} else {
 			Logger.timestampedErrorPrint("Invalid arguments for add");
 		}

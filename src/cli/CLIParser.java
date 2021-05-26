@@ -9,6 +9,7 @@ import app.Logger;
 import cli.command.CLICommand;
 import cli.command.PullCommand;
 import cli.command.AddCommand;
+import cli.command.RemoveCommand;
 import cli.command.InfoCommand;
 import cli.command.PauseCommand;
 import cli.command.StopCommand;
@@ -47,6 +48,7 @@ public class CLIParser implements Runnable, Cancellable {
 		commandList.add(new SuccessorInfo());
 		commandList.add(new PullCommand());
 		commandList.add(new AddCommand());
+		commandList.add(new RemoveCommand());
 		commandList.add(new StopCommand(this, listener));
 	}
 	

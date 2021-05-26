@@ -11,6 +11,7 @@ import app.storage.FileDoesntExistException;
 import servent.message.AskGetMessage;
 import servent.message.AddMessage;
 import servent.message.WelcomeMessage;
+import servent.message.RemoveMessage;
 import servent.message.util.MessageUtil;
 
 import static app.AppConfig.*;
@@ -369,5 +370,18 @@ public class ChordState {
 
 		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName, version);
 		MessageUtil.sendMessage(agm);
+	}
+
+	public void remove(String removePath) {
+		int key = chordHash(removePath.hashCode());
+
+		if (isKeyMine(key)) {
+//			storage.remove(removePath);
+			storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath));
+		} else {
+			ServentInfo nextNode = getNextNodeForKey(key);
+			RemoveMessage rm = new RemoveMessage(myServentInfo, nextNode, removePath);
+			MessageUtil.sendMessage(rm);
+		}
 	}
 }

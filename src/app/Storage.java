@@ -152,4 +152,5 @@ public class Storage {
     private File fileForRelativePathToWorkDir(String storagePath) { //bananica.txt_version_0 -> /aleksa/xyz/storage_1/bananica.txt_version_0
         return new File(root, storagePath);
     }
+
 }
