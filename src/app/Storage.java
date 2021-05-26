@@ -5,6 +5,7 @@ import app.storage.FileDoesntExistException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -26,10 +27,33 @@ public class Storage {
         }
 
         try {
-            Files.writeString(fileForSillyFile.toPath(), sgf.getContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            String versionedContent = addVersionToRawContent(sgf.getContent());
+            Files.writeString(fileForSillyFile.toPath(), versionedContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot write to storage " + fileForSillyFile.getPath());
             e.printStackTrace();
+        }
+    }
+
+    private String addVersionToRawContent(String content) {
+        return "0\n" + content;
+    }
+
+    private void incrementVersionOfFile(File file) {
+        try {
+            String versionedContent = Files.readString(file.toPath());
+            //content:
+            //0\n
+            //cokoladna\n
+            String[] contentSplit = versionedContent.split("\n");
+            int currentVersion = Integer.parseInt(contentSplit[0]);
+            contentSplit[0] = "" + (currentVersion + 1);
+
+            versionedContent = String.join("\n", contentSplit);
+            Files.writeString(file.toPath(), versionedContent, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            Logger.timestampedErrorPrint("Cannot update file version " + file.getPath());
+            throw new UncheckedIOException(e);
         }
     }
 
