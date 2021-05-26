@@ -33,7 +33,7 @@ public class AskGetHandler implements MessageHandler {
 					MessageUtil.sendMessage(tgm);
 				} catch (FileDoesntExistException e) {
 						TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-							fileName, "FAJL_NE_POSTOJI");
+							fileName, TellGetMessage.FILE_DOESNT_EXIST_CONTENT);
 					MessageUtil.sendMessage(tgm);
 				} catch (DataNotOnOurNodeException e) {
 					AppConfig.chordState.sendAskGetMessage(fileName, version, clientMessage.getSender());

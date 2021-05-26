@@ -5,6 +5,7 @@ import app.Logger;
 import app.SillyGitFile;
 import servent.message.Message;
 import servent.message.MessageType;
+import servent.message.TellGetMessage;
 
 public class TellGetHandler implements MessageHandler {
 
@@ -23,7 +24,7 @@ public class TellGetHandler implements MessageHandler {
 				String filePath = parts[0];
 				String content = parts[1];
 
-				if (content.equals("FILE_NE_POSTOJI")) {
+				if (content.equals(TellGetMessage.FILE_DOESNT_EXIST_CONTENT)) {
 					Logger.timestampedStandardPrint("No such file with name: " + filePath);
 				} else {
 					AppConfig.workDirectory.addFile(new SillyGitFile(filePath, content));

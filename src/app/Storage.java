@@ -31,54 +31,12 @@ public class Storage {
         }
 
         try {
-//            String versionedContent = addVersionToRawContent(sgf.getContent());
             Files.writeString(fileForSillyFile.toPath(), sgsf.getContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot write to storage " + fileForSillyFile.getPath());
             e.printStackTrace();
         }
     }
-
-
-    //baninca.txt
-
-    //banica.txt/
-    //  -> 0 - cokoladna
-    //  -> 1 - ledena
-
-    //bananica.txt_0
-    //bananica.txt_1
-
-    //bananica.txt - cokoladna
-
-//    private String addVersionToRawContent(String content) {
-//        return "0\n" + content;
-//    }
-//
-//    private void incrementVersionOfFile(File file) {
-//        try {
-//            String versionedContent = Files.readString(file.toPath());
-//            //content:
-//            //0\n
-//            //cokoladna\n
-//            //1
-//            //ledena
-//            String[] contentSplit = versionedContent.split("\n");
-//            int currentVersion = Integer.parseInt(contentSplit[0]);
-//            contentSplit[0] = "" + (currentVersion + 1);
-//
-//            versionedContent = String.join("\n", contentSplit);
-//            Files.writeString(file.toPath(), versionedContent, StandardOpenOption.TRUNCATE_EXISTING);
-//        } catch (IOException e) {
-//            Logger.timestampedErrorPrint("Cannot update file version " + file.getPath());
-//            throw new UncheckedIOException(e);
-//        }
-//    }
-
-//    public SillyGitStorageFile get(String pathInStorageDir) throws FileDoesntExistException {
-//        int latestVersion = getLatestStoredVersion(pathInStorageDir);
-//        return get(pathInStorageDir, latestVersion);
-//    }
 
     public SillyGitStorageFile get(String pathInStorageDir, int version) throws FileDoesntExistException { //TODO: fix version
         int realVersion;
@@ -159,34 +117,6 @@ public class Storage {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-
-//                .map(path -> {
-//                    try {
-//                        String content = Files.readString(path);
-//                        String relativePathToStorage = root.toPath().relativize(path).toString();
-//                        Files.delete(path);
-//                        return new SillyGitStorageFile(relativePathToStorage, content);
-//                    } catch (IOException e) {
-//                        throw new UncheckedIOException(e);
-//                    }
-//                })
-
-//        List<SillyGitStorageFile> gitFiles = paths.stream()
-//                // List<String>
-//                // Map -> String, a vraca: return File
-//                .map(this::fileForRelativePathToWorkDir)
-//                .map(file -> { return file.toPath(); })
-//                .map(path -> {
-//                    try {
-//                        String content = Files.readString(path);
-//                        String relativePathToStorage = root.toPath().relativize(path).toString();
-//                        Files.delete(path);
-//                        return new SillyGitFile(relativePathToStorage, content);
-//                    } catch (IOException e) {
-//                        throw new UncheckedIOException(e);
-//                    }
-//                }).collect(Collectors.toList());
-//        return gitFiles;
     }
 
     private int getLatestStoredVersion(String pathInStorageDir) throws FileDoesntExistException {
