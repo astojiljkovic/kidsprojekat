@@ -409,20 +409,28 @@ public class ChordState {
 				throw new FileNotAddedFirstCommitException();
 			}
 			String hash = fileInWorkDir.getStorageHash().get();
-			storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash);
+			SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash);
+			workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
 		} else {
 			sendCommitMessage(fileInWorkDir, myServentInfo);
 		}
 	}
 
-	public void commitFileFromSomeoneElse(SillyGitFile sgf, ServentInfo requester) throws FileAlreadyAddedStorageException, FileDoesntExistStorageException, FileNotAddedFirstCommitException, CommitConflictStorageException {
+	public void commitFileFromSomeoneElse(SillyGitFile sgf, ServentInfo requester) throws FileDoesntExistStorageException, FileNotAddedFirstCommitException, CommitConflictStorageException {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		if (isKeyMine(key)) {
 			if (sgf.getStorageHash().isEmpty()) {
+				sendCommitResponseMessage(sgf.getPathInWorkDir(), null, requester);
 				throw new FileNotAddedFirstCommitException();
 			}
-			String hash = sgf.getStorageHash().get();
-			storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash);
+			try {
+				String hash = sgf.getStorageHash().get();
+				SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash);
+				sendCommitResponseMessage(sgsf.getPathInStorageDir(), sgsf, requester);
+			} catch (FileDoesntExistStorageException | CommitConflictStorageException e) {
+				sendCommitResponseMessage(sgf.getPathInWorkDir(), null, requester);
+				throw e;
+			}
 		} else {
 			sendCommitMessage(sgf, requester);
 		}
@@ -432,6 +440,11 @@ public class ChordState {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 		CommitMessage cm = new CommitMessage(servent, nextNode, sgf);
+		MessageUtil.sendMessage(cm);
+	}
+
+	private void sendCommitResponseMessage(String path, SillyGitStorageFile sgsf, ServentInfo receiver) {
+		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, receiver, path, sgsf);
 		MessageUtil.sendMessage(cm);
 	}
 }
