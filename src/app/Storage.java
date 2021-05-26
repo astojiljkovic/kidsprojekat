@@ -27,9 +27,10 @@ public class Storage {
         this.root = root;
     }
 
-    public void add(String path, String content) throws FileAlreadyAddedStorageException {
+    public SillyGitStorageFile add(String path, String content) throws FileAlreadyAddedStorageException {
         try {
             save(path, content, 0);
+            return createSillyGitStorageFile(path, content, 0);
         } catch (FileAlreadyExistsException e) {
             throw new FileAlreadyAddedStorageException(path);
         }
@@ -109,7 +110,6 @@ public class Storage {
                     })
                     .map(path -> { // bananica.txt, jogurt.txt
                             return filenameFromVersionedFilename(path);
-//                        return path.split("_version_")[0];
                     })
                     .collect(Collectors.toList());
         } catch (IOException e) {

@@ -306,23 +306,44 @@ public class ChordState {
 		updateSuccessorTable();
 	}
 
-	/**
-	 * The Chord put operation. Stores locally if key is ours, otherwise sends it on.
-	 */
-	public void addFile(SillyGitFile sgf) throws FileAlreadyAddedStorageException {
-//		String base64EncodedContent = Base64.getEncoder().encodeToString(content);
-//		String base64EncodedFilename = Base64.getEncoder().encodeToString(fileName.getBytes());
-
-		int key = chordHash(sgf.getPathInWorkDir().hashCode());
-		System.out.println("Bananica se dodaje, key: " + key);
+	//Add
+	public void addFileFromMyWorkDir(String path) throws FileAlreadyAddedStorageException, FileNotFoundException {
+		int key = chordHash(path.hashCode());
+		SillyGitFile sgf = workDirectory.getFileForPath(path);
 
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
-			AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+			SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+			workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
 		} else {
-			ServentInfo nextNode = getNextNodeForKey(key);
-			AddMessage pm = new AddMessage(myServentInfo, nextNode, sgf);
-			MessageUtil.sendMessage(pm);
+			sendAddFileMessage(sgf, myServentInfo);
 		}
+	}
+
+	public void addFileForSomeoneElse(SillyGitFile sgf, ServentInfo requester) throws FileAlreadyAddedStorageException {
+		int key = chordHash(sgf.getPathInWorkDir().hashCode());
+		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+			try {
+				SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+				sendAddResponseMessage(sgsf.getPathInStorageDir(), sgsf, requester);
+			} catch (FileAlreadyAddedStorageException e) {
+				sendAddResponseMessage(sgf.getPathInWorkDir(), null, requester);
+				throw e;
+			}
+		} else {
+			sendAddFileMessage(sgf, requester);
+		}
+	}
+
+	private void sendAddFileMessage(SillyGitFile sgf, ServentInfo servent) {
+		int key = chordHash(sgf.getPathInWorkDir().hashCode());
+		ServentInfo nextNode = getNextNodeForKey(key);
+		AddMessage pm = new AddMessage(servent, nextNode, sgf);
+		MessageUtil.sendMessage(pm);
+	}
+
+	private void sendAddResponseMessage(String path, SillyGitStorageFile sgsf, ServentInfo receiver) {
+		AddResponseMessage responseMessage = new AddResponseMessage(myServentInfo, receiver, path, sgsf);
+		MessageUtil.sendMessage(responseMessage);
 	}
 	
 	/**
@@ -361,6 +382,8 @@ public class ChordState {
 		MessageUtil.sendMessage(agm);
 	}
 
+	//Remove
+
 	public void remove(String removePath) {
 		int key = chordHash(removePath.hashCode());
 
@@ -373,6 +396,8 @@ public class ChordState {
 			MessageUtil.sendMessage(rm);
 		}
 	}
+
+	//Commit
 
 	public void commitFileFromMyWorkDir(String filePath) throws FileNotFoundException, FileAlreadyAddedStorageException, FileDoesntExistStorageException, FileNotAddedFirstCommitException, CommitConflictStorageException {
 		int key = chordHash(filePath.hashCode());

@@ -24,9 +24,8 @@ public class AddCommand implements CLICommand {
 			String pathToFile = args;
 
 			try {
-				SillyGitFile sgf = AppConfig.workDirectory.getFileForPath(pathToFile);
 // TODO: 25.5.21. Resi folder
-				AppConfig.chordState.addFile(sgf);
+				AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
 			} catch (FileAlreadyAddedStorageException e) {
 				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
 			}
