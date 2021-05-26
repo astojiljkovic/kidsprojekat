@@ -2,42 +2,30 @@ package cli.command;
 
 import app.AppConfig;
 import app.Logger;
-import app.SillyGitFile;
-import app.storage.FileAlreadyAddedException;
+import app.storage.FileAlreadyAddedStorageException;
+import app.storage.FileDoesntExistStorageException;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 public class CommitCommand implements CLICommand {
 
     @Override
     public String commandName() {
-        return "add";
+        return "commit";
     }
 
     @Override
     public void execute(String args) {
-        String[] splitArgs = args.split(" ");
+        String removePath = args;
 
-        //add bananica.txt
-        if (splitArgs.length != 0) {
-            String pathToFile = args;
-
-            try {
-                SillyGitFile sgf = AppConfig.workDirectory.getFileForPath(pathToFile);
-// TODO: 25.5.21. Resi folder
-                AppConfig.chordState.addFile(sgf);
-            } catch (FileAlreadyAddedException e) {
-                Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
-            }
-            catch (FileNotFoundException e) {
-                Logger.timestampedErrorPrint("Invalid file path - File doesn't exist: " + e);
-            } catch (IOException e) {
-                Logger.timestampedErrorPrint("Problem reading content of file: " + e);
-            }
-        } else {
-            Logger.timestampedErrorPrint("Invalid arguments for add");
+        try {
+            AppConfig.chordState.commitFileFromMyWorkDir(removePath);
+        } catch (FileNotFoundException e) {
+            Logger.timestampedErrorPrint("Cannot commit file - Doesn't exist in my work dir: " + e);
+        } catch (FileAlreadyAddedStorageException e) {
+            Logger.timestampedErrorPrint("Cannot commit file - File with this version already exists in storage: " + e);
+        } catch (FileDoesntExistStorageException e) {
+            Logger.timestampedErrorPrint("Cannot commit file - File must be added to the storage first: " + e);
         }
-
     }
 }

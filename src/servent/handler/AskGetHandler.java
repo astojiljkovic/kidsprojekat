@@ -3,8 +3,7 @@ package servent.handler;
 import app.AppConfig;
 import app.DataNotOnOurNodeException;
 import app.Logger;
-import app.ServentInfo;
-import app.storage.FileDoesntExistException;
+import app.storage.FileDoesntExistStorageException;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.TellGetMessage;
@@ -27,11 +26,11 @@ public class AskGetHandler implements MessageHandler {
 				int version = Integer.parseInt(fileNameAndVersion[1]);
 
 				try {
-					String localVal = AppConfig.chordState.getLocalValue(fileName, version);
+					String localVal = AppConfig.chordState.retrieveFileFromOurStorage(fileName, version).getContent();
 					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
 							fileName, localVal);
 					MessageUtil.sendMessage(tgm);
-				} catch (FileDoesntExistException e) {
+				} catch (FileDoesntExistStorageException e) {
 						TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
 							fileName, TellGetMessage.FILE_DOESNT_EXIST_CONTENT);
 					MessageUtil.sendMessage(tgm);

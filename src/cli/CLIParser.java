@@ -6,14 +6,7 @@ import java.util.Scanner;
 
 import app.Cancellable;
 import app.Logger;
-import cli.command.CLICommand;
-import cli.command.PullCommand;
-import cli.command.AddCommand;
-import cli.command.RemoveCommand;
-import cli.command.InfoCommand;
-import cli.command.PauseCommand;
-import cli.command.StopCommand;
-import cli.command.SuccessorInfo;
+import cli.command.*;
 import servent.SimpleServentListener;
 
 /**
@@ -49,6 +42,7 @@ public class CLIParser implements Runnable, Cancellable {
 		commandList.add(new PullCommand());
 		commandList.add(new AddCommand());
 		commandList.add(new RemoveCommand());
+		commandList.add(new CommitCommand());
 		commandList.add(new StopCommand(this, listener));
 	}
 	

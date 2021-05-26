@@ -1,16 +1,14 @@
 package app;
 
-import app.storage.FileAlreadyAddedException;
-import app.storage.FileDoesntExistException;
+import app.storage.FileAlreadyAddedStorageException;
+import app.storage.FileDoesntExistStorageException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -22,12 +20,12 @@ public class Storage {
         this.root = root;
     }
 
-    public void add(SillyGitStorageFile sgsf) throws FileAlreadyAddedException {
-        String versionedFilename = filenameWithVersion(sgsf.getPathInStorageDir(), sgsf.getVersion());
+    public void add(SillyGitStorageFile sgsf) throws FileAlreadyAddedStorageException {
+        String versionedFilename = filenameWithVersion(sgsf.getPathInStorageDir(), sgsf.getVersion()); //TODO: Fix: Add should just create version 0!
         File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
 
         if (fileForSillyFile.exists()) {
-            throw new FileAlreadyAddedException(sgsf);
+            throw new FileAlreadyAddedStorageException(sgsf);
         }
 
         try {
@@ -38,7 +36,13 @@ public class Storage {
         }
     }
 
-    public SillyGitStorageFile get(String pathInStorageDir, int version) throws FileDoesntExistException { //TODO: fix version
+    public void commit(String pathInStorageDir, String content) throws FileDoesntExistStorageException, FileAlreadyAddedStorageException { //TODO: fix conflicts
+        int latestVersion = getLatestStoredVersion(pathInStorageDir);
+        int newVersion = latestVersion + 1;
+        add(new SillyGitStorageFile(pathInStorageDir, content, newVersion));
+    }
+
+    public SillyGitStorageFile get(String pathInStorageDir, int version) throws FileDoesntExistStorageException { //TODO: fix version
         int realVersion;
         if (version == -1) {
             realVersion = getLatestStoredVersion(pathInStorageDir);
@@ -50,7 +54,7 @@ public class Storage {
         File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
 
         if (!fileForSillyFile.exists()) {
-            throw new FileDoesntExistException(pathInStorageDir);
+            throw new FileDoesntExistStorageException(pathInStorageDir);
         }
 
         try {
@@ -119,7 +123,7 @@ public class Storage {
         }
     }
 
-    private int getLatestStoredVersion(String pathInStorageDir) throws FileDoesntExistException {
+    private int getLatestStoredVersion(String pathInStorageDir) throws FileDoesntExistStorageException {
         try {
             return Files.list(root.toPath())
                     .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
@@ -133,7 +137,7 @@ public class Storage {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (NoSuchElementException e) {
-            throw new FileDoesntExistException(pathInStorageDir);
+            throw new FileDoesntExistStorageException(pathInStorageDir);
         }
     }
 

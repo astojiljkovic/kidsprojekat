@@ -3,7 +3,7 @@ package servent.handler;
 import app.AppConfig;
 import app.Logger;
 import app.SillyGitFile;
-import app.storage.FileAlreadyAddedException;
+import app.storage.FileAlreadyAddedStorageException;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -26,7 +26,7 @@ public class AddHandler implements MessageHandler {
 				SillyGitFile sgf = new SillyGitFile(fileName, content);
 				try {
 					AppConfig.chordState.addFile(sgf);
-				} catch (FileAlreadyAddedException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
+				} catch (FileAlreadyAddedStorageException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
 					Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
 				}
 			} else {

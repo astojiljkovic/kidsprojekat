@@ -3,7 +3,7 @@ package cli.command;
 import app.AppConfig;
 import app.DataNotOnOurNodeException;
 import app.Logger;
-import app.storage.FileDoesntExistException;
+import app.storage.FileDoesntExistStorageException;
 
 public class PullCommand implements CLICommand {
 
@@ -25,11 +25,11 @@ public class PullCommand implements CLICommand {
 				filePath = args;
 			}
 
-			String val = AppConfig.chordState.getValueForCLI(filePath, version);
-			Logger.timestampedStandardPrint("Successfully pulled file " + filePath + " : " + val);
+			AppConfig.chordState.pullFileInWorkDirFromLocalStorage(filePath, version);
+			Logger.timestampedStandardPrint("Successfully pulled file " + filePath);
 		} catch (NumberFormatException e) {
 			Logger.timestampedErrorPrint("Invalid argument for pull: " + args + ". Should be key, which is an int.");
-		} catch (FileDoesntExistException e) {
+		} catch (FileDoesntExistStorageException e) {
 			Logger.timestampedStandardPrint("No such file: " + args);
 		} catch (DataNotOnOurNodeException e) {
 			Logger.timestampedStandardPrint("Please wait...");

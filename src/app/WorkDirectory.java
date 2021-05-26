@@ -15,16 +15,19 @@ public class WorkDirectory {
         this.root = root;
     }
 
-    public SillyGitFile getFileForPath(String path) throws IOException {
+    public SillyGitFile getFileForPath(String path) throws FileNotFoundException {
         File fileToAdd = fileForRelativePathToWorkDir(path);
 
         if (!fileToAdd.exists()) {
             throw new FileNotFoundException();
         }
 
-        String content = Files.readString(Path.of(fileToAdd.toURI()));
-
-        return new SillyGitFile(path, content);
+        try {
+            String content = Files.readString(Path.of(fileToAdd.toURI()));
+            return new SillyGitFile(path, content);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void addFile(SillyGitFile sgf) {
@@ -36,6 +39,11 @@ public class WorkDirectory {
             e.printStackTrace();
             throw new UncheckedIOException(e);
         }
+    }
+
+    public void removeFileForPath(String path) {
+        File fileToDelete = fileForRelativePathToWorkDir(path);
+        fileToDelete.delete();
     }
 
     private File fileForRelativePathToWorkDir(String fileName) {
