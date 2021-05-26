@@ -1,11 +1,11 @@
 package app.storage;
 
-import app.SillyGitFile;
+import app.SillyGitStorageFile;
 
 public class FileAlreadyAddedException extends StorageException {
-    private SillyGitFile sgf;
+    private SillyGitStorageFile sgf;
 
-    public FileAlreadyAddedException(SillyGitFile sgf) {
+    public FileAlreadyAddedException(SillyGitStorageFile sgf) {
         super();
         this.sgf = sgf;
     }

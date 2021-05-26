@@ -15,9 +15,17 @@ public class PullCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		try {
-			String filePath = args; // TODO: 25.5.21. Remove key
+			String []splitArgs = args.split(" ");
+			String filePath;
+			int version = -1;
+			if(splitArgs.length == 2) {
+				filePath = splitArgs[0];
+				version = Integer.parseInt(splitArgs[1]);
+			} else {
+				filePath = args;
+			}
 
-			String val = AppConfig.chordState.getValueForCLI(filePath);
+			String val = AppConfig.chordState.getValueForCLI(filePath, version);
 			Logger.timestampedStandardPrint("Successfully pulled file " + filePath + " : " + val);
 		} catch (NumberFormatException e) {
 			Logger.timestampedErrorPrint("Invalid argument for pull: " + args + ". Should be key, which is an int.");

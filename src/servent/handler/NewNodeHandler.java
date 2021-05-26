@@ -7,10 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import app.AppConfig;
-import app.Logger;
-import app.ServentInfo;
-import app.SillyGitFile;
+import app.*;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.NewNodeMessage;
@@ -92,15 +89,17 @@ public class NewNodeHandler implements MessageHandler {
 //					return hisFilePaths.stream().noneMatch(hisFilePath -> myFilePath.equals(hisFilePath));
 //				}).collect(Collectors.toList());
 
-				List<SillyGitFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
+				List<SillyGitStorageFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
 //				AppConfig.storage.setAllFiles(myStoredFilePaths);
 
-				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
-				for(SillyGitFile sgf: hisFiles) {
-					mapToSend.put(sgf.getPathInWorkDir(), sgf.getContent());
-				}
+//				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
+//				for(SillyGitFile sgf: hisFiles) {
+//					mapToSend.put(sgf.getPathInWorkDir(), sgf.getContent());
+//				}
+
+
 				
-				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, mapToSend);
+				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
 				MessageUtil.sendMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(newNodeInfo.getChordId());

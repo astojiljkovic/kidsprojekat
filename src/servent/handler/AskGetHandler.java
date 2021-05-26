@@ -22,10 +22,12 @@ public class AskGetHandler implements MessageHandler {
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.ASK_GET) {
 			try {
-				String fileName = clientMessage.getMessageText();
+				String []fileNameAndVersion = clientMessage.getMessageText().split(" ");
+				String fileName = fileNameAndVersion[0];
+				int version = Integer.parseInt(fileNameAndVersion[1]);
 
 				try {
-					String localVal = AppConfig.chordState.getLocalValue(fileName);
+					String localVal = AppConfig.chordState.getLocalValue(fileName, version);
 					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
 							fileName, localVal);
 					MessageUtil.sendMessage(tgm);
@@ -34,7 +36,7 @@ public class AskGetHandler implements MessageHandler {
 							fileName, "FAJL_NE_POSTOJI");
 					MessageUtil.sendMessage(tgm);
 				} catch (DataNotOnOurNodeException e) {
-					AppConfig.chordState.sendAskGetMessage(fileName, clientMessage.getSender());
+					AppConfig.chordState.sendAskGetMessage(fileName, version, clientMessage.getSender());
 				}
 
 			} catch (NumberFormatException e) {

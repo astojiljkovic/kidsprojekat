@@ -1,5 +1,7 @@
 package app;
 
+import java.io.Serializable;
+
 public class SillyGitFile {
     private final String pathInWorkDir;
     private final String content;

@@ -88,14 +88,22 @@ public class ChordState {
 		successorTable[0] = welcomeMsg.getSender();
 //		this.valueMap = welcomeMsg.getValues();
 
-		for(Map.Entry<String, String> entry: welcomeMsg.getValues().entrySet()) {
-			SillyGitFile sgf = new SillyGitFile(entry.getKey(), entry.getValue());
+		for(SillyGitStorageFile sgsf: welcomeMsg.getFiles()) {
 			try {
-				storage.add(sgf);
+				storage.add(sgsf);
 			} catch (FileAlreadyAddedException e) {
-				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgf.getPathInWorkDir() + " " + sgf.getContent());
+				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgsf);
 			}
 		}
+
+//		for(Map.Entry<String, String> entry: welcomeMsg.getValues().entrySet()) {
+//			SillyGitFile sgf = new SillyGitFile(entry.getKey(), entry.getValue());
+//			try {
+//				storage.add(sgf);
+//			} catch (FileAlreadyAddedException e) {
+//				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgf.getPathInWorkDir() + " " + sgf.getContent());
+//			}
+//		}
 		
 		//tell bootstrap this node is not a collider
 		try {
@@ -318,7 +326,7 @@ public class ChordState {
 		System.out.println("Bananica se dodaje, key: " + key);
 
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
-			AppConfig.storage.add(sgf);
+			AppConfig.storage.add(new SillyGitStorageFile(sgf.getPathInWorkDir(), sgf.getContent(), 0));
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
 			AddMessage pm = new AddMessage(myServentInfo, nextNode, sgf.getPathInWorkDir(), sgf.getContent());
@@ -334,32 +342,32 @@ public class ChordState {
 	 *			<li>-2 if we asked someone else</li>
 	 *		   </ul>
 	 */
-	public String getValueForCLI(String filePath) throws FileDoesntExistException, DataNotOnOurNodeException {
+	public String getValueForCLI(String filePath, int version) throws FileDoesntExistException, DataNotOnOurNodeException {
 		try {
-			String content = getLocalValue(filePath);
+			String content = getLocalValue(filePath, version);
 			workDirectory.addFile(new SillyGitFile(filePath, content));
 			return content;
 		} catch (DataNotOnOurNodeException e) {
-			sendAskGetMessage(filePath, myServentInfo);
+			sendAskGetMessage(filePath, version, myServentInfo);
 			throw new DataNotOnOurNodeException();
 		}
 	}
 
-	public String getLocalValue(String fileName) throws FileDoesntExistException, DataNotOnOurNodeException {
+	public String getLocalValue(String fileName, int version) throws FileDoesntExistException, DataNotOnOurNodeException {
 		int key = chordHash(fileName.hashCode());
 
 		if (isKeyMine(key)) {
-			return storage.get(fileName).getContent();
+			return storage.get(fileName, version).getContent();
 		}
 
 		throw new DataNotOnOurNodeException();
 	}
 
-	public void sendAskGetMessage(String fileName, ServentInfo servent) {
+	public void sendAskGetMessage(String fileName, int version, ServentInfo servent) {
 		int key = chordHash(fileName.hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
-		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName);
+		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName, version);
 		MessageUtil.sendMessage(agm);
 	}
 }
