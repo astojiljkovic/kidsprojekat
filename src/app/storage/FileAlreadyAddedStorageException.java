@@ -3,10 +3,10 @@ package app.storage;
 import app.SillyGitStorageFile;
 
 public class FileAlreadyAddedStorageException extends StorageException {
-    private SillyGitStorageFile sgf;
+    private String path;
 
-    public FileAlreadyAddedStorageException(SillyGitStorageFile sgf) {
+    public FileAlreadyAddedStorageException(String path) {
         super();
-        this.sgf = sgf;
+        this.path = path;
     }
 }

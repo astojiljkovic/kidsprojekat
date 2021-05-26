@@ -97,8 +97,10 @@ public class BasicMessage implements Message {
 	@Override
 	public String toString() {
 		return "[" + getSender().getChordId() + "(" + getSender().getTeam() + ")" + "|" + getSender().getNetworkLocation() + "|" + getMessageId() + "|" +
-				getMessageText() + "|" + getMessageType() + "|" +
+				getMessageText() + "|" + additionalContentToPrint() + "|" + getMessageType() + "|" +
 				getReceiver().getNetworkLocation() + "|" +
 				getReceiver().getChordId() + "(" + getReceiver().getTeam() + ")" + "]";
 	}
+
+	protected String additionalContentToPrint() { return ""; }
 }

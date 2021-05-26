@@ -3,6 +3,7 @@ package servent.handler;
 import app.AppConfig;
 import app.DataNotOnOurNodeException;
 import app.Logger;
+import app.SillyGitStorageFile;
 import app.storage.FileDoesntExistStorageException;
 import servent.message.Message;
 import servent.message.MessageType;
@@ -26,13 +27,13 @@ public class AskGetHandler implements MessageHandler {
 				int version = Integer.parseInt(fileNameAndVersion[1]);
 
 				try {
-					String localVal = AppConfig.chordState.retrieveFileFromOurStorage(fileName, version).getContent();
-					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-							fileName, localVal);
+					SillyGitStorageFile sgsf = AppConfig.chordState.retrieveFileFromOurStorage(fileName, version);
+					TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(), sgsf.getPathInStorageDir(),
+							sgsf);
 					MessageUtil.sendMessage(tgm);
 				} catch (FileDoesntExistStorageException e) {
 						TellGetMessage tgm = new TellGetMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-							fileName, TellGetMessage.FILE_DOESNT_EXIST_CONTENT);
+							fileName, null);
 					MessageUtil.sendMessage(tgm);
 				} catch (DataNotOnOurNodeException e) {
 					AppConfig.chordState.sendAskGetMessage(fileName, version, clientMessage.getSender());

@@ -1,12 +1,25 @@
 package servent.message;
 
 import app.ServentInfo;
+import app.SillyGitFile;
 
 public class AddMessage extends BasicMessage {
 
 	private static final long serialVersionUID = 5163039209888734276L;
 
-	public AddMessage(ServentInfo sender, ServentInfo receiver, String name, String content) {
-		super(MessageType.ADD, sender, receiver, name + "<=>" + content);
+	private final SillyGitFile sgf;
+
+	public AddMessage(ServentInfo sender, ServentInfo receiver, SillyGitFile file) {
+		super(MessageType.ADD, sender, receiver, "");
+		this.sgf = file;
+	}
+
+	public SillyGitFile getSgf() {
+		return sgf;
+	}
+
+	@Override
+	protected String additionalContentToPrint() {
+		return sgf.getPathInWorkDir() + "|" + sgf.getContent() + "|" + sgf.getStorageHash().orElse("");
 	}
 }

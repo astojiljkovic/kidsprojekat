@@ -3,6 +3,7 @@ package cli.command;
 import app.AppConfig;
 import app.DataNotOnOurNodeException;
 import app.Logger;
+import app.Storage;
 import app.storage.FileDoesntExistStorageException;
 
 public class PullCommand implements CLICommand {
@@ -17,7 +18,7 @@ public class PullCommand implements CLICommand {
 		try {
 			String []splitArgs = args.split(" ");
 			String filePath;
-			int version = -1;
+			int version = Storage.LATEST_STORAGE_FILE_VERSION;
 			if(splitArgs.length == 2) {
 				filePath = splitArgs[0];
 				version = Integer.parseInt(splitArgs[1]);

@@ -4,6 +4,7 @@ import app.AppConfig;
 import app.Logger;
 import app.SillyGitFile;
 import app.storage.FileAlreadyAddedStorageException;
+import servent.message.AddMessage;
 import servent.message.Message;
 import servent.message.MessageType;
 
@@ -18,22 +19,14 @@ public class AddHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.ADD) {
-			String[] splitText = clientMessage.getMessageText().split("<=>");
-			if (splitText.length == 2) {
-				String fileName = splitText[0];
-				String content = splitText[1];
+			AddMessage addMessage = (AddMessage) clientMessage;
 
-				SillyGitFile sgf = new SillyGitFile(fileName, content);
-				try {
-					AppConfig.chordState.addFile(sgf);
-				} catch (FileAlreadyAddedStorageException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
-					Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
-				}
-			} else {
-				Logger.timestampedErrorPrint("Got add message with bad text: " + clientMessage.getMessageText());
+			try {
+				SillyGitFile sgf = addMessage.getSgf();
+				AppConfig.chordState.addFile(sgf);
+			} catch (FileAlreadyAddedStorageException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
+				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
 			}
-			
-			
 		} else {
 			Logger.timestampedErrorPrint("Put handler got a message that is not PUT");
 		}

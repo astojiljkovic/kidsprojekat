@@ -3,6 +3,7 @@ package servent.handler;
 import app.AppConfig;
 import app.Logger;
 import app.SillyGitFile;
+import app.SillyGitStorageFile;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.TellGetMessage;
@@ -18,21 +19,16 @@ public class TellGetHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.TELL_GET) {
-			String []parts = clientMessage.getMessageText().split("<=>");
-			
-			if (parts.length == 2) {
-				String filePath = parts[0];
-				String content = parts[1];
+			TellGetMessage tellGetMessage = (TellGetMessage) clientMessage;
+			String requestedPath = tellGetMessage.getMessageText();
 
-				if (content.equals(TellGetMessage.FILE_DOESNT_EXIST_CONTENT)) {
-					Logger.timestampedStandardPrint("No such file with name: " + filePath);
-				} else {
-					AppConfig.workDirectory.addFile(new SillyGitFile(filePath, content));
-					Logger.timestampedStandardPrint("Successfully pulled file " + filePath + " : " + content);
-//					Logger.timestampedStandardPrint(clientMessage.getMessageText());
-				}
+			SillyGitStorageFile sgsf = tellGetMessage.getSgsf();
+
+			if (sgsf == null) {
+				Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 			} else {
-				Logger.timestampedErrorPrint("Got TELL_GET message with bad text: " + clientMessage.getMessageText());
+				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
+				Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
 			}
 		} else {
 			Logger.timestampedErrorPrint("Tell get handler got a message that is not TELL_GET");

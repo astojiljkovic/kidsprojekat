@@ -1,50 +1,81 @@
 package app;
 
+import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 public class Storage {
+    public static final int LATEST_STORAGE_FILE_VERSION = -1;
+
     private final File root;
 
     public Storage(File root) {
         this.root = root;
     }
 
-    public void add(SillyGitStorageFile sgsf) throws FileAlreadyAddedStorageException {
-        String versionedFilename = filenameWithVersion(sgsf.getPathInStorageDir(), sgsf.getVersion()); //TODO: Fix: Add should just create version 0!
+    public void add(String path, String content) throws FileAlreadyAddedStorageException {
+        try {
+            save(path, content, 0);
+        } catch (FileAlreadyExistsException e) {
+            throw new FileAlreadyAddedStorageException(path);
+        }
+    }
+
+    private void save(String path, String content, int version) throws FileAlreadyExistsException {
+        String versionedFilename = filenameWithVersion(path, version);
         File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
 
         if (fileForSillyFile.exists()) {
-            throw new FileAlreadyAddedStorageException(sgsf);
+            throw new FileAlreadyExistsException(path);
         }
 
         try {
-            Files.writeString(fileForSillyFile.toPath(), sgsf.getContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.writeString(fileForSillyFile.toPath(), content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot write to storage " + fileForSillyFile.getPath());
             e.printStackTrace();
         }
     }
 
-    public void commit(String pathInStorageDir, String content) throws FileDoesntExistStorageException, FileAlreadyAddedStorageException { //TODO: fix conflicts
-        int latestVersion = getLatestStoredVersion(pathInStorageDir);
-        int newVersion = latestVersion + 1;
-        add(new SillyGitStorageFile(pathInStorageDir, content, newVersion));
+    public void commit(String pathInStorageDir, String content, String versionHash) throws FileDoesntExistStorageException, CommitConflictStorageException {
+        SillyGitStorageFile currentFile = get(pathInStorageDir, LATEST_STORAGE_FILE_VERSION);
+
+        int newVersion = currentFile.getVersion() + 1;
+
+        //If hashes are not equal, there is a conflict
+        if (!currentFile.getVersionHash().equals(versionHash)) {
+            throw new CommitConflictStorageException(pathInStorageDir, newVersion);
+        }
+
+        //If content is equal, and hashes are equal ^, file is the same
+        if (currentFile.getContent().equals(content)) {
+            return;
+        }
+
+        try {
+            save(pathInStorageDir,  content, newVersion);
+        } catch (FileAlreadyExistsException e) {
+            throw new CommitConflictStorageException(pathInStorageDir, newVersion);
+        }
     }
 
-    public SillyGitStorageFile get(String pathInStorageDir, int version) throws FileDoesntExistStorageException { //TODO: fix version
+    public SillyGitStorageFile get(String pathInStorageDir, int version) throws FileDoesntExistStorageException {
         int realVersion;
-        if (version == -1) {
+        if (version == LATEST_STORAGE_FILE_VERSION) {
             realVersion = getLatestStoredVersion(pathInStorageDir);
         } else {
             realVersion = version;
@@ -59,7 +90,7 @@ public class Storage {
 
         try {
             String content = Files.readString(fileForSillyFile.toPath());
-            return new SillyGitStorageFile(pathInStorageDir, content, version);
+            return createSillyGitStorageFile(pathInStorageDir, content, realVersion);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot read a file from storage " + fileForSillyFile.getPath());
             e.printStackTrace();
@@ -113,7 +144,7 @@ public class Storage {
                             String fileName = filenameFromVersionedFilename(relativePathToStorage);
                             int version = versionFromVersionedFilename(relativePathToStorage);
                             Files.delete(path);
-                            return new SillyGitStorageFile(fileName, content, version);
+                            return createSillyGitStorageFile(fileName, content, version);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -138,6 +169,17 @@ public class Storage {
             throw new UncheckedIOException(e);
         } catch (NoSuchElementException e) {
             throw new FileDoesntExistStorageException(pathInStorageDir);
+        }
+    }
+
+    private SillyGitStorageFile createSillyGitStorageFile(String path, String content, int version) {
+        try {
+            byte []shaBytes = MessageDigest.getInstance("SHA-1").digest((content + version).getBytes());
+            String hash = Base64.getEncoder().encodeToString(shaBytes);
+            return new SillyGitStorageFile(path, content, version, hash);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new RuntimeException();
         }
     }
 

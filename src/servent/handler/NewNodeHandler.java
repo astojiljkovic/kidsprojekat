@@ -84,20 +84,8 @@ public class NewNodeHandler implements MessageHandler {
 					
 				}
 
-				// remove his values from my list
-//				myStoredFilePaths = myStoredFilePaths.stream().filter(myFilePath -> {
-//					return hisFilePaths.stream().noneMatch(hisFilePath -> myFilePath.equals(hisFilePath));
-//				}).collect(Collectors.toList());
-
+				// remove his values from my storage
 				List<SillyGitStorageFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
-//				AppConfig.storage.setAllFiles(myStoredFilePaths);
-
-//				Map<String, String> mapToSend = new HashMap<>(); //TODO: update WelcomeMsg
-//				for(SillyGitFile sgf: hisFiles) {
-//					mapToSend.put(sgf.getPathInWorkDir(), sgf.getContent());
-//				}
-
-
 				
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
 				MessageUtil.sendMessage(wm);

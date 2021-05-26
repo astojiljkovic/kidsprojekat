@@ -7,8 +7,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WorkDirectory {
+    private final Map<String, String> versionHashes = new HashMap<>();
+
     private final File root;
 
     public WorkDirectory(File root) {
@@ -24,16 +28,24 @@ public class WorkDirectory {
 
         try {
             String content = Files.readString(Path.of(fileToAdd.toURI()));
-            return new SillyGitFile(path, content);
+
+            if(versionHashes.containsKey(path)) {
+                return SillyGitFile.newVersionedFile(path, content, versionHashes.get(path));
+            } else {
+                return SillyGitFile.newUnversionedFile(path, content);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public void addFile(SillyGitFile sgf) {
-        File fileToAdd = fileForRelativePathToWorkDir(sgf.getPathInWorkDir());
+    public void addFile(String path, String content, String versionHash) {
+        File fileToAdd = fileForRelativePathToWorkDir(path);
         try {
-            Files.writeString(fileToAdd.toPath(), sgf.getContent(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.writeString(fileToAdd.toPath(), content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            if (versionHash != null && !versionHash.isEmpty()) {
+                versionHashes.put(path, versionHash);
+            }
         } catch (IOException e) {
             //TODO: change to WorkDirectoryException -> Cannot add file
             e.printStackTrace();
@@ -44,6 +56,7 @@ public class WorkDirectory {
     public void removeFileForPath(String path) {
         File fileToDelete = fileForRelativePathToWorkDir(path);
         fileToDelete.delete();
+        versionHashes.remove(path);
     }
 
     private File fileForRelativePathToWorkDir(String fileName) {
