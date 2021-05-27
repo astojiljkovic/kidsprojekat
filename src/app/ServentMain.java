@@ -58,6 +58,5 @@ public class ServentMain {
 		ServentInitializer serventInitializer = new ServentInitializer();
 		Thread initializerThread = new Thread(serventInitializer);
 		initializerThread.start();
-		
 	}
 }

@@ -13,7 +13,7 @@ import app.ServentInfo;
  * @author bmilojkovic
  *
  */
-public class BasicMessage implements Message {
+public class BasicMessage implements Message, Cloneable {
 
 	private static final long serialVersionUID = -9075856313609777945L;
 	private final MessageType type;

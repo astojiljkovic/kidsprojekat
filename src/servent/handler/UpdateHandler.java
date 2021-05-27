@@ -26,7 +26,7 @@ public class UpdateHandler implements MessageHandler {
 				ServentInfo newNodInfo = clientMessage.getSender();
 				List<ServentInfo> newNodes = new ArrayList<>();
 				newNodes.add(newNodInfo);
-				
+
 				AppConfig.chordState.addNodes(newNodes);
 
 				//Create ip:port:team
@@ -45,7 +45,7 @@ public class UpdateHandler implements MessageHandler {
 			} else {
 				String messageText = clientMessage.getMessageText(); //ip:port:team,ip:port:team,ip:port:team...
 				String[] ipPortTeams = messageText.split(",");
-				
+
 				List<ServentInfo> allNodes = new ArrayList<>();
 				for (String ipPortTeam : ipPortTeams) {
 					String ip = ipPortTeam.split(":")[0];

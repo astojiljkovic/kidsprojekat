@@ -10,6 +10,7 @@ import java.util.*;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
+import com.sun.nio.sctp.PeerAddressChangeNotification;
 import servent.message.*;
 import servent.message.util.MessageUtil;
 
@@ -315,34 +316,37 @@ public class ChordState {
 			SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
 			workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
 		} else {
-			sendAddFileMessage(sgf, myServentInfo);
+			sendAddFileMessage(sgf, new AddMessage(myServentInfo, myServentInfo, sgf)); //TODO: fix message creation
 		}
 	}
 
-	public void addFileForSomeoneElse(SillyGitFile sgf, ServentInfo requester) throws FileAlreadyAddedStorageException {
+	public void addFileForSomeoneElse(SillyGitFile sgf, AddMessage receivedMessage) throws FileAlreadyAddedStorageException {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
 			try {
 				SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
-				sendAddResponseMessage(sgsf.getPathInStorageDir(), sgsf, requester);
+				sendAddResponseMessage(sgsf.getPathInStorageDir(), sgsf, receivedMessage);
 			} catch (FileAlreadyAddedStorageException e) {
-				sendAddResponseMessage(sgf.getPathInWorkDir(), null, requester);
+				sendAddResponseMessage(sgf.getPathInWorkDir(), null, receivedMessage);
 				throw e;
 			}
 		} else {
-			sendAddFileMessage(sgf, requester);
+			sendAddFileMessage(sgf, receivedMessage);
 		}
 	}
 
-	private void sendAddFileMessage(SillyGitFile sgf, ServentInfo servent) {
+	private void sendAddFileMessage(SillyGitFile sgf, AddMessage message) {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
-		AddMessage pm = new AddMessage(servent, nextNode, sgf);
-		MessageUtil.sendMessage(pm);
+
+		AddMessage am = new AddMessage(message.getSender(), nextNode, sgf);
+		am.copyContextFrom(message); // new AddMessage(servent, nextNode, sgf);
+		MessageUtil.sendMessage(am);
 	}
 
-	private void sendAddResponseMessage(String path, SillyGitStorageFile sgsf, ServentInfo receiver) {
-		AddResponseMessage responseMessage = new AddResponseMessage(myServentInfo, receiver, path, sgsf);
+	private void sendAddResponseMessage(String path, SillyGitStorageFile sgsf, AddMessage receivedMessage) {
+		AddResponseMessage responseMessage = new AddResponseMessage(myServentInfo, receivedMessage.getSender(), path, sgsf);
+		responseMessage.copyContextFrom(receivedMessage);
 		MessageUtil.sendMessage(responseMessage);
 	}
 	
@@ -446,5 +450,9 @@ public class ChordState {
 	private void sendCommitResponseMessage(String path, SillyGitStorageFile sgsf, ServentInfo receiver) {
 		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, receiver, path, sgsf);
 		MessageUtil.sendMessage(cm);
+	}
+
+	public void getViewFile(String resolvingConflictPath) {
+
 	}
 }

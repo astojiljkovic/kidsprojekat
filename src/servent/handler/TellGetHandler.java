@@ -27,7 +27,7 @@ public class TellGetHandler implements MessageHandler {
 			if (sgsf == null) {
 				Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 			} else {
-				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
+				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir() , sgsf.getContent(), sgsf.getVersionHash());
 				Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
 			}
 		} else {

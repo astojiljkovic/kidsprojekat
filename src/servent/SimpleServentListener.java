@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 import app.AppConfig;
 import app.Cancellable;
@@ -97,7 +98,7 @@ public class SimpleServentListener implements Runnable, Cancellable {
 					break;
 				}
 				
-				threadPool.submit(messageHandler);
+				threadPool.execute(messageHandler);
 			} catch (SocketTimeoutException timeoutEx) {
 				//Uncomment the next line to see that we are waking up every second.
 //				AppConfig.timedStandardPrint("Waiting...");

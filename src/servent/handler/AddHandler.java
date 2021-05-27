@@ -20,11 +20,11 @@ public class AddHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.ADD) {
-			AddMessage addMessage = (AddMessage) clientMessage;
-
 			try {
+				AddMessage addMessage = (AddMessage) clientMessage;
+
 				SillyGitFile sgf = addMessage.getSgf();
-				AppConfig.chordState.addFileForSomeoneElse(sgf, clientMessage.getSender());
+				AppConfig.chordState.addFileForSomeoneElse(sgf, addMessage);
 			} catch (FileAlreadyAddedStorageException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
 				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
 			}

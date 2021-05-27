@@ -23,7 +23,8 @@ public class CommitResponseHandler implements MessageHandler {
 
 			SillyGitStorageFile sgsf = responseMessage.getSgsf();
 			if (sgsf == null) {
-				Logger.timestampedErrorPrint("Couldn't commit - " + clientMessage.getMessageText());
+				Logger.timestampedErrorPrint("Commit conflict detected for file - " + clientMessage.getMessageText());
+
 			} else {
 				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
 			}

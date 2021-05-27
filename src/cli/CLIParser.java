@@ -44,17 +44,18 @@ public class CLIParser implements Runnable, Cancellable {
 		commandList.add(new RemoveCommand());
 		commandList.add(new CommitCommand());
 		commandList.add(new StopCommand(this, listener));
+		commandList.add(new ViewCommand());
 	}
 	
 	@Override
 	public void run() {
 		Scanner sc = new Scanner(System.in);
-		
+
 		while (working) {
 			String commandLine = sc.nextLine();
-			
+
 			int spacePos = commandLine.indexOf(" ");
-			
+
 			String commandName = null;
 			String commandArgs = null;
 			if (spacePos != -1) {
@@ -63,9 +64,9 @@ public class CLIParser implements Runnable, Cancellable {
 			} else {
 				commandName = commandLine;
 			}
-			
+
 			boolean found = false;
-			
+
 			for (CLICommand cliCommand : commandList) {
 				if (cliCommand.commandName().equals(commandName)) {
 					cliCommand.execute(commandArgs);
@@ -73,12 +74,12 @@ public class CLIParser implements Runnable, Cancellable {
 					break;
 				}
 			}
-			
+
 			if (!found) {
 				Logger.timestampedErrorPrint("Unknown command: " + commandName);
 			}
 		}
-		
+
 		sc.close();
 	}
 	

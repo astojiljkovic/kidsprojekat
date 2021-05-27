@@ -3,7 +3,7 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitFile;
 
-public class AddMessage extends BasicMessage {
+public class AddMessage extends TrackedMessage {
 
 	private static final long serialVersionUID = 5163039209888734276L;
 
