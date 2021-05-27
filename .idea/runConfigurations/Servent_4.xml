@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Servent-4" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="app.ServentMain" />
+    <module name="KiDS8" />
+    <option name="PROGRAM_PARAMETERS" value="chord/servent_list.properties 4" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
