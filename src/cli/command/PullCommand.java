@@ -14,10 +14,12 @@ public class PullCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		try {
-			String []splitArgs = args.split(" ");
-			if (splitArgs.length == 0 && AppConfig.mergeResolver.isWaitingForInput()) { //Conflict resolution pull
+
+			if (args == null) { //Conflict resolution pull  |  `pull`
+//				if (AppConfig.mergeResolver.isWaitingForInput()) {
 				AppConfig.mergeResolver.pull();
-			} else { //Pull file from system
+			} else { //Pull file from system |  bananica.txt   or   bananica.txt 1
+				String []splitArgs = args.split(" ");
 				String filePath;
 				int version = Storage.LATEST_STORAGE_FILE_VERSION;
 				if (splitArgs.length == 2) {
@@ -36,7 +38,7 @@ public class PullCommand implements CLICommand {
 		} catch (DataNotOnOurNodeException e) {
 			Logger.timestampedStandardPrint("Please wait...");
 		} catch (NotReadyForInputException e) {
-			Logger.timestampedErrorPrint("Invalid command 'view' - Merge resolver not ready for input");
+			Logger.timestampedErrorPrint("Invalid command 'pull' - Merge resolver not ready for input");
 		}
 	}
 
