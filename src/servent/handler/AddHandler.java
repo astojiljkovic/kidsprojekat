@@ -9,19 +9,19 @@ import servent.message.AddResponseMessage;
 import servent.message.Message;
 import servent.message.MessageType;
 
-public class AddHandler implements MessageHandler {
+public class AddHandler extends TrackedMessageHandler {
 
-	private Message clientMessage;
+//	private Message clientMessage;
 	
-	public AddHandler(Message clientMessage) {
-		this.clientMessage = clientMessage;
-	}
+//	public AddHandler(Message clientMessage) {
+//		this.clientMessage = clientMessage;
+//	}
 	
 	@Override
 	public void run() {
-		if (clientMessage.getMessageType() == MessageType.ADD) {
+		if (message.getMessageType() == MessageType.ADD) {
 			try {
-				AddMessage addMessage = (AddMessage) clientMessage;
+				AddMessage addMessage = (AddMessage) message;
 
 				SillyGitFile sgf = addMessage.getSgf();
 				AppConfig.chordState.addFileForSomeoneElse(sgf, addMessage);

@@ -13,6 +13,7 @@ import app.Cancellable;
 import app.Logger;
 import servent.handler.*;
 import servent.message.Message;
+import servent.message.TrackedMessage;
 import servent.message.util.MessageUtil;
 
 public class SimpleServentListener implements Runnable, Cancellable {
@@ -51,52 +52,49 @@ public class SimpleServentListener implements Runnable, Cancellable {
 				
 				//GOT A MESSAGE! <3
 				clientMessage = MessageUtil.readMessage(clientSocket);
-				
+
 				MessageHandler messageHandler = new NullHandler(clientMessage);
-				
-				/*
-				 * Each message type has it's own handler.
-				 * If we can get away with stateless handlers, we will,
-				 * because that way is much simpler and less error prone.
-				 */
-				switch (clientMessage.getMessageType()) {
-				case NEW_NODE:
-					messageHandler = new NewNodeHandler(clientMessage);
-					break;
-				case WELCOME:
-					messageHandler = new WelcomeHandler(clientMessage);
-					break;
-				case SORRY:
-					messageHandler = new SorryHandler(clientMessage);
-					break;
-				case UPDATE:
-					messageHandler = new UpdateHandler(clientMessage);
-					break;
-				case ADD:
-					messageHandler = new AddHandler(clientMessage);
-					break;
-				case ADD_RESPONSE:
-					messageHandler = new AddResponseHandler(clientMessage);
-					break;
-				case PULL:
-					messageHandler = new AskGetHandler(clientMessage);
-					break;
-				case PULL_RESPONSE:
-					messageHandler = new TellGetHandler(clientMessage);
-					break;
-				case REMOVE:
-					messageHandler = new RemoveHandler(clientMessage);
-					break;
-				case COMMIT:
-					messageHandler = new CommitHandler(clientMessage);
-					break;
-				case COMMIT_RESPONSE:
-					messageHandler = new CommitResponseHandler(clientMessage);
-					break;
-				case POISON:
-					break;
+
+				if (clientMessage instanceof TrackedMessage) {
+					TrackedMessage trackedMessage = (TrackedMessage) clientMessage;
+					TrackedMessageHandler handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId()); //TODO: crashes when handler is null
+					handler.setMessage(trackedMessage);
+					messageHandler = handler;
 				}
-				
+				else {
+
+					/*
+					 * Each message type has it's own handler.
+					 * If we can get away with stateless handlers, we will,
+					 * because that way is much simpler and less error prone.
+					 */
+					switch (clientMessage.getMessageType()) {
+						case NEW_NODE:
+							messageHandler = new NewNodeHandler(clientMessage);
+							break;
+						case WELCOME:
+							messageHandler = new WelcomeHandler(clientMessage);
+							break;
+						case SORRY:
+							messageHandler = new SorryHandler(clientMessage);
+							break;
+						case UPDATE:
+							messageHandler = new UpdateHandler(clientMessage);
+							break;
+						case REMOVE:
+							messageHandler = new RemoveHandler(clientMessage);
+							break;
+						case COMMIT:
+							messageHandler = new CommitHandler(clientMessage);
+							break;
+						case COMMIT_RESPONSE:
+							messageHandler = new CommitResponseHandler(clientMessage);
+							break;
+						case POISON:
+							break;
+					}
+				}
+
 				threadPool.execute(messageHandler);
 			} catch (SocketTimeoutException timeoutEx) {
 				//Uncomment the next line to see that we are waking up every second.

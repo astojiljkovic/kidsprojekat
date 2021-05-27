@@ -7,22 +7,24 @@ import servent.message.AddResponseMessage;
 import servent.message.Message;
 import servent.message.MessageType;
 
-public class AddResponseHandler implements MessageHandler {
+import javax.sound.midi.Track;
 
-	private Message clientMessage;
+public class AddResponseHandler extends TrackedMessageHandler {
 
-	public AddResponseHandler(Message clientMessage) {
-		this.clientMessage = clientMessage;
-	}
+//	private Message clientMessage;
+
+//	public AddResponseHandler(Message clientMessage) {
+//		this.clientMessage = clientMessage;
+//	}
 	
 	@Override
 	public void run() {
-		if (clientMessage.getMessageType() == MessageType.ADD_RESPONSE) {
-			AddResponseMessage responseMessage = (AddResponseMessage) clientMessage;
+		if (message.getMessageType() == MessageType.ADD_RESPONSE) {
+			AddResponseMessage responseMessage = (AddResponseMessage) message;
 
 			SillyGitStorageFile sgsf = responseMessage.getSgsf();
 			if (sgsf == null) {
-				Logger.timestampedErrorPrint("Couldn't add file - " + clientMessage.getMessageText());
+				Logger.timestampedErrorPrint("Couldn't add file - " + responseMessage.getMessageText());
 			} else {
 				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
 			}

@@ -30,8 +30,8 @@ public class NewNodeHandler implements MessageHandler {
 			
 			//check if the new node collides with another existing node.
 			if (AppConfig.chordState.isCollision(newNodeInfo.getChordId())) {
-				Message sry = new SorryMessage(AppConfig.myServentInfo, newNodeInfo);
-				MessageUtil.sendMessage(sry);
+				SorryMessage sry = new SorryMessage(AppConfig.myServentInfo, newNodeInfo);
+				MessageUtil.sendAndForgetMessage(sry);
 				return;
 			}
 			
@@ -88,11 +88,11 @@ public class NewNodeHandler implements MessageHandler {
 				List<SillyGitStorageFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
 				
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
-				MessageUtil.sendMessage(wm);
+				MessageUtil.sendAndForgetMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(newNodeInfo.getChordId());
 				NewNodeMessage nnm = new NewNodeMessage(newNodeInfo, nextNode);
-				MessageUtil.sendMessage(nnm);
+				MessageUtil.sendAndForgetMessage(nnm);
 			}
 			
 		} else {

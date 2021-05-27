@@ -3,10 +3,17 @@ package servent.message.util;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import app.AppConfig;
 import app.Logger;
+import servent.handler.MessageHandler;
+import servent.handler.TrackedMessageHandler;
 import servent.message.Message;
+import servent.message.SendAndForgetMessage;
+import servent.message.TrackedMessage;
 
 /**
  * For now, just the read and send implementation, based on Java serializing.
@@ -52,9 +59,26 @@ public class MessageUtil {
 		return clientMessage;
 	}
 	
-	public static void sendMessage(Message message) {
+	private static void sendMessage(Message message) {
 		Thread delayedSender = new Thread(new DelayedMessageSender(message));
 		
 		delayedSender.start();
+	}
+
+	public static void sendAndForgetMessage(SendAndForgetMessage message) {
+		sendMessage(message);
+	}
+
+	private static Map<Integer, TrackedMessageHandler> trackedHandlers = new ConcurrentHashMap<>();
+
+	public static TrackedMessageHandler removeHandlerForId(int messageId) {
+		return trackedHandlers.remove(messageId);
+	}
+
+	public static void sendTrackedMessage(TrackedMessage message, TrackedMessageHandler handler) {
+		int messageId = message.getMessageId();
+		trackedHandlers.put(messageId, handler);
+
+		sendMessage(message);
 	}
 }

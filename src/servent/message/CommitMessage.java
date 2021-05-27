@@ -3,7 +3,7 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitFile;
 
-public class CommitMessage extends BasicMessage {
+public class CommitMessage extends SendAndForgetMessage {
 
     private final SillyGitFile sgf;
 

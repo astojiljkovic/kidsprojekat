@@ -24,7 +24,7 @@ public class WelcomeHandler implements MessageHandler {
 			AppConfig.chordState.init(welcomeMsg);
 			
 			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.getSuccessorInfo(), "");
-			MessageUtil.sendMessage(um);
+			MessageUtil.sendAndForgetMessage(um);
 			
 		} else {
 			Logger.timestampedErrorPrint("Welcome handler got a message that is not WELCOME");

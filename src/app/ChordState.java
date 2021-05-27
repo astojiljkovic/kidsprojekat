@@ -10,6 +10,10 @@ import java.util.*;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
+import servent.handler.AddHandler;
+import servent.handler.AddResponseHandler;
+import servent.handler.PullHandler;
+import servent.handler.PullResponseHandler;
 import servent.message.*;
 import servent.message.util.MessageUtil;
 
@@ -338,16 +342,16 @@ public class ChordState {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
-//		AddMessage am = new AddMessage(message.getSender(), nextNode, sgf);
-//		am.newMessageFor(nextNode)
-//		am.copyContextFrom(message); // new AddMessage(servent, nextNode, sgf);
-		MessageUtil.sendMessage(message.newMessageFor(nextNode));
+//		MessageUtil.sendMessage(message.newMessageFor(nextNode));
+		MessageUtil.sendTrackedMessage(message.newMessageFor(nextNode), new AddHandler());
 	}
 
 	private void sendAddResponseMessage(String path, SillyGitStorageFile sgsf, AddMessage receivedMessage) {
 		AddResponseMessage responseMessage = new AddResponseMessage(myServentInfo, receivedMessage.getSender(), path, sgsf);
 		responseMessage.copyContextFrom(receivedMessage);
-		MessageUtil.sendMessage(responseMessage);
+
+		MessageUtil.sendTrackedMessage(responseMessage, new AddResponseHandler());
+//		MessageUtil.sendMessage(responseMessage);
 	}
 	
 	/**
@@ -397,13 +401,15 @@ public class ChordState {
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		PullMessage messageToForward = originalMessage.newMessageFor(nextNode);
-		MessageUtil.sendMessage(messageToForward);
+		MessageUtil.sendTrackedMessage(messageToForward, new PullHandler());
+//		MessageUtil.sendMessage(messageToForward);
 	}
 
 	private void sendPullResponseMessage(SillyGitStorageFile sgsf, PullMessage askMessage) {
 		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), sgsf);
 		responseMessage.copyContextFrom(askMessage);
-		MessageUtil.sendMessage(responseMessage);
+		MessageUtil.sendTrackedMessage(responseMessage, new PullResponseHandler());
+//		MessageUtil.sendMessage(responseMessage);
 	}
 
 	//Remove
@@ -417,7 +423,7 @@ public class ChordState {
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
 			RemoveMessage rm = new RemoveMessage(myServentInfo, nextNode, removePath);
-			MessageUtil.sendMessage(rm);
+			MessageUtil.sendAndForgetMessage(rm);
 		}
 	}
 
@@ -464,12 +470,12 @@ public class ChordState {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 		CommitMessage cm = new CommitMessage(servent, nextNode, sgf);
-		MessageUtil.sendMessage(cm);
+		MessageUtil.sendAndForgetMessage(cm);
 	}
 
 	private void sendCommitResponseMessage(String path, SillyGitStorageFile sgsf, ServentInfo receiver) {
 		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, receiver, path, sgsf);
-		MessageUtil.sendMessage(cm);
+		MessageUtil.sendAndForgetMessage(cm);
 	}
 
 	public void getViewFile(String resolvingConflictPath) {

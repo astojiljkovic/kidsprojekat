@@ -2,7 +2,7 @@ package servent.message;
 
 import app.ServentInfo;
 
-public class NewNodeMessage extends BasicMessage {
+public class NewNodeMessage extends SendAndForgetMessage {
 
 	private static final long serialVersionUID = 3899837286642127636L;
 

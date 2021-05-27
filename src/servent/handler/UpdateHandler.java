@@ -39,9 +39,9 @@ public class UpdateHandler implements MessageHandler {
 					newMessageText = clientMessage.getMessageText() + "," + currentNodeInfo;
 				}
 
-				Message nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.getSuccessorInfo(),
+				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.getSuccessorInfo(),
 						newMessageText);
-				MessageUtil.sendMessage(nextUpdate);
+				MessageUtil.sendAndForgetMessage(nextUpdate);
 			} else {
 				String messageText = clientMessage.getMessageText(); //ip:port:team,ip:port:team,ip:port:team...
 				String[] ipPortTeams = messageText.split(",");

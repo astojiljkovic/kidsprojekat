@@ -7,18 +7,18 @@ import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.PullResponseMessage;
 
-public class TellGetHandler implements MessageHandler {
+public class PullResponseHandler extends TrackedMessageHandler {
 
-	private Message clientMessage;
-	
-	public TellGetHandler(Message clientMessage) {
-		this.clientMessage = clientMessage;
-	}
+//	private Message clientMessage;
+//
+//	public PullResponseHandler(Message clientMessage) {
+//		this.clientMessage = clientMessage;
+//	}
 	
 	@Override
 	public void run() {
-		if (clientMessage.getMessageType() == MessageType.PULL_RESPONSE) {
-			PullResponseMessage pullResponseMessage = (PullResponseMessage) clientMessage;
+		if (message.getMessageType() == MessageType.PULL_RESPONSE) {
+			PullResponseMessage pullResponseMessage = (PullResponseMessage) message;
 			String requestedPath = pullResponseMessage.getMessageText();
 
 			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();

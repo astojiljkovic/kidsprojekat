@@ -66,7 +66,7 @@ public class ServentInitializer implements Runnable {
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
 
 			NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
-			MessageUtil.sendMessage(nnm);
+			MessageUtil.sendAndForgetMessage(nnm);
 		}
 	}
 

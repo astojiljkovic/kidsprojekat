@@ -22,6 +22,10 @@ public abstract class TrackedMessage extends BasicMessage {
         context = new Context(sender, getMessageId());
     }
 
+    public int getInitialId() {
+        return context.initiatorMessageId;
+    }
+
 //    private TrackedMessage(MessageType type, ServentInfo sender, ServentInfo receiver, String messageText, Context context) {
 //        super(type, sender, receiver, messageText);
 //        this.context = context;
