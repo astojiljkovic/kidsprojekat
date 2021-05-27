@@ -45,11 +45,17 @@ public class MergeResolver {
         try {
             state = MergeState.WAITING_FOR_VIEW;
             AppConfig.chordState.getViewFile(resolvingConflictPath);
+//            Logger.timestampedStandardPrint("[Merge Resolver] Temp file successfully fetched.");
+//            state = MergeState.WAITING_FOR_INPUT;
+            viewResponseReceived(true);
         } catch (FileDoesntExistStorageException e) {
             state = MergeState.WAITING_FOR_INPUT;
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'view' file should be on our node but not found");
         } catch (DataNotOnOurNodeException e) {
             Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Fetching, please wait...");
+        } catch (UnexpectedPullResponseException e) {
+            Logger.timestampedErrorPrint("[Merge Resolver] Unexpected pull response.");
+            state = MergeState.WAITING_FOR_INPUT;
         }
 
     }
@@ -77,11 +83,16 @@ public class MergeResolver {
 
         try {
             AppConfig.chordState.pullFileForUs(resolvingConflictPath, -1, PullType.CONFLICT_PULL);
+//            Logger.timestampedStandardPrint("[Merge Resolver] Conflict successfully resolved - " + resolvingConflictPath);
+            pullResponseReceived(true);
         } catch (FileDoesntExistStorageException e) {
             state = MergeState.WAITING_FOR_INPUT;
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'pull' file should be on our node but not found");
         } catch (DataNotOnOurNodeException e) {
             Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Pulling, please wait...");
+        } catch (UnexpectedPullResponseException e) {
+            Logger.timestampedErrorPrint("[Merge Resolver] Unexpected pull response");
+            state = MergeState.WAITING_FOR_INPUT;
         }
     }
 
@@ -109,6 +120,7 @@ public class MergeResolver {
 
         try {
             AppConfig.chordState.commitFileFromMyWorkDir(resolvingConflictPath, true);
+            pushResponseReceived(true);
         } catch (FileAlreadyAddedStorageException | CommitConflictStorageException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - failed to force commit please try again or abort");
             state = MergeState.WAITING_FOR_INPUT;
@@ -117,6 +129,9 @@ public class MergeResolver {
             state = MergeState.WAITING_FOR_INPUT;
         } catch (FileDoesntExistStorageException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'push' file should be in our storage, but not found");
+            state = MergeState.WAITING_FOR_INPUT;
+        } catch (UnespectedPushResponseException e) {
+            Logger.timestampedErrorPrint("[Merge Resolver] Unexpected push response");
             state = MergeState.WAITING_FOR_INPUT;
         }
     }

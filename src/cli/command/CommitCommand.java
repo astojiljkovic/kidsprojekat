@@ -18,10 +18,10 @@ public class CommitCommand implements CLICommand {
 
     @Override
     public void execute(String args) {
-        String removePath = args;
+        String commitPath = args;
 
         try {
-            AppConfig.chordState.commitFileFromMyWorkDir(removePath, false);
+            AppConfig.chordState.commitFileFromMyWorkDir(commitPath, false);
         } catch (FileNotFoundException e) {
             Logger.timestampedErrorPrint("Cannot commit file - Doesn't exist in my work dir: " + e);
         } catch (FileAlreadyAddedStorageException e) {
@@ -32,6 +32,7 @@ public class CommitCommand implements CLICommand {
             Logger.timestampedErrorPrint("Cannot commit file - File must be added before comitting: " + e);
         } catch (CommitConflictStorageException e) {
             Logger.timestampedErrorPrint("Cannot commit file - There was a conflict: " + e);
+            AppConfig.mergeResolver.addConflictToResolve(commitPath);
         }
     }
 }

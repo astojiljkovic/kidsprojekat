@@ -45,9 +45,6 @@ public class PullResponseHandler extends ResponseMessageHandler {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
 						AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
-						if (pullType == CONFLICT_PULL) {
-							AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
-						}
 						break;
 					case VIEW:
 						if (sgsf != null) {
