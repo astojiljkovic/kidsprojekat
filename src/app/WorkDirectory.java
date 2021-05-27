@@ -8,7 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class WorkDirectory {
     private final Map<String, String> versionHashes = new HashMap<>();
@@ -19,20 +21,37 @@ public class WorkDirectory {
         this.root = root;
     }
 
-    public SillyGitFile getFileForPath(String path) throws FileNotFoundException {
-        File fileToAdd = fileForRelativePathToWorkDir(path);
+    public List<SillyGitFile> getFileForPath(String pathRelativeToWorkDir) throws FileNotFoundException {
+        File fileToAdd = fileForRelativePathToWorkDir(pathRelativeToWorkDir);
 
         if (!fileToAdd.exists()) {
             throw new FileNotFoundException();
         }
 
         try {
-            String content = Files.readString(Path.of(fileToAdd.toURI()));
+            if (fileToAdd.isDirectory()) {
+                return Files.list(fileToAdd.toPath()) // chord/s0_work/dir/bananica...
+                        .map(absolutePath -> { // dir/bananica
+                            return root.toPath().relativize(absolutePath).toString();
+                        })
+                        .map(this::getSgf)
+                        .collect(Collectors.toList());
+            }
 
-            if(versionHashes.containsKey(path)) {
-                return SillyGitFile.newVersionedFile(path, content, versionHashes.get(path));
+            return List.of(getSgf(pathRelativeToWorkDir));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private SillyGitFile getSgf(String pathRelativeToWorkDir) {
+        try {
+            String content = Files.readString(Path.of(pathRelativeToWorkDir));
+
+            if(versionHashes.containsKey(pathRelativeToWorkDir)) {
+                return SillyGitFile.newVersionedFile(pathRelativeToWorkDir, content, versionHashes.get(pathRelativeToWorkDir));
             } else {
-                return SillyGitFile.newUnversionedFile(path, content);
+                return SillyGitFile.newUnversionedFile(pathRelativeToWorkDir, content);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -59,6 +78,9 @@ public class WorkDirectory {
         versionHashes.remove(path);
     }
 
+    //returns chord/s0_work/filename
+    //Never use *return* of this to create GitSillyFile / get versionHash key...
+    //Use it only for working with file system
     private File fileForRelativePathToWorkDir(String fileName) {
         return new File(root, fileName);
     }
