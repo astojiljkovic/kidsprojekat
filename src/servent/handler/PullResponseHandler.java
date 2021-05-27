@@ -27,13 +27,7 @@ public class PullResponseHandler extends ResponseMessageHandler {
 
 			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();
 
-
-//			if (pullType == CONFLICT_PULL) {
-//				Logger.timestampedStandardPrint("pull type in if " + (pullType == CONFLICT_PULL));
-//				AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
-//			}
 			try {
-				Logger.timestampedStandardPrint("pull type before switch " + pullType);
 				switch (pullType) {
 					case PULL:
 						if (sgsf != null) {
@@ -51,15 +45,14 @@ public class PullResponseHandler extends ResponseMessageHandler {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
 						AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
-						Logger.timestampedStandardPrint("pull type before if " + pullType);
 						if (pullType == CONFLICT_PULL) {
-							Logger.timestampedStandardPrint("pull type in if " + (pullType == CONFLICT_PULL));
 							AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
 						}
 						break;
 					case VIEW:
 						if (sgsf != null) {
 							Logger.timestampedStandardPrint("Successfully fetched 'view' file for " + sgsf.getPathInStorageDir());
+							AppConfig.chordState.storeFileInWorkDir(sgsf, true);
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
