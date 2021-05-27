@@ -21,14 +21,10 @@ public class AddHandler implements MessageHandler {
 	@Override
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.ADD) {
-			try {
 				AddMessage addMessage = (AddMessage) clientMessage;
 
 				List<SillyGitFile> sillyGitFiles = addMessage.getSillyGitFiles();
 				AppConfig.chordState.addFileForSomeoneElse(sillyGitFiles, addMessage);
-			} catch (FileAlreadyAddedStorageException e) { //TODO: Da li treba dodati poruku za slucaj da se ne uspe dodavanje?
-				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
-			}
 		} else {
 			Logger.timestampedErrorPrint("Put handler got a message that is not PUT");
 		}

@@ -1,6 +1,7 @@
 package app;
 
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class SillyGitFile implements Serializable {
@@ -36,6 +37,12 @@ public class SillyGitFile implements Serializable {
             return Optional.empty();
         }
         return Optional.of(storageHash);
+    }
+
+    public String getValueToHash() {
+        String somethingToHash = Path.of(pathInWorkDir).getName(0).toString();
+        System.out.println("Hash test - input: " + pathInWorkDir + " output: " + somethingToHash);
+        return somethingToHash;
     }
 
     @Override

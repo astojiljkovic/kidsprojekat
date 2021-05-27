@@ -2,30 +2,28 @@ package servent.message;
 
 import app.ServentInfo;
 import app.SillyGitStorageFile;
+import app.git.add.AddResult;
 
 public class AddResponseMessage extends ResponseMessage {
-    private final SillyGitStorageFile sgsf;
+    private final AddResult addResult;
 
-    public AddResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, SillyGitStorageFile sgsf) {
-        super(MessageType.ADD_RESPONSE, sender, receiver, requestedPath);
-        this.sgsf = sgsf;
+    public AddResponseMessage(ServentInfo sender, ServentInfo receiver, AddResult addResult) {
+        super(MessageType.ADD_RESPONSE, sender, receiver, "");
+        this.addResult = addResult;
     }
 
     @Override
     protected String additionalContentToPrint() {
-        if (sgsf == null) {
-            return "";
-        }
-        return sgsf.getPathInStorageDir() + "|" + sgsf.getContent() + "|" + sgsf.getVersionHash();
+        return addResult.toString();
     }
 
-    public SillyGitStorageFile getSgsf() {
-        return sgsf;
+    public AddResult getAddResult() {
+        return addResult;
     }
 
     @Override
     public AddResponseMessage newMessageFor(ServentInfo next) {
-        AddResponseMessage message = new AddResponseMessage(getSender(), next, getMessageText(), sgsf);
+        AddResponseMessage message = new AddResponseMessage(getSender(), next, addResult);
         message.copyContextFrom(this);
         return message;
     }

@@ -1,12 +1,12 @@
 package app.git.add;
 
-import app.SillyGitFile;
 import app.SillyGitStorageFile;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class AddResult {
+public class AddResult implements Serializable {
     private final List<String> failedPaths;
     private final List<SillyGitStorageFile> successes;
 
@@ -21,5 +21,11 @@ public class AddResult {
 
     public List<SillyGitStorageFile> getSuccesses() {
         return successes;
+    }
+
+    @Override
+    public String toString() {
+        return "AddResult{S:" + getSuccesses().stream().map(SillyGitStorageFile::getPathInStorageDir).collect(Collectors.joining(" "))
+                + "|F:" + String.join(" ", getFailedPaths()) + "}";
     }
 }
