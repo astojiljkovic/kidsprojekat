@@ -7,6 +7,7 @@ import app.storage.FileAlreadyAddedStorageException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 public class AddCommand implements CLICommand {
 
@@ -27,7 +28,7 @@ public class AddCommand implements CLICommand {
 // TODO: 25.5.21. Resi folder
 				AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
 			} catch (FileAlreadyAddedStorageException e) {
-				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
+				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + String.join(" ", e.getPath()));
 			}
 			catch (FileNotFoundException e) {
 				Logger.timestampedErrorPrint("Invalid file path - File doesn't exist: " + e);

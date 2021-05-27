@@ -45,6 +45,7 @@ public class Storage {
         }
 
         try {
+            Files.createDirectories(fileForSillyFile.toPath().getParent());
             Files.writeString(fileForSillyFile.toPath(), content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot write to storage " + fileForSillyFile.getPath());

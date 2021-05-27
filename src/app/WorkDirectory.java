@@ -46,7 +46,8 @@ public class WorkDirectory {
 
     private SillyGitFile getSgf(String pathRelativeToWorkDir) {
         try {
-            String content = Files.readString(Path.of(pathRelativeToWorkDir));
+            File f = fileForRelativePathToWorkDir(pathRelativeToWorkDir);
+            String content = Files.readString(f.toPath());
 
             if(versionHashes.containsKey(pathRelativeToWorkDir)) {
                 return SillyGitFile.newVersionedFile(pathRelativeToWorkDir, content, versionHashes.get(pathRelativeToWorkDir));
