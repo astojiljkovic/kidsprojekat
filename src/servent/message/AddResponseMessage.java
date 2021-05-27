@@ -3,7 +3,7 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitStorageFile;
 
-public class AddResponseMessage extends TrackedMessage {
+public class AddResponseMessage extends ResponseMessage {
     private final SillyGitStorageFile sgsf;
 
     public AddResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, SillyGitStorageFile sgsf) {
