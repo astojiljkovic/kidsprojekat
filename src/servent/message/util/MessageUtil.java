@@ -66,6 +66,7 @@ public class MessageUtil {
 		sendMessage(message);
 	}
 
+	//TODO: remove this duplicate
 	public static void sendAndForgetMessage(TrackedMessage message) { //TODO: delete
 		sendMessage(message);
 	}

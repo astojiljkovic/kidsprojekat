@@ -21,7 +21,7 @@ public class CommitCommand implements CLICommand {
         String removePath = args;
 
         try {
-            AppConfig.chordState.commitFileFromMyWorkDir(removePath);
+            AppConfig.chordState.commitFileFromMyWorkDir(removePath, false);
         } catch (FileNotFoundException e) {
             Logger.timestampedErrorPrint("Cannot commit file - Doesn't exist in my work dir: " + e);
         } catch (FileAlreadyAddedStorageException e) {

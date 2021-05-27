@@ -25,7 +25,7 @@ public class CommitHandler implements MessageHandler {
 			CommitMessage commitMessage = (CommitMessage) clientMessage;
 
 			try {
-				AppConfig.chordState.commitFileFromSomeoneElse(commitMessage.getSgf(), clientMessage.getSender());
+				AppConfig.chordState.commitFileFromSomeoneElse(commitMessage);
 			} catch (FileDoesntExistStorageException e) { //TODO: Da li treba vratiti odgovor requesteru da ne postoji file vise / nikad nije ni addovan?
 				Logger.timestampedErrorPrint("Cannot commit file - File doesn't exist: " + commitMessage.getSgf());
 			} catch (FileNotAddedFirstCommitException e) { //TODO: Da li treba vratiti odgovor requesteru da ne postoji file vise / nikad nije ni addovan?

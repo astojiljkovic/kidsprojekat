@@ -3,7 +3,7 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitStorageFile;
 
-public class CommitResponseMessage extends SendAndForgetMessage {
+public class CommitResponseMessage extends ResponseMessage {
     private final SillyGitStorageFile sgsf;
 
     public CommitResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, SillyGitStorageFile sgsf) {
@@ -21,5 +21,12 @@ public class CommitResponseMessage extends SendAndForgetMessage {
 
     public SillyGitStorageFile getSgsf() {
         return sgsf;
+    }
+
+    @Override
+    public CommitResponseMessage newMessageFor(ServentInfo next) {
+        CommitResponseMessage message = new CommitResponseMessage(getSender(), next, getMessageText(), sgsf);
+        message.copyContextFrom(this);
+        return message;
     }
 }

@@ -100,9 +100,9 @@ public class SimpleServentListener implements Runnable, Cancellable {
 						case COMMIT:
 							messageHandler = new CommitHandler(clientMessage);
 							break;
-						case COMMIT_RESPONSE:
-							messageHandler = new CommitResponseHandler(clientMessage);
-							break;
+//						case COMMIT_RESPONSE:
+//							messageHandler = new CommitResponseHandler(clientMessage);
+//							break;
 						case POISON:
 							break;
 					}

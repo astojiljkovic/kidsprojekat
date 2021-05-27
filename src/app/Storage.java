@@ -52,19 +52,21 @@ public class Storage {
         }
     }
 
-    public SillyGitStorageFile commit(String pathInStorageDir, String content, String versionHash) throws FileDoesntExistStorageException, CommitConflictStorageException {
+    public SillyGitStorageFile commit(String pathInStorageDir, String content, String versionHash, boolean force) throws FileDoesntExistStorageException, CommitConflictStorageException {
         SillyGitStorageFile currentFile = get(pathInStorageDir, LATEST_STORAGE_FILE_VERSION);
 
         int newVersion = currentFile.getVersion() + 1;
 
-        //If hashes are not equal, there is a conflict
-        if (!currentFile.getVersionHash().equals(versionHash)) {
-            throw new CommitConflictStorageException(pathInStorageDir, newVersion);
-        }
+        if (!force) {
+            //If hashes are not equal, there is a conflict
+            if (!currentFile.getVersionHash().equals(versionHash)) {
+                throw new CommitConflictStorageException(pathInStorageDir, newVersion);
+            }
 
-        //If content is equal, and hashes are equal ^, file is the same
-        if (currentFile.getContent().equals(content)) {
-            return currentFile;
+            //If content is equal, and hashes are equal ^, file is the same
+            if (currentFile.getContent().equals(content)) {
+                return currentFile;
+            }
         }
 
         try {

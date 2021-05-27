@@ -2,18 +2,22 @@ package servent.handler;
 
 import app.AppConfig;
 import app.Logger;
+import app.PullType;
 import app.SillyGitStorageFile;
-import servent.message.Message;
+import app.merge.UnexpectedPullResponseException;
 import servent.message.MessageType;
 import servent.message.PullResponseMessage;
 
-public class PullResponseHandler extends ResponseMessageHandler {
+import static app.PullType.CONFLICT_PULL;
 
-//	private Message clientMessage;
-//
-//	public PullResponseHandler(Message clientMessage) {
-//		this.clientMessage = clientMessage;
-//	}
+public class PullResponseHandler extends ResponseMessageHandler {
+//	private boolean shouldSaveAsTemp;
+	private PullType pullType;
+
+	public PullResponseHandler(PullType pullType) {
+		super();
+		this.pullType = pullType;
+	}
 	
 	@Override
 	public void run() {
@@ -23,12 +27,64 @@ public class PullResponseHandler extends ResponseMessageHandler {
 
 			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();
 
-			if (sgsf == null) {
-				Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
-			} else {
-				AppConfig.workDirectory.addFile(sgsf.getPathInStorageDir() , sgsf.getContent(), sgsf.getVersionHash());
-				Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+			try {
+				switch (pullType) {
+					case PULL:
+					case CONFLICT_PULL:
+						if (sgsf != null) {
+							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
+							Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+						} else {
+							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
+						}
+
+						if (pullType == CONFLICT_PULL) {
+							AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
+						}
+					case VIEW:
+						if (sgsf != null) {
+							Logger.timestampedStandardPrint("Successfully fetched 'view' file for " + sgsf.getPathInStorageDir());
+						} else {
+							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
+						}
+						AppConfig.mergeResolver.viewResponseReceived(sgsf != null);
+				}
+			} catch (UnexpectedPullResponseException e) {
+				Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
 			}
+//			if (shouldSaveAsTemp) { //conflict resolution
+//				if (sgsf == null) {
+//					try {
+//						AppConfig.mergeResolver.viewResponseReceived(false);
+//					} catch (UnexpectedPullResponseException e) {
+//						Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
+//					}
+//				} else {
+//
+//				}
+//			}
+
+//			if (sgsf == null) { //File not found in system
+//				if (shouldSaveAsTemp) { //is conflict resolution (pull)
+//					try {
+//						AppConfig.mergeResolver.pullResponseReceived(false);
+//					} catch (UnexpectedPullResponseException e) {
+//						Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
+//					}
+//				} else {
+//					Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
+//				}
+//			} else {
+//				AppConfig.chordState.storeFileInWorkDir(sgsf, shouldSaveAsTemp);
+//				Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+//				if (shouldSaveAsTemp) {
+//					try {
+//						AppConfig.mergeResolver.viewResponseReceived();
+//					} catch (UnexpectedPullResponseException e) {
+//						Logger.timestampedErrorPrint("Merge resolver didn't expect view response");
+//					}
+//				}
+//			}
 		} else {
 			Logger.timestampedErrorPrint("Tell get handler got a message that is not TELL_GET");
 		}

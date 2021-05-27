@@ -1,5 +1,7 @@
 package app;
 
+import app.merge.MergeResolver;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,6 +20,8 @@ import java.util.stream.Stream;
  *
  */
 public class AppConfig {
+
+	public static MergeResolver mergeResolver = new MergeResolver();
 
 	public static WorkDirectory workDirectory;
 	public static Storage storage;
