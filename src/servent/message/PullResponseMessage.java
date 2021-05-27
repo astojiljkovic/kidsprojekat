@@ -3,7 +3,7 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitStorageFile;
 
-public class PullResponseMessage extends TrackedMessage {
+public class PullResponseMessage extends ResponseMessage {
 
 	private static final long serialVersionUID = -6213394344524749872L;
 	private final SillyGitStorageFile sgsf;

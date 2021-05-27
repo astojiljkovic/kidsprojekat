@@ -9,7 +9,7 @@ import servent.message.MessageType;
 
 import javax.sound.midi.Track;
 
-public class AddResponseHandler extends TrackedMessageHandler {
+public class AddResponseHandler extends ResponseMessageHandler {
 
 //	private Message clientMessage;
 

@@ -1,5 +1,14 @@
 package servent.message;
 
-public class ResponseMessage extends BasicMessage {
+import app.ServentInfo;
 
+public abstract class ResponseMessage extends TrackedMessage {
+
+    public ResponseMessage(MessageType type, ServentInfo sender, ServentInfo receiver, String messageText) {
+        super(type, sender, receiver, messageText);
+    }
+
+    public void tieResponseTo(TrackedMessage tm) {
+        copyContextFrom(tm);
+    }
 }

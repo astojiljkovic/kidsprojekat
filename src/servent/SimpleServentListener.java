@@ -13,6 +13,7 @@ import app.Cancellable;
 import app.Logger;
 import servent.handler.*;
 import servent.message.Message;
+import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
 import servent.message.util.MessageUtil;
 
@@ -55,9 +56,9 @@ public class SimpleServentListener implements Runnable, Cancellable {
 
 				MessageHandler messageHandler = new NullHandler(clientMessage);
 
-				if (clientMessage instanceof TrackedMessage) {
-					TrackedMessage trackedMessage = (TrackedMessage) clientMessage;
-					TrackedMessageHandler handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId()); //TODO: crashes when handler is null
+				if (clientMessage instanceof ResponseMessage) {
+					ResponseMessage trackedMessage = (ResponseMessage) clientMessage;
+					ResponseMessageHandler handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId()); //TODO: crashes when handler is null
 					handler.setMessage(trackedMessage);
 					messageHandler = handler;
 				}
@@ -81,6 +82,18 @@ public class SimpleServentListener implements Runnable, Cancellable {
 						case UPDATE:
 							messageHandler = new UpdateHandler(clientMessage);
 							break;
+						case ADD:
+							messageHandler = new AddHandler(clientMessage);
+							break;
+//						case ADD_RESPONSE:
+//							messageHandler = new AddResponseHandler(clientMessage);
+//							break;
+						case PULL:
+							messageHandler = new PullHandler(clientMessage);
+							break;
+//						case PULL_RESPONSE:
+//							messageHandler = new TellGetHandler(clientMessage);
+//							break;
 						case REMOVE:
 							messageHandler = new RemoveHandler(clientMessage);
 							break;

@@ -6,18 +6,18 @@ import servent.message.PullMessage;
 import servent.message.Message;
 import servent.message.MessageType;
 
-public class PullHandler extends TrackedMessageHandler {
+public class PullHandler implements MessageHandler {
 
-//	private Message clientMessage;
+	private Message clientMessage;
 	
-//	public PullHandler(Message clientMessage) {
-//		this.clientMessage = clientMessage;
-//	}
+	public PullHandler(Message clientMessage) {
+		this.clientMessage = clientMessage;
+	}
 	
 	@Override
 	public void run() {
-		if (message.getMessageType() == MessageType.PULL) {
-			PullMessage pullMessage = (PullMessage) message;
+		if (clientMessage.getMessageType() == MessageType.PULL) {
+			PullMessage pullMessage = (PullMessage) clientMessage;
 
 			AppConfig.chordState.pullFileForSomeoneElse(pullMessage);
 		} else {

@@ -7,7 +7,7 @@ import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.PullResponseMessage;
 
-public class PullResponseHandler extends TrackedMessageHandler {
+public class PullResponseHandler extends ResponseMessageHandler {
 
 //	private Message clientMessage;
 //
