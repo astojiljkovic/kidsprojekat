@@ -15,7 +15,10 @@ public class PullCommand implements CLICommand {
 	public void execute(String args) {
 		try {
 			String []splitArgs = args.split(" ");
-			if (splitArgs.length == 2) { //Pull file from system
+			if (splitArgs.length == 0 && AppConfig.mergeResolver.isWaitingForInput()) { //Conflict resolution pull
+				AppConfig.mergeResolver.pull();
+
+			} else { //Pull file from system
 				String filePath;
 				int version = Storage.LATEST_STORAGE_FILE_VERSION;
 				if (splitArgs.length == 2) {
@@ -28,8 +31,6 @@ public class PullCommand implements CLICommand {
 				AppConfig.chordState.pullFileForUs(filePath, version, PullType.PULL);
 
 				Logger.timestampedStandardPrint("Successfully pulled file " + filePath);
-			} else { //Conflict resolution pull
-				AppConfig.mergeResolver.pull();
 			}
 		} catch (FileDoesntExistStorageException e) {
 			Logger.timestampedStandardPrint("No such file: " + args);

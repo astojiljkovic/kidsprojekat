@@ -154,4 +154,8 @@ public class MergeResolver {
         }
         resolveCurrentConflict(true);
     }
+
+    public boolean isWaitingForInput(){
+        return state == MergeState.WAITING_FOR_INPUT;
+    }
 }
