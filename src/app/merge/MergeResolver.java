@@ -111,11 +111,12 @@ public class MergeResolver {
             AppConfig.chordState.commitFileFromMyWorkDir(resolvingConflictPath, true);
         } catch (FileAlreadyAddedStorageException | CommitConflictStorageException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - failed to force commit please try again or abort");
+            state = MergeState.WAITING_FOR_INPUT;
         } catch (FileNotAddedFirstCommitException | FileNotFoundException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - trying to push file that was never added");
+            state = MergeState.WAITING_FOR_INPUT;
         } catch (FileDoesntExistStorageException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'push' file should be in our storage, but not found");
-        } finally {
             state = MergeState.WAITING_FOR_INPUT;
         }
     }
