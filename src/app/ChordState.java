@@ -424,6 +424,7 @@ public class ChordState {
 
 		PullMessage message = new PullMessage(myServentInfo, nextNode, filePath, version);
 
+		Logger.timestampedStandardPrint("pull type before sending " + pullType);
 		MessageUtil.sendTrackedMessageAwaitingResponse(message, new PullResponseHandler(pullType));
 	}
 

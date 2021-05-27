@@ -17,7 +17,6 @@ public class PullCommand implements CLICommand {
 			String []splitArgs = args.split(" ");
 			if (splitArgs.length == 0 && AppConfig.mergeResolver.isWaitingForInput()) { //Conflict resolution pull
 				AppConfig.mergeResolver.pull();
-
 			} else { //Pull file from system
 				String filePath;
 				int version = Storage.LATEST_STORAGE_FILE_VERSION;

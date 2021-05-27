@@ -11,7 +11,7 @@ import servent.message.PullResponseMessage;
 import static app.PullType.CONFLICT_PULL;
 
 public class PullResponseHandler extends ResponseMessageHandler {
-//	private boolean shouldSaveAsTemp;
+
 	private PullType pullType;
 
 	public PullResponseHandler(PullType pullType) {
@@ -27,9 +27,21 @@ public class PullResponseHandler extends ResponseMessageHandler {
 
 			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();
 
+
+//			if (pullType == CONFLICT_PULL) {
+//				Logger.timestampedStandardPrint("pull type in if " + (pullType == CONFLICT_PULL));
+//				AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
+//			}
 			try {
+				Logger.timestampedStandardPrint("pull type before switch " + pullType);
 				switch (pullType) {
 					case PULL:
+						if (sgsf != null) {
+							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
+							Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+						} else {
+							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
+						}
 					case CONFLICT_PULL:
 						if (sgsf != null) {
 							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
@@ -37,8 +49,10 @@ public class PullResponseHandler extends ResponseMessageHandler {
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
-
+						AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
+						Logger.timestampedStandardPrint("pull type before if " + pullType);
 						if (pullType == CONFLICT_PULL) {
+							Logger.timestampedStandardPrint("pull type in if " + (pullType == CONFLICT_PULL));
 							AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
 						}
 					case VIEW:
