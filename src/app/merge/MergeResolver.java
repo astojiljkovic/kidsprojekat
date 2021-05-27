@@ -155,6 +155,8 @@ public class MergeResolver {
         } else {
             Logger.timestampedStandardPrint("[Merge Resolver] Conflict successfully resolved - " + resolvingConflictPath);
         }
+        AppConfig.workDirectory.removeFileForPath(resolvingConflictPath + ".tmp");
+
         resolvingConflictPath = null;
         state = MergeState.WAITING_FOR_CONFLICT;
         if (conflictPaths.size() > 0) {
