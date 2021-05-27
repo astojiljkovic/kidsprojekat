@@ -9,23 +9,20 @@ import java.io.FileNotFoundException;
 
 public class ViewCommand implements CLICommand {
 
-	@Override
-	public String commandName() {
-		return "view";
-	}
+    @Override
+    public String commandName() {
+        return "view";
+    }
 
-	@Override
-	public void execute(String args) {
-		if (args != null || !args.isEmpty()) {
+    @Override
+    public void execute(String args) {
 
-			try {
-				AppConfig.mergeResolver.view();
-			} catch (NotReadyForInputException e) {
-				Logger.timestampedErrorPrint("Invalid command 'view' - Merge resolver not ready for input");
-			}
-		} else {
-			Logger.timestampedErrorPrint("Invalid command for view - " + args);
-		}
-	}
+        try {
+            AppConfig.mergeResolver.view();
+        } catch (NotReadyForInputException e) {
+            Logger.timestampedErrorPrint("Invalid command 'view' - Merge resolver not ready for input");
+        }
+
+    }
 
 }

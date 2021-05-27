@@ -42,6 +42,7 @@ public class PullResponseHandler extends ResponseMessageHandler {
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
+						break;
 					case CONFLICT_PULL:
 						if (sgsf != null) {
 							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
@@ -55,6 +56,7 @@ public class PullResponseHandler extends ResponseMessageHandler {
 							Logger.timestampedStandardPrint("pull type in if " + (pullType == CONFLICT_PULL));
 							AppConfig.mergeResolver.pullResponseReceived(sgsf != null);
 						}
+						break;
 					case VIEW:
 						if (sgsf != null) {
 							Logger.timestampedStandardPrint("Successfully fetched 'view' file for " + sgsf.getPathInStorageDir());
@@ -62,6 +64,7 @@ public class PullResponseHandler extends ResponseMessageHandler {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
 						AppConfig.mergeResolver.viewResponseReceived(sgsf != null);
+						break;
 				}
 			} catch (UnexpectedPullResponseException e) {
 				Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
