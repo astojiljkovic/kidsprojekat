@@ -3,6 +3,8 @@ package cli.command;
 import app.AppConfig;
 import app.Logger;
 import app.SillyGitFile;
+import app.SillyGitStorageFile;
+import app.git.add.AddResult;
 import app.storage.FileAlreadyAddedStorageException;
 
 import java.io.FileNotFoundException;
@@ -20,15 +22,20 @@ public class AddCommand implements CLICommand {
 	public void execute(String args) {
 		String[] splitArgs = args.split(" ");
 
-		//add bananica.txt
 		if (splitArgs.length != 0) {
 			String pathToFile = args;
 
 			try {
-// TODO: 25.5.21. Resi folder
-				AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
-			} catch (FileAlreadyAddedStorageException e) {
-				Logger.timestampedErrorPrint("Cannot add file - File already exists: " + String.join(" ", e.getPath()));
+				AddResult addResult = AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
+
+				if (addResult.getFailedPaths().isEmpty() && addResult.getSuccesses().isEmpty()) {
+					Logger.timestampedStandardPrint("Files will be added to the system...");
+				} else {
+					Logger.timestampedStandardPrint("Local add completed!");
+					Logger.timestampedStandardPrint("Results:");
+					Logger.timestampedStandardPrint("Success - " + addResult.getSuccesses().stream().map(SillyGitStorageFile::getPathInStorageDir).collect(Collectors.joining(" ")));
+					Logger.timestampedStandardPrint("Failures - " + String.join(" ", addResult.getFailedPaths()));
+				}
 			}
 			catch (FileNotFoundException e) {
 				Logger.timestampedErrorPrint("Invalid file path - File doesn't exist: " + e);

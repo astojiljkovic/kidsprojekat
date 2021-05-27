@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import app.git.add.AddResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
@@ -310,7 +311,7 @@ public class ChordState {
 	}
 
 	//Add
-	public void addFileFromMyWorkDir(String path) throws FileAlreadyAddedStorageException, FileNotFoundException {
+	public AddResult addFileFromMyWorkDir(String path) throws FileNotFoundException {
 
 		//A list contains either only one file, or list of files the same dir
 		List<SillyGitFile> sillyGitFiles = workDirectory.getFileForPath(path);
@@ -319,21 +320,22 @@ public class ChordState {
 		int key = chordHash(referenceFile.hashCode());
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
 			ArrayList<String> failedPaths = new ArrayList<>();
+			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
 			for (SillyGitFile sgf : sillyGitFiles) { //TODO: verovatno ne valja
 				try {
 					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
 					workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
+					successes.add(sgsf);
 				} catch (FileAlreadyAddedStorageException e) {
 					failedPaths.addAll(e.getPath());
 				}
 			}
 
-			if (!failedPaths.isEmpty()) {
-				throw new FileAlreadyAddedStorageException(failedPaths);
-			}
+			return new AddResult(failedPaths, successes);
 		} else {
 			sendAddFilesForMe(sillyGitFiles);
+			return new AddResult(List.of(), List.of());
 		}
 	}
 
