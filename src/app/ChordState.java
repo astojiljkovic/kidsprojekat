@@ -10,7 +10,6 @@ import java.util.*;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
-import com.sun.nio.sctp.PeerAddressChangeNotification;
 import servent.message.*;
 import servent.message.util.MessageUtil;
 
@@ -339,9 +338,10 @@ public class ChordState {
 		int key = chordHash(sgf.getPathInWorkDir().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
-		AddMessage am = new AddMessage(message.getSender(), nextNode, sgf);
-		am.copyContextFrom(message); // new AddMessage(servent, nextNode, sgf);
-		MessageUtil.sendMessage(am);
+//		AddMessage am = new AddMessage(message.getSender(), nextNode, sgf);
+//		am.newMessageFor(nextNode)
+//		am.copyContextFrom(message); // new AddMessage(servent, nextNode, sgf);
+		MessageUtil.sendMessage(message.newMessageFor(nextNode));
 	}
 
 	private void sendAddResponseMessage(String path, SillyGitStorageFile sgsf, AddMessage receivedMessage) {
@@ -358,17 +358,31 @@ public class ChordState {
 	 *			<li>-2 if we asked someone else</li>
 	 *		   </ul>
 	 */
-	public void pullFileInWorkDirFromLocalStorage(String filePath, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
+	//pull
+
+	public void pullFileForUs(String filePath, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
 		try {
 			SillyGitStorageFile storageFile = retrieveFileFromOurStorage(filePath, version);
 			workDirectory.addFile(storageFile.getPathInStorageDir(), storageFile.getContent(), storageFile.getVersionHash());
 		} catch (DataNotOnOurNodeException e) {
-			sendAskGetMessage(filePath, version, myServentInfo);
+			PullMessage message = new PullMessage(myServentInfo, myServentInfo, filePath, version);
+			forwardPullMessage(message);
 			throw new DataNotOnOurNodeException();
 		}
 	}
 
-	public SillyGitStorageFile retrieveFileFromOurStorage(String fileName, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
+	public void pullFileForSomeoneElse(PullMessage requestMessage) {
+		try {
+			SillyGitStorageFile sgsf = retrieveFileFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+			sendPullResponseMessage(sgsf, requestMessage);
+		} catch (FileDoesntExistStorageException e) {
+			sendPullResponseMessage(null, requestMessage);
+		} catch (DataNotOnOurNodeException e) {
+			forwardPullMessage(requestMessage);
+		}
+	}
+
+	private SillyGitStorageFile retrieveFileFromOurStorage(String fileName, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
 		int key = chordHash(fileName.hashCode());
 
 		if (isKeyMine(key)) {
@@ -378,12 +392,18 @@ public class ChordState {
 		throw new DataNotOnOurNodeException();
 	}
 
-	public void sendAskGetMessage(String fileName, int version, ServentInfo servent) {
-		int key = chordHash(fileName.hashCode());
+	private void forwardPullMessage(PullMessage originalMessage) {
+		int key = chordHash(originalMessage.getFileName().hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
-		AskGetMessage agm = new AskGetMessage(servent, nextNode, fileName, version);
-		MessageUtil.sendMessage(agm);
+		PullMessage messageToForward = originalMessage.newMessageFor(nextNode);
+		MessageUtil.sendMessage(messageToForward);
+	}
+
+	private void sendPullResponseMessage(SillyGitStorageFile sgsf, PullMessage askMessage) {
+		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), sgsf);
+		responseMessage.copyContextFrom(askMessage);
+		MessageUtil.sendMessage(responseMessage);
 	}
 
 	//Remove

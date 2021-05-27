@@ -1,15 +1,11 @@
 package servent.handler;
 
 import app.AppConfig;
-import app.DataNotOnOurNodeException;
 import app.Logger;
 import app.SillyGitStorageFile;
-import app.storage.FileDoesntExistStorageException;
 import servent.message.AddResponseMessage;
 import servent.message.Message;
 import servent.message.MessageType;
-import servent.message.TellGetMessage;
-import servent.message.util.MessageUtil;
 
 public class AddResponseHandler implements MessageHandler {
 

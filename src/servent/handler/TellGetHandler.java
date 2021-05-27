@@ -2,11 +2,10 @@ package servent.handler;
 
 import app.AppConfig;
 import app.Logger;
-import app.SillyGitFile;
 import app.SillyGitStorageFile;
 import servent.message.Message;
 import servent.message.MessageType;
-import servent.message.TellGetMessage;
+import servent.message.PullResponseMessage;
 
 public class TellGetHandler implements MessageHandler {
 
@@ -18,11 +17,11 @@ public class TellGetHandler implements MessageHandler {
 	
 	@Override
 	public void run() {
-		if (clientMessage.getMessageType() == MessageType.TELL_GET) {
-			TellGetMessage tellGetMessage = (TellGetMessage) clientMessage;
-			String requestedPath = tellGetMessage.getMessageText();
+		if (clientMessage.getMessageType() == MessageType.PULL_RESPONSE) {
+			PullResponseMessage pullResponseMessage = (PullResponseMessage) clientMessage;
+			String requestedPath = pullResponseMessage.getMessageText();
 
-			SillyGitStorageFile sgsf = tellGetMessage.getSgsf();
+			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();
 
 			if (sgsf == null) {
 				Logger.timestampedStandardPrint("No such file with name: " + requestedPath);

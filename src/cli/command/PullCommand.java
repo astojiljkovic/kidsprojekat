@@ -26,7 +26,8 @@ public class PullCommand implements CLICommand {
 				filePath = args;
 			}
 
-			AppConfig.chordState.pullFileInWorkDirFromLocalStorage(filePath, version);
+			AppConfig.chordState.pullFileForUs(filePath, version);
+
 			Logger.timestampedStandardPrint("Successfully pulled file " + filePath);
 		} catch (NumberFormatException e) {
 			Logger.timestampedErrorPrint("Invalid argument for pull: " + args + ". Should be key, which is an int.");

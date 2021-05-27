@@ -4,7 +4,7 @@ import app.ServentInfo;
 
 import java.io.Serializable;
 
-public class TrackedMessage extends BasicMessage {
+public abstract class TrackedMessage extends BasicMessage {
     class Context implements Serializable {
         ServentInfo initiator;
         int initiatorMessageId;
@@ -31,6 +31,7 @@ public class TrackedMessage extends BasicMessage {
 //        TrackedMessage clone = clone();
 //        return new TrackedMessage(getMessageType(), context.initiator, next, getMessageText(), context);
 //    }
+    public abstract TrackedMessage newMessageFor(ServentInfo next);
 
     public void copyContextFrom(TrackedMessage trackedMessage) {
         this.context = trackedMessage.context;

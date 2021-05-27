@@ -22,4 +22,11 @@ public class AddResponseMessage extends TrackedMessage {
     public SillyGitStorageFile getSgsf() {
         return sgsf;
     }
+
+    @Override
+    public AddResponseMessage newMessageFor(ServentInfo next) {
+        AddResponseMessage message = new AddResponseMessage(getSender(), next, getMessageText(), sgsf);
+        message.copyContextFrom(this);
+        return message;
+    }
 }

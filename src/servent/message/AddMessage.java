@@ -22,4 +22,12 @@ public class AddMessage extends TrackedMessage {
 	protected String additionalContentToPrint() {
 		return sgf.getPathInWorkDir() + "|" + sgf.getContent() + "|" + sgf.getStorageHash().orElse("");
 	}
+
+	@Override
+	public AddMessage newMessageFor(ServentInfo next) {
+		AddMessage am = new AddMessage(getSender(), next, sgf);
+		am.copyContextFrom(this);
+		return am;
+	}
+
 }

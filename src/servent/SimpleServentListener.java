@@ -7,7 +7,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 
 import app.AppConfig;
 import app.Cancellable;
@@ -79,10 +78,10 @@ public class SimpleServentListener implements Runnable, Cancellable {
 				case ADD_RESPONSE:
 					messageHandler = new AddResponseHandler(clientMessage);
 					break;
-				case ASK_GET:
+				case PULL:
 					messageHandler = new AskGetHandler(clientMessage);
 					break;
-				case TELL_GET:
+				case PULL_RESPONSE:
 					messageHandler = new TellGetHandler(clientMessage);
 					break;
 				case REMOVE:
