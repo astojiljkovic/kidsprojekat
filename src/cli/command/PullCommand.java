@@ -1,9 +1,8 @@
 package cli.command;
 
 import app.*;
-import app.git.pull.PullResult;
+import app.git.pull.RemoveResult;
 import app.merge.NotReadyForInputException;
-import app.storage.FileDoesntExistStorageException;
 
 import java.util.Optional;
 
@@ -30,7 +29,7 @@ public class PullCommand implements CLICommand {
 					filePath = args;
 				}
 
-				Optional<PullResult> pullResult = AppConfig.chordState.pullFileForUs(filePath, version, PullType.PULL);
+				Optional<RemoveResult> pullResult = AppConfig.chordState.pullFileForUs(filePath, version, PullType.PULL);
 
 				if (pullResult.isEmpty()) {
 					Logger.timestampedStandardPrint("Remote pull initiated for: " + filePath);

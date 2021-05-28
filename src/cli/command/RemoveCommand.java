@@ -6,13 +6,13 @@ public class RemoveCommand implements CLICommand {
 
     @Override
     public String commandName() {
-        return "remove";
+        return "removeFileForUs";
     }
 
     @Override
     public void execute(String args) {
         String removePath = args;
 
-        AppConfig.chordState.remove(removePath);
+        AppConfig.chordState.removeFilesForUs(removePath);
     }
 }

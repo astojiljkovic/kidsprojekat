@@ -80,7 +80,7 @@ public class NewNodeHandler implements MessageHandler {
 					
 				}
 
-				// remove his values from my storage
+				// removeFileForUs his values from my storage
 				List<SillyGitStorageFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
 				
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);

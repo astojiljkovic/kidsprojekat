@@ -6,11 +6,11 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class PullResult implements Serializable {
+public class RemoveResult implements Serializable {
     private final List<String> failedPaths;
     private final List<SillyGitStorageFile> successes;
 
-    public PullResult(List<String> failedPaths, List<SillyGitStorageFile> successes) {
+    public RemoveResult(List<String> failedPaths, List<SillyGitStorageFile> successes) {
         this.failedPaths = failedPaths;
         this.successes = successes;
     }

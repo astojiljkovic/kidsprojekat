@@ -2,12 +2,8 @@ package app.merge;
 
 import app.*;
 import app.git.commit.CommitResult;
-import app.git.pull.PullResult;
-import app.storage.CommitConflictStorageException;
-import app.storage.FileAlreadyAddedStorageException;
-import app.storage.FileDoesntExistStorageException;
+import app.git.pull.RemoveResult;
 
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -49,26 +45,26 @@ public class MergeResolver {
         Logger.timestampedStandardPrint("[Merge Resolver] Initiating view for " + resolvingConflictPath);
         try {
             state = MergeState.WAITING_FOR_VIEW;
-            Optional<PullResult> pullResultOpt = AppConfig.chordState.getViewFile(resolvingConflictPath);
+            Optional<RemoveResult> pullResultOpt = AppConfig.chordState.getViewFile(resolvingConflictPath);
 
             if (pullResultOpt.isEmpty()) {
                 Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Fetching, please wait...");
                 return;
             }
 
-            PullResult pullResult = pullResultOpt.get();
+            RemoveResult removeResult = pullResultOpt.get();
 
-            viewResponseReceived(!pullResult.getSuccesses().isEmpty());
+            viewResponseReceived(!removeResult.getSuccesses().isEmpty());
 //            Logger.timestampedStandardPrint("[Merge Resolver] Temp file successfully fetched.");
 //            state = MergeState.WAITING_FOR_INPUT;
 
             Logger.timestampedStandardPrint("--- Merge resolver VIEW locally");
 
-            for (SillyGitStorageFile sgsf : pullResult.getSuccesses()) { //Should always be just 1
+            for (SillyGitStorageFile sgsf : removeResult.getSuccesses()) { //Should always be just 1
                 Logger.timestampedStandardPrint("--- Success: " + sgsf);
             }
 
-            for (String path : pullResult.getFailedPaths()) {
+            for (String path : removeResult.getFailedPaths()) {
                 Logger.timestampedStandardPrint("--- Failed: " + path); //Should always be just 1
             }
         }
@@ -108,25 +104,25 @@ public class MergeResolver {
         state = MergeState.WAITING_FOR_PULL;
 
         try {
-            Optional<PullResult> pullResultOpt = AppConfig.chordState.pullFileForUs(resolvingConflictPath, -1, PullType.CONFLICT_PULL);
+            Optional<RemoveResult> pullResultOpt = AppConfig.chordState.pullFileForUs(resolvingConflictPath, -1, PullType.CONFLICT_PULL);
 
             if (pullResultOpt.isEmpty()) {
                 Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Pulling, please wait...");
                 return;
             }
 
-            PullResult pullResult = pullResultOpt.get();
+            RemoveResult removeResult = pullResultOpt.get();
 
 //            Logger.timestampedStandardPrint("[Merge Resolver] Conflict successfully resolved - " + resolvingConflictPath);
-            pullResponseReceived(!pullResult.getSuccesses().isEmpty());
+            pullResponseReceived(!removeResult.getSuccesses().isEmpty());
 
             Logger.timestampedStandardPrint("--- Merge resolver pulls locally");
 
-            for (SillyGitStorageFile sgsf : pullResult.getSuccesses()) { //Should always be just 1
+            for (SillyGitStorageFile sgsf : removeResult.getSuccesses()) { //Should always be just 1
                 Logger.timestampedStandardPrint("--- Success: " + sgsf);
             }
 
-            for (String path : pullResult.getFailedPaths()) {
+            for (String path : removeResult.getFailedPaths()) {
                 Logger.timestampedStandardPrint("--- Failed: " + path); //Should always be just 1
             }
 

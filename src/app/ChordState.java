@@ -10,13 +10,14 @@ import java.util.*;
 
 import app.git.add.AddResult;
 import app.git.commit.CommitResult;
-import app.git.pull.PullResult;
+import app.git.pull.RemoveResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
 import servent.handler.AddResponseHandler;
 import servent.handler.CommitResponseHandler;
 import servent.handler.PullResponseHandler;
+import servent.handler.RemoveResponseHandler;
 import servent.message.*;
 import servent.message.util.MessageUtil;
 
@@ -402,8 +403,8 @@ public class ChordState {
 
 	//Pull
 
-	public Optional<PullResult> pullFileForUs(String filePath, int version, PullType pullType) {
-		Optional<PullResult> pullResultOptional = retrieveFilesFromOurStorage(filePath, version);
+	public Optional<RemoveResult> pullFileForUs(String filePath, int version, PullType pullType) {
+		Optional<RemoveResult> pullResultOptional = retrieveFilesFromOurStorage(filePath, version);
 
 		if(pullResultOptional.isEmpty()) {
 			sendPullMessageForMe(filePath, version, pullType);
@@ -425,22 +426,22 @@ public class ChordState {
 	}
 
 	public void pullFileForSomeoneElse(PullMessage requestMessage) {
-		Optional<PullResult> pullResultOpt = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+		Optional<RemoveResult> pullResultOpt = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
 
 		if(pullResultOpt.isEmpty()) {
 			forwardPullMessage(requestMessage);
 		} else {
-			PullResult pullResult = pullResultOpt.get();
-			sendPullResponseMessage(pullResult, requestMessage);
+			RemoveResult removeResult = pullResultOpt.get();
+			sendPullResponseMessage(removeResult, requestMessage);
 		}
 	}
 
-	private Optional<PullResult> retrieveFilesFromOurStorage(String fileName, int version) {
+	private Optional<RemoveResult> retrieveFilesFromOurStorage(String fileName, int version) {
 		int key = hashForFilePath(fileName);
 
 		if (isKeyMine(key)) {
 			Storage.GetResult storageResult = storage.get(fileName, version);
-			return Optional.of(new PullResult(storageResult.getFailedPaths(), storageResult.getSuccesses()));
+			return Optional.of(new RemoveResult(storageResult.getFailedPaths(), storageResult.getSuccesses()));
 		}
 
 		return Optional.empty();
@@ -463,25 +464,71 @@ public class ChordState {
 		MessageUtil.sendTrackedMessageAwaitingResponse(message, new PullResponseHandler(pullType));
 	}
 
-	private void sendPullResponseMessage(PullResult pullResult, PullMessage askMessage) {
-		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), pullResult);
+	private void sendPullResponseMessage(RemoveResult removeResult, PullMessage askMessage) {
+		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), removeResult);
 		responseMessage.copyContextFrom(askMessage);
 		MessageUtil.sendAndForgetMessage(responseMessage);
 	}
 
 	//Remove
 
-	public void remove(String removePath) {
+	public Optional<List<SillyGitStorageFile>> removeFilesForUs(String removePath) {
+
+		Optional<List<SillyGitStorageFile>> locallyRemovedOpt = removeFilesFromOurStorage(removePath);
+
+		if(locallyRemovedOpt.isEmpty()) {
+			sendRemoveMessageForUs(removePath);
+		} else {
+			for(SillyGitStorageFile sgfs: locallyRemovedOpt.get()) {
+				workDirectory.removeFileForPath(sgfs.getPathInStorageDir());
+			}
+		}
+
+		return locallyRemovedOpt;
+	}
+
+	private Optional<List<SillyGitStorageFile>> removeFilesFromOurStorage(String removePath) {
 		int key = hashForFilePath(removePath);
 
 		if (isKeyMine(key)) {
-			storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath)); // TODO: ne radi za dirove
-			workDirectory.removeFileForPath(removePath);
-		} else {
-			ServentInfo nextNode = getNextNodeForKey(key);
-			RemoveMessage rm = new RemoveMessage(myServentInfo, nextNode, removePath);
-			MessageUtil.sendAndForgetMessage(rm);
+			List<SillyGitStorageFile> removedFiles = storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath));
+			return Optional.of(removedFiles);
 		}
+		return Optional.empty();
+	}
+
+	public void removeFileFromSomeoneElse(RemoveMessage message) {
+		Optional<List<SillyGitStorageFile>> removeResultOptional = removeFilesFromOurStorage(message.getRemovePath());
+
+		if(removeResultOptional.isEmpty()) {
+			forwardRemoveMessageForSomeoneElse(message);
+		} else {
+			sendRemoveResponseMessage(message, removeResultOptional.get());
+		}
+	}
+
+	private void sendRemoveMessageForUs(String removePath) {
+		int key = hashForFilePath(removePath);
+
+		ServentInfo nextNode = getNextNodeForKey(key);
+		RemoveMessage rm = new RemoveMessage(myServentInfo, nextNode, removePath);
+
+		MessageUtil.sendTrackedMessageAwaitingResponse(rm, new RemoveResponseHandler());
+	}
+
+	private void forwardRemoveMessageForSomeoneElse(RemoveMessage originalMessage) {
+		int key = hashForFilePath(originalMessage.getRemovePath());
+
+		ServentInfo nextNode = getNextNodeForKey(key);
+
+		RemoveMessage rm = originalMessage.newMessageFor(nextNode);
+		MessageUtil.sendAndForgetMessage(rm);
+	}
+
+	private void sendRemoveResponseMessage(RemoveMessage message, List<SillyGitStorageFile> removedFiles) {
+		RemoveResponseMessage rm = new RemoveResponseMessage(myServentInfo, message.getSender(), message.getRemovePath(), removedFiles);
+		rm.copyContextFrom(message);
+		MessageUtil.sendAndForgetMessage(rm);
 	}
 
 	//Commit
@@ -578,7 +625,7 @@ public class ChordState {
 		MessageUtil.sendAndForgetMessage(cm);
 	}
 
-	public Optional<PullResult> getViewFile(String resolvingConflictPath) {
+	public Optional<RemoveResult> getViewFile(String resolvingConflictPath) {
 		return pullFileForUs(resolvingConflictPath, Storage.LATEST_STORAGE_FILE_VERSION, PullType.VIEW);
 	}
 }

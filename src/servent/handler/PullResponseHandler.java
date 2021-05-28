@@ -4,12 +4,10 @@ import app.AppConfig;
 import app.Logger;
 import app.PullType;
 import app.SillyGitStorageFile;
-import app.git.pull.PullResult;
+import app.git.pull.RemoveResult;
 import app.merge.UnexpectedPullResponseException;
 import servent.message.MessageType;
 import servent.message.PullResponseMessage;
-
-import java.util.List;
 
 public class PullResponseHandler extends ResponseMessageHandler {
 
@@ -27,14 +25,14 @@ public class PullResponseHandler extends ResponseMessageHandler {
 //			String requestedPath = pullResponseMessage.getMessageText(); //TODO: don't use - always empty. <- it's actually good.
 
 //			List<SillyGitStorageFile> sgsf = pullResponseMessage.getSillyGitStorageFiles();
-			PullResult pullResult = pullResponseMessage.getPullResult();
+			RemoveResult removeResult = pullResponseMessage.getPullResult();
 
 			try {
 				switch (pullType) {
 					case PULL:
 						Logger.timestampedStandardPrint("Remote pull result received");
-						Logger.timestampedStandardPrint(pullResult.toString());
-						for (SillyGitStorageFile file: pullResult.getSuccesses()) {
+						Logger.timestampedStandardPrint(removeResult.toString());
+						for (SillyGitStorageFile file: removeResult.getSuccesses()) {
 							AppConfig.chordState.storeFileInWorkDir(file, false);
 						}
 
@@ -49,11 +47,11 @@ public class PullResponseHandler extends ResponseMessageHandler {
 						break;
 					case CONFLICT_PULL:
 						Logger.timestampedStandardPrint("Remote CONFLICT_PULL result received");
-						Logger.timestampedStandardPrint(pullResult.toString());
-						if (pullResult.getSuccesses().size() > 1) {
+						Logger.timestampedStandardPrint(removeResult.toString());
+						if (removeResult.getSuccesses().size() > 1) {
 							throw new RuntimeException("CONFLICT PULL success result should always be at most 1");
 						}
-						for (SillyGitStorageFile file: pullResult.getSuccesses()) {
+						for (SillyGitStorageFile file: removeResult.getSuccesses()) {
 							AppConfig.chordState.storeFileInWorkDir(file, false);
 //							Logger.timestampedStandardPrint("Successfully pulled file " + file.getPathInStorageDir());
 						}
@@ -65,21 +63,21 @@ public class PullResponseHandler extends ResponseMessageHandler {
 //						} else {
 //							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 //						}
-						boolean isSuccess = !pullResult.getSuccesses().isEmpty();
+						boolean isSuccess = !removeResult.getSuccesses().isEmpty();
 						AppConfig.mergeResolver.pullResponseReceived(isSuccess);
 						break;
 					case VIEW:
 						Logger.timestampedStandardPrint("Remote VIEW result received");
-						Logger.timestampedStandardPrint(pullResult.toString());
-						if (pullResult.getSuccesses().size() > 1) {
+						Logger.timestampedStandardPrint(removeResult.toString());
+						if (removeResult.getSuccesses().size() > 1) {
 							throw new RuntimeException("VIEW success result should always be at most 1");
 						}
-						for (SillyGitStorageFile file: pullResult.getSuccesses()) {
+						for (SillyGitStorageFile file: removeResult.getSuccesses()) {
 							AppConfig.chordState.storeFileInWorkDir(file, true);
 //							Logger.timestampedStandardPrint("Successfully pulled file " + file.getPathInStorageDir());
 						}
 
-						boolean isSuccessView = !pullResult.getSuccesses().isEmpty();
+						boolean isSuccessView = !removeResult.getSuccesses().isEmpty();
 						AppConfig.mergeResolver.viewResponseReceived(isSuccessView);
 //						if (sgsf != null) {
 //							for (SillyGitStorageFile file: sgsf) {

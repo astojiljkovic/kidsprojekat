@@ -1,38 +1,34 @@
 package servent.message;
 
 import app.ServentInfo;
-import app.SillyGitStorageFile;
-import app.git.pull.PullResult;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import app.git.pull.RemoveResult;
 
 public class PullResponseMessage extends ResponseMessage {
 
 	private static final long serialVersionUID = -6213394344524749872L;
-	private final PullResult pullResult;
+	private final RemoveResult removeResult;
 
-	public PullResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, PullResult pullResult) {
+	public PullResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, RemoveResult removeResult) {
 		super(MessageType.PULL_RESPONSE, sender, receiver, requestedPath);
-		this.pullResult = pullResult;
+		this.removeResult = removeResult;
 	}
 
 	@Override
 	protected String additionalContentToPrint() {
-		if (pullResult == null) {
+		if (removeResult == null) {
 			return "";
 		}
 
-		return pullResult.toString();
+		return removeResult.toString();
 	}
 
-	public PullResult getPullResult() {
-		return pullResult;
+	public RemoveResult getPullResult() {
+		return removeResult;
 	}
 
 	@Override
 	public PullResponseMessage newMessageFor(ServentInfo next) {
-		PullResponseMessage message = new PullResponseMessage(getSender(), next, getMessageText(), pullResult);
+		PullResponseMessage message = new PullResponseMessage(getSender(), next, getMessageText(), removeResult);
 		message.copyContextFrom(this);
 		return message;
 	}
