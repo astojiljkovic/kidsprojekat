@@ -2,6 +2,7 @@ package servent.message;
 
 import app.ServentInfo;
 import app.SillyGitStorageFile;
+import app.git.pull.PullResult;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,31 +10,29 @@ import java.util.stream.Collectors;
 public class PullResponseMessage extends ResponseMessage {
 
 	private static final long serialVersionUID = -6213394344524749872L;
-	private final List<SillyGitStorageFile> sillyGitStorageFiles;
+	private final PullResult pullResult;
 
-	public PullResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, List<SillyGitStorageFile> sillyGitStorageFiles) {
+	public PullResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, PullResult pullResult) {
 		super(MessageType.PULL_RESPONSE, sender, receiver, requestedPath);
-		this.sillyGitStorageFiles = sillyGitStorageFiles;
+		this.pullResult = pullResult;
 	}
 
 	@Override
 	protected String additionalContentToPrint() {
-		if (sillyGitStorageFiles == null) {
+		if (pullResult == null) {
 			return "";
 		}
 
-		return sillyGitStorageFiles.stream().map(sillyGitStorageFile -> {
-			return "<" + sillyGitStorageFile.getPathInStorageDir() + "|" + sillyGitStorageFile.getContent() + "|" + sillyGitStorageFile.getVersionHash() + ">";
-		}).collect(Collectors.joining(""));
+		return pullResult.toString();
 	}
 
-	public List<SillyGitStorageFile> getSillyGitStorageFiles() {
-		return sillyGitStorageFiles;
+	public PullResult getPullResult() {
+		return pullResult;
 	}
 
 	@Override
 	public PullResponseMessage newMessageFor(ServentInfo next) {
-		PullResponseMessage message = new PullResponseMessage(getSender(), next, getMessageText(), getSillyGitStorageFiles());
+		PullResponseMessage message = new PullResponseMessage(getSender(), next, getMessageText(), pullResult);
 		message.copyContextFrom(this);
 		return message;
 	}

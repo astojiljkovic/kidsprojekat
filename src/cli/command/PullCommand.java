@@ -1,8 +1,11 @@
 package cli.command;
 
 import app.*;
+import app.git.pull.PullResult;
 import app.merge.NotReadyForInputException;
 import app.storage.FileDoesntExistStorageException;
+
+import java.util.Optional;
 
 public class PullCommand implements CLICommand {
 
@@ -27,14 +30,15 @@ public class PullCommand implements CLICommand {
 					filePath = args;
 				}
 
-				AppConfig.chordState.pullFileForUs(filePath, version, PullType.PULL);
+				Optional<PullResult> pullResult = AppConfig.chordState.pullFileForUs(filePath, version, PullType.PULL);
 
-				Logger.timestampedStandardPrint("Successfully pulled file " + filePath);
+				if (pullResult.isEmpty()) {
+					Logger.timestampedStandardPrint("Remote pull initiated for: " + filePath);
+				} else {
+					Logger.timestampedStandardPrint("Local pull results for: " + filePath);
+					Logger.timestampedStandardPrint(pullResult.get().toString());
+				}
 			}
-		} catch (FileDoesntExistStorageException e) {
-			Logger.timestampedStandardPrint("No such file: " + args);
-		} catch (DataNotOnOurNodeException e) {
-			Logger.timestampedStandardPrint("Please wait...");
 		} catch (NotReadyForInputException e) {
 			Logger.timestampedErrorPrint("Invalid command 'pull' - Merge resolver not ready for input");
 		}

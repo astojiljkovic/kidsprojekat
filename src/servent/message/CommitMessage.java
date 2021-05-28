@@ -3,24 +3,29 @@ package servent.message;
 import app.ServentInfo;
 import app.SillyGitFile;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class CommitMessage extends TrackedMessage {
 
-    private final SillyGitFile sgf;
+    private final List<SillyGitFile> filesToCommit;
     private final boolean force;
 
-    public CommitMessage(ServentInfo sender, ServentInfo receiver, SillyGitFile file, boolean force) {
+    public CommitMessage(ServentInfo sender, ServentInfo receiver, List<SillyGitFile> filesToCommit, boolean force) {
         super(MessageType.COMMIT, sender, receiver, "");
-        this.sgf = file;
+        this.filesToCommit = filesToCommit;
         this.force = force;
     }
 
     @Override
     protected String additionalContentToPrint() {
-        return sgf.getPathInWorkDir() + "|" + sgf.getContent() + "|" + sgf.getStorageHash().orElse("") + "|Force:" + force;
+        return filesToCommit.stream().map(sgf -> {
+            return "<" + sgf.getPathInWorkDir() + "|" + sgf.getContent() + "|" + sgf.getStorageHash().orElse("") + ">";
+        }).collect(Collectors.joining()) + "|Force:" + force;
     }
 
-    public SillyGitFile getSgf() {
-        return sgf;
+    public List<SillyGitFile> getFilesToCommit() {
+        return filesToCommit;
     }
 
     public boolean getIsForce() {
@@ -29,7 +34,7 @@ public class CommitMessage extends TrackedMessage {
 
     @Override
     public CommitMessage newMessageFor(ServentInfo next) {
-        CommitMessage am = new CommitMessage(getSender(), next, sgf, force);
+        CommitMessage am = new CommitMessage(getSender(), next, filesToCommit, force);
         am.copyContextFrom(this);
         return am;
     }

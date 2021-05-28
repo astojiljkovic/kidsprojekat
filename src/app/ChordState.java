@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.util.*;
 
 import app.git.add.AddResult;
+import app.git.commit.CommitResult;
+import app.git.pull.PullResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
@@ -316,7 +318,7 @@ public class ChordState {
 	}
 
 	//Add
-	public AddResult addFileFromMyWorkDir(String path) throws FileNotFoundException {
+	public Optional<AddResult> addFileFromMyWorkDir(String path) throws FileNotFoundException {
 
 		//A list contains either only one file, or list of files the same dir
 		List<SillyGitFile> sillyGitFiles = workDirectory.getFileForPath(path);
@@ -329,7 +331,7 @@ public class ChordState {
 			ArrayList<String> failedPaths = new ArrayList<>();
 			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
-			for (SillyGitFile sgf : sillyGitFiles) { //TODO: verovatno ne valja
+			for (SillyGitFile sgf : sillyGitFiles) {
 				try {
 					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
 					workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
@@ -339,10 +341,10 @@ public class ChordState {
 				}
 			}
 
-			return new AddResult(failedPaths, successes);
+			return Optional.of(new AddResult(failedPaths, successes));
 		} else {
 			sendAddFilesForMe(sillyGitFiles);
-			return new AddResult(List.of(), List.of());
+			return Optional.empty();
 		}
 	}
 
@@ -352,7 +354,7 @@ public class ChordState {
 			ArrayList<String> failedPaths = new ArrayList<>();
 			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
-			for (SillyGitFile sgf : sillyGitFiles) { //TODO: verovatno ne valja
+			for (SillyGitFile sgf : sillyGitFiles) {
 				try {
 					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
 					successes.add(sgsf);
@@ -403,16 +405,27 @@ public class ChordState {
 	 */
 	//pull
 
-	public void pullFileForUs(String filePath, int version, PullType pullType) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
+	/**
+	 *
+	 * @param filePath
+	 * @param version
+	 * @param pullType
+	 * @return PullResult will contain empty arrays if pull is forwarded to system for remote fetch
+	 */
+	public Optional<PullResult> pullFileForUs(String filePath, int version, PullType pullType) {
 		try {
-			List<SillyGitStorageFile> storageFiles = retrieveFilesFromOurStorage(filePath, version);
+//			List<SillyGitStorageFile> storageFiles = retrieveFilesFromOurStorage(filePath, version);
+			PullResult pullResult = retrieveFilesFromOurStorage(filePath, version);
 
-			for(SillyGitStorageFile sgsf: storageFiles) {
+			for(SillyGitStorageFile sgsf: pullResult.getSuccesses()) {
 				storeFileInWorkDir(sgsf, pullType == PullType.VIEW);
 			}
+
+			return Optional.of(pullResult);
 		} catch (DataNotOnOurNodeException e) {
 			sendPullMessageForMe(filePath, version, pullType);
-			throw new DataNotOnOurNodeException();
+			return Optional.empty();
+//			throw new DataNotOnOurNodeException();
 		}
 	}
 
@@ -426,20 +439,25 @@ public class ChordState {
 
 	public void pullFileForSomeoneElse(PullMessage requestMessage) {
 		try {
-			List<SillyGitStorageFile> sillyGitStorageFiles = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
-			sendPullResponseMessage(sillyGitStorageFiles, requestMessage);
-		} catch (FileDoesntExistStorageException e) {
-			sendPullResponseMessage(null, requestMessage);
-		} catch (DataNotOnOurNodeException e) {
+			PullResult pullResult = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+//			List<SillyGitStorageFile> sillyGitStorageFiles =
+//			sendPullResponseMessage(sillyGitStorageFiles, requestMessage);
+			sendPullResponseMessage(pullResult, requestMessage);
+		}
+//		catch (FileDoesntExistStorageException e) {
+//			sendPullResponseMessage(null, requestMessage);
+//		}
+		catch (DataNotOnOurNodeException e) {
 			forwardPullMessage(requestMessage);
 		}
 	}
 
-	private List<SillyGitStorageFile> retrieveFilesFromOurStorage(String fileName, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
+	private PullResult retrieveFilesFromOurStorage(String fileName, int version) throws DataNotOnOurNodeException {
 		int key = hashForFilePath(fileName);
 
 		if (isKeyMine(key)) {
-			return storage.get(fileName, version);
+			Storage.GetResult storageResult = storage.get(fileName, version);
+			return new PullResult(storageResult.getFailedPaths(), storageResult.getSuccesses());
 		}
 
 		throw new DataNotOnOurNodeException();
@@ -450,9 +468,7 @@ public class ChordState {
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		PullMessage messageToForward = originalMessage.newMessageFor(nextNode);
-//		MessageUtil.sendTrackedMessage(messageToForward, new PullHandler());
 		MessageUtil.sendAndForgetMessage(messageToForward);
-//		MessageUtil.sendMessage(messageToForward);
 	}
 
 	private void sendPullMessageForMe(String filePath, int version, PullType pullType) {
@@ -464,8 +480,8 @@ public class ChordState {
 		MessageUtil.sendTrackedMessageAwaitingResponse(message, new PullResponseHandler(pullType));
 	}
 
-	private void sendPullResponseMessage(List<SillyGitStorageFile> sgsf, PullMessage askMessage) {
-		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), sgsf);
+	private void sendPullResponseMessage(PullResult pullResult, PullMessage askMessage) {
+		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), pullResult);
 		responseMessage.copyContextFrom(askMessage);
 		MessageUtil.sendAndForgetMessage(responseMessage);
 	}
@@ -487,54 +503,121 @@ public class ChordState {
 
 	//Commit
 
-	public void commitFileFromMyWorkDir(String filePath, boolean force) throws FileNotFoundException, FileAlreadyAddedStorageException, FileDoesntExistStorageException, FileNotAddedFirstCommitException, CommitConflictStorageException {
-		int key = chordHash(filePath.hashCode());
+	public Optional<CommitResult> commitFileFromMyWorkDir(String filePath, boolean force) {
+		ArrayList<String> failedPaths = new ArrayList<>();
+		ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+		ArrayList<SillyGitFile> conflicts = new ArrayList<>();
 
-		//TODO: FIX COMMIT
-//		SillyGitFile fileInWorkDir = workDirectory.getFileForPath(filePath);
-//
-//		if (isKeyMine(key)) {
+		List<SillyGitFile> filesInWorkDir;
+		try {
+			filesInWorkDir = workDirectory.getFileForPath(filePath);
+		} catch (FileNotFoundException e) {
+			failedPaths.add(filePath);
+			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
+		}
+
+		SillyGitFile referenceFile = filesInWorkDir.get(0);
+		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+
+		if (isKeyMine(key)) {
+
+			for (SillyGitFile fileInWorkDir : filesInWorkDir) {
+				try {
+					if (fileInWorkDir.getStorageHash().isEmpty()) {
+						failedPaths.add(fileInWorkDir.getPathInWorkDir());
+						continue;
+					}
+					String hash = fileInWorkDir.getStorageHash().get();
+					SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash, force);
+					workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
+					successes.add(sgfs);
+				} catch (FileDoesntExistStorageException e) {
+					failedPaths.add(fileInWorkDir.getPathInWorkDir());
+				} catch (CommitConflictStorageException e) {
+					conflicts.add(fileInWorkDir);
+				}
+			}
 //			if (fileInWorkDir.getStorageHash().isEmpty()) {
 //				throw new FileNotAddedFirstCommitException();
 //			}
 //			String hash = fileInWorkDir.getStorageHash().get();
 //			SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash, force);
 //			workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
-//		} else {
-//			sendCommitMessageForUs(fileInWorkDir, myServentInfo, force);
-//		}
+			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
+		} else {
+			sendCommitMessageForUs(filesInWorkDir, myServentInfo, force);
+			return Optional.empty();
+		}
 	}
 
-	public void commitFileFromSomeoneElse(CommitMessage message) throws FileDoesntExistStorageException, FileNotAddedFirstCommitException, CommitConflictStorageException {
-		int key = chordHash(message.getSgf().getPathInWorkDir().hashCode());
+	public void commitFileFromSomeoneElse(CommitMessage message) {
+		SillyGitFile referenceFile = message.getFilesToCommit().get(0);
+		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+//		int key = chordHash(message.getSgf().getPathInWorkDir().hashCode());
 		if (isKeyMine(key)) {
-			if (message.getSgf().getStorageHash().isEmpty()) {
-				sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
-				throw new FileNotAddedFirstCommitException();
+			ArrayList<String> failedPaths = new ArrayList<>();
+			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+			ArrayList<SillyGitFile> conflicts = new ArrayList<>();
+
+			for (SillyGitFile sgf: message.getFilesToCommit()) {
+				if (sgf.getStorageHash().isEmpty()) {
+					failedPaths.add(sgf.getPathInWorkDir());
+//					sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
+//					throw new FileNotAddedFirstCommitException();
+				}
+				try {
+					String hash = sgf.getStorageHash().get();
+					SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash, message.getIsForce());
+					successes.add(sgsf);
+//					sendCommitResponseMessage(message, sgsf.getPathInStorageDir(), sgsf);
+				} catch (FileDoesntExistStorageException e) {
+					Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sgf.getPathInWorkDir());
+					failedPaths.add(sgf.getPathInWorkDir());
+				} catch (CommitConflictStorageException e) {
+					Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sgf.getPathInWorkDir());
+					conflicts.add(sgf);
+//					sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
+//					throw e;
+				}
 			}
-			try {
-				String hash = message.getSgf().getStorageHash().get();
-				SillyGitStorageFile sgsf = storage.commit(message.getSgf().getPathInWorkDir(), message.getSgf().getContent(), hash, message.getIsForce());
-				sendCommitResponseMessage(message, sgsf.getPathInStorageDir(), sgsf);
-			} catch (FileDoesntExistStorageException | CommitConflictStorageException e) {
-				sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
-				throw e;
-			}
+
+			CommitResult commitResult = new CommitResult(failedPaths, successes, conflicts);
+			sendCommitResponseMessage(message, commitResult);
+//			for (SillyGitFile fileInWorkDir : filesInWorkDir) {
+//				try {
+//					if (fileInWorkDir.getStorageHash().isEmpty()) {
+//						failedPaths.add(fileInWorkDir.getPathInWorkDir());
+//						continue;
+//					}
+//					String hash = fileInWorkDir.getStorageHash().get();
+//					SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash, force);
+//					workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
+//					successes.add(sgfs);
+//				} catch (FileDoesntExistStorageException e) {
+//					failedPaths.add(fileInWorkDir.getPathInWorkDir());
+//				} catch (CommitConflictStorageException e) {
+//					conflicts.add(fileInWorkDir);
+//				}
+//			}
 		} else {
 			forwardCommitMessageForSomeoneElse(message);
 		}
 	}
 
-	private void sendCommitMessageForUs(SillyGitFile sgf, ServentInfo myServentInfo, boolean isCommitResolution) {
-		int key = chordHash(sgf.getPathInWorkDir().hashCode());
+	private void sendCommitMessageForUs(List<SillyGitFile> filesInWorkDir, ServentInfo myServentInfo, boolean isCommitResolution) {
+		SillyGitFile referenceFile = filesInWorkDir.get(0);
+		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+
 		ServentInfo nextNode = getNextNodeForKey(key);
-		CommitMessage cm = new CommitMessage(myServentInfo, nextNode, sgf, isCommitResolution);
+		CommitMessage cm = new CommitMessage(myServentInfo, nextNode, filesInWorkDir, isCommitResolution);
 
 		MessageUtil.sendTrackedMessageAwaitingResponse(cm, new CommitResponseHandler(isCommitResolution));
 	}
 
 	private void forwardCommitMessageForSomeoneElse(CommitMessage originalMessage) {
-		int key = chordHash(originalMessage.getSgf().getPathInWorkDir().hashCode());
+		SillyGitFile referenceFile = originalMessage.getFilesToCommit().get(0);
+		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		CommitMessage cm = originalMessage.newMessageFor(nextNode);
@@ -542,13 +625,13 @@ public class ChordState {
 	}
 
 	//sgsf can be null
-	private void sendCommitResponseMessage(CommitMessage message, String filePath, SillyGitStorageFile sgsf) {
-		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, message.getSender(), filePath, sgsf);
+	private void sendCommitResponseMessage(CommitMessage message, CommitResult commitResult) {
+		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, message.getSender(), commitResult);
 		cm.copyContextFrom(message);
 		MessageUtil.sendAndForgetMessage(cm);
 	}
 
-	public void getViewFile(String resolvingConflictPath) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
-		pullFileForUs(resolvingConflictPath, Storage.LATEST_STORAGE_FILE_VERSION, PullType.VIEW);
+	public Optional<PullResult> getViewFile(String resolvingConflictPath) {
+		return pullFileForUs(resolvingConflictPath, Storage.LATEST_STORAGE_FILE_VERSION, PullType.VIEW);
 	}
 }

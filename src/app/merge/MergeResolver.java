@@ -1,6 +1,8 @@
 package app.merge;
 
 import app.*;
+import app.git.commit.CommitResult;
+import app.git.pull.PullResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
@@ -8,6 +10,8 @@ import app.storage.FileDoesntExistStorageException;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MergeResolver {
     private MergeState state = MergeState.WAITING_FOR_CONFLICT;
@@ -19,14 +23,15 @@ public class MergeResolver {
 
     public MergeResolver () {}
 
-    public void addConflictToResolve(String path) {
-        conflictPaths.add(path);
-        if(state == MergeState.WAITING_FOR_CONFLICT) {
+    public void addConflictsToResolve(List<String> path) {
+        conflictPaths.addAll(path);
+        if(state == MergeState.WAITING_FOR_CONFLICT && !conflictPaths.isEmpty()) {
             startConflictResolution();
         }
     }
 
     private void startConflictResolution() {
+        //TODO: maybe need check for conflictPaths == 0
         resolvingConflictPath = conflictPaths.get(0);
         conflictPaths.remove(resolvingConflictPath);
 
@@ -44,16 +49,36 @@ public class MergeResolver {
         Logger.timestampedStandardPrint("[Merge Resolver] Initiating view for " + resolvingConflictPath);
         try {
             state = MergeState.WAITING_FOR_VIEW;
-            AppConfig.chordState.getViewFile(resolvingConflictPath);
+            Optional<PullResult> pullResultOpt = AppConfig.chordState.getViewFile(resolvingConflictPath);
+
+            if (pullResultOpt.isEmpty()) {
+                Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Fetching, please wait...");
+                return;
+            }
+
+            PullResult pullResult = pullResultOpt.get();
+
+            viewResponseReceived(!pullResult.getSuccesses().isEmpty());
 //            Logger.timestampedStandardPrint("[Merge Resolver] Temp file successfully fetched.");
 //            state = MergeState.WAITING_FOR_INPUT;
-            viewResponseReceived(true);
-        } catch (FileDoesntExistStorageException e) {
-            state = MergeState.WAITING_FOR_INPUT;
-            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'view' file should be on our node but not found");
-        } catch (DataNotOnOurNodeException e) {
-            Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Fetching, please wait...");
-        } catch (UnexpectedPullResponseException e) {
+
+            Logger.timestampedStandardPrint("--- Merge resolver VIEW locally");
+
+            for (SillyGitStorageFile sgsf : pullResult.getSuccesses()) { //Should always be just 1
+                Logger.timestampedStandardPrint("--- Success: " + sgsf);
+            }
+
+            for (String path : pullResult.getFailedPaths()) {
+                Logger.timestampedStandardPrint("--- Failed: " + path); //Should always be just 1
+            }
+        }
+//        catch (FileDoesntExistStorageException e) {
+//            state = MergeState.WAITING_FOR_INPUT;
+//            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'view' file should be on our node but not found");
+//        } catch (DataNotOnOurNodeException e) {
+//            Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Fetching, please wait...");
+//        }
+        catch (UnexpectedPullResponseException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Unexpected pull response.");
             state = MergeState.WAITING_FOR_INPUT;
         }
@@ -82,15 +107,36 @@ public class MergeResolver {
         state = MergeState.WAITING_FOR_PULL;
 
         try {
-            AppConfig.chordState.pullFileForUs(resolvingConflictPath, -1, PullType.CONFLICT_PULL);
+            Optional<PullResult> pullResultOpt = AppConfig.chordState.pullFileForUs(resolvingConflictPath, -1, PullType.CONFLICT_PULL);
+
+            if (pullResultOpt.isEmpty()) {
+                Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Pulling, please wait...");
+                return;
+            }
+
+            PullResult pullResult = pullResultOpt.get();
+
 //            Logger.timestampedStandardPrint("[Merge Resolver] Conflict successfully resolved - " + resolvingConflictPath);
-            pullResponseReceived(true);
-        } catch (FileDoesntExistStorageException e) {
-            state = MergeState.WAITING_FOR_INPUT;
-            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'pull' file should be on our node but not found");
-        } catch (DataNotOnOurNodeException e) {
-            Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Pulling, please wait...");
-        } catch (UnexpectedPullResponseException e) {
+            pullResponseReceived(!pullResult.getSuccesses().isEmpty());
+
+            Logger.timestampedStandardPrint("--- Merge resolver pulls locally");
+
+            for (SillyGitStorageFile sgsf : pullResult.getSuccesses()) { //Should always be just 1
+                Logger.timestampedStandardPrint("--- Success: " + sgsf);
+            }
+
+            for (String path : pullResult.getFailedPaths()) {
+                Logger.timestampedStandardPrint("--- Failed: " + path); //Should always be just 1
+            }
+
+        }
+//        catch (FileDoesntExistStorageException e) {
+//            state = MergeState.WAITING_FOR_INPUT;
+//            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'pull' file should be on our node but not found");
+//        } catch (DataNotOnOurNodeException e) {
+//            Logger.timestampedStandardPrint("[Merge Resolver] File is remote. Pulling, please wait...");
+//        }
+        catch (UnexpectedPullResponseException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Unexpected pull response");
             state = MergeState.WAITING_FOR_INPUT;
         }
@@ -119,18 +165,41 @@ public class MergeResolver {
         state = MergeState.WAITING_FOR_PUSH;
 
         try {
-            AppConfig.chordState.commitFileFromMyWorkDir(resolvingConflictPath, true);
-            pushResponseReceived(true);
-        } catch (FileAlreadyAddedStorageException | CommitConflictStorageException e) {
-            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - failed to force commit please try again or abort");
-            state = MergeState.WAITING_FOR_INPUT;
-        } catch (FileNotAddedFirstCommitException | FileNotFoundException e) {
-            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - trying to push file that was never added");
-            state = MergeState.WAITING_FOR_INPUT;
-        } catch (FileDoesntExistStorageException e) {
-            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'push' file should be in our storage, but not found");
-            state = MergeState.WAITING_FOR_INPUT;
-        } catch (UnespectedPushResponseException e) {
+            Optional<CommitResult> commitResultOpt = AppConfig.chordState.commitFileFromMyWorkDir(resolvingConflictPath, true);
+
+            if(commitResultOpt.isEmpty()) {
+                Logger.timestampedStandardPrint("--- Merge initiated remotely. Please wait...");
+            }
+
+            CommitResult commitResult = commitResultOpt.get();
+
+            pushResponseReceived(!commitResult.getSuccesses().isEmpty());
+
+            Logger.timestampedStandardPrint("--- Merge resolver pushes locally");
+
+            for (SillyGitStorageFile sgsf : commitResult.getSuccesses()) {
+                Logger.timestampedStandardPrint("--- Success: " + sgsf);
+            }
+
+            for (String path : commitResult.getFailedPaths()) {
+                Logger.timestampedStandardPrint("--- Failed: " + path);
+            }
+
+            List<String> confclitPaths = commitResult.getConflicts().stream().map(SillyGitFile::getPathInWorkDir).collect(Collectors.toList());
+            for (String confclitPath : confclitPaths) {
+                Logger.timestampedStandardPrint("--- Conflicts: " + confclitPath);
+            }
+        }
+//        } catch (FileAlreadyAddedStorageException | CommitConflictStorageException e) {
+//            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - failed to force commit please try again or abort");
+//            state = MergeState.WAITING_FOR_INPUT;
+//        } catch (FileNotAddedFirstCommitException | FileNotFoundException e) {
+//            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - trying to push file that was never added");
+//            state = MergeState.WAITING_FOR_INPUT;
+//        } catch (FileDoesntExistStorageException e) {
+//            Logger.timestampedErrorPrint("[Merge Resolver] Error resolving conflict - 'push' file should be in our storage, but not found");
+//            state = MergeState.WAITING_FOR_INPUT;
+         catch (UnespectedPushResponseException e) {
             Logger.timestampedErrorPrint("[Merge Resolver] Unexpected push response");
             state = MergeState.WAITING_FOR_INPUT;
         }

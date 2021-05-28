@@ -4,10 +4,7 @@ import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,6 +12,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Storage {
+    public class GetResult {
+        private final List<String> failedPaths;
+        private final List<SillyGitStorageFile> successes;
+
+        public GetResult(List<String> failedPaths, List<SillyGitStorageFile> successes) {
+            this.failedPaths = failedPaths;
+            this.successes = successes;
+        }
+
+        public List<String> getFailedPaths() {
+            return failedPaths;
+        }
+
+        public List<SillyGitStorageFile> getSuccesses() {
+            return successes;
+        }
+    }
+
     public static final int LATEST_STORAGE_FILE_VERSION = -1;
 
     private final File root;
@@ -50,84 +65,82 @@ public class Storage {
     }
 
     public SillyGitStorageFile commit(String pathInStorageDir, String content, String versionHash, boolean force) throws FileDoesntExistStorageException, CommitConflictStorageException {
-        return createSillyGitStorageFile(pathInStorageDir, content, 1); //TODO: this breaks commit
-//        SillyGitStorageFile currentFile = get(pathInStorageDir, LATEST_STORAGE_FILE_VERSION);
-//
-//        int newVersion = currentFile.getVersion() + 1;
-//
-//        if (!force) {
-//            //If hashes are not equal, there is a conflict
-//            if (!currentFile.getVersionHash().equals(versionHash)) {
-//                throw new CommitConflictStorageException(pathInStorageDir, newVersion);
-//            }
-//
-//            //If content is equal, and hashes are equal ^, file is the same
-//            if (currentFile.getContent().equals(content)) {
-//                return currentFile;
-//            }
-//        }
-//
-//        try {
-//            save(pathInStorageDir,  content, newVersion);
-//            return createSillyGitStorageFile(pathInStorageDir, content, newVersion);
-//        } catch (FileAlreadyExistsException e) {
-//            throw new CommitConflictStorageException(pathInStorageDir, newVersion);
-//        }
+        //Commit is always file by file -> pathInStorageDir will never be dir -> get() will always return only one file
+
+        GetResult getResult = get(pathInStorageDir, LATEST_STORAGE_FILE_VERSION);
+        if (getResult.successes.isEmpty()) {
+            throw new FileDoesntExistStorageException(pathInStorageDir);
+        }
+        SillyGitStorageFile currentFile = getResult.getSuccesses().get(0);
+
+        int newVersion = currentFile.getVersion() + 1;
+
+        if (!force) {
+            //If hashes are not equal, there is a conflict
+            if (!currentFile.getVersionHash().equals(versionHash)) {
+                throw new CommitConflictStorageException(pathInStorageDir, newVersion);
+            }
+
+            //If content is equal, and hashes are equal ^, file is the same
+            if (currentFile.getContent().equals(content)) {
+                return currentFile;
+            }
+        }
+
+        try {
+            save(pathInStorageDir,  content, newVersion);
+            return createSillyGitStorageFile(pathInStorageDir, content, newVersion);
+        } catch (FileAlreadyExistsException e) {
+            throw new CommitConflictStorageException(pathInStorageDir, newVersion);
+        }
     }
 
-    public List<SillyGitStorageFile> get(String pathInStorageDir, int version) throws FileDoesntExistStorageException {
-        File fileForPotentialFolder = fileForRelativePathToWorkDir(pathInStorageDir);
-
-//        System.out.println("Get - file to get: " + fileToGet.getPath());
-//        if (!fileToGet.exists()) {
-//            System.out.println("Get - file doesn't exist");
-//            throw new FileDoesntExistStorageException(pathInStorageDir);
-//        }
+    public GetResult get(String pathInStorageDir, int version) {
+        List<SillyGitStorageFile> resultSgfs = new ArrayList<>();
+        List<String> failedPaths = new ArrayList<>();
+        //dir/bananica.txt -> dir
+        //dir -> dir
+        //bananica -> bananica
+        Path dirOrFileOnFirstPath = Path.of(pathInStorageDir).getName(0);
+        File fileForPotentialFolder = fileForRelativePathToWorkDir(dirOrFileOnFirstPath.toString());
 
         if (fileForPotentialFolder.isDirectory()) {
-            Path dirPathRelativeToRoot = Path.of(pathInStorageDir);
-            List<SillyGitStorageFile> foundFiles = new ArrayList<>();
+            Path dirPathRelativeToRoot = dirOrFileOnFirstPath;
+//            List<SillyGitStorageFile> foundFiles = new ArrayList<>();
 
+            List<String> filesToRetrieve;
 
-            List<String> storedFilePaths = getAllStoredFilesPaths(dirPathRelativeToRoot); //bananica.txt, jogurt.txt (koji su u folderu "fileToGet")
+            Path filePath = Path.of(pathInStorageDir);
 
-            for(String storedFilePath: storedFilePaths) {
+            if (filePath.getNameCount() == 2) {
+                String specificFile = filePath.getName(1).toString();
+                filesToRetrieve = List.of(specificFile);
+            } else {
+                filesToRetrieve = getAllStoredFilesPaths(dirPathRelativeToRoot); //bananica.txt, jogurt.txt (koji su u folderu "fileToGet")
+            }
+
+            for(String storedFileName: filesToRetrieve) {
                 try {
-                    String pathToFile = storedFilePath; //Paths.get(directoryRoot.toString(), storedFilePath).toString();
+                    String pathToFile = storedFileName; //Paths.get(directoryRoot.toString(), storedFilePath).toString();
                     System.out.println("Path to file u foru: " + pathToFile);
                     SillyGitStorageFile sgsf = getOneFile(dirPathRelativeToRoot, pathToFile, version, false);
-                    foundFiles.add(sgsf);
+                    resultSgfs.add(sgsf);
                 } catch (FileDoesntExistStorageException e) {
-                    e.printStackTrace();
+                    failedPaths.add(storedFileName);
                 }
             }
 
-            return foundFiles;
+            return new GetResult(failedPaths, resultSgfs);
         }
 
-        return List.of(getOneFile(Path.of(""), pathInStorageDir, version, true));
-//        int realVersion;
-//        if (version == LATEST_STORAGE_FILE_VERSION) {
-//            realVersion = getLatestStoredVersion(pathInStorageDir);
-//        } else {
-//            realVersion = version;
-//        }
-//
-//        String versionedFilename = filenameWithVersion(pathInStorageDir, realVersion);
-//        File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
-//
-//        if (!fileForSillyFile.exists()) {
-//            throw new FileDoesntExistStorageException(pathInStorageDir);
-//        }
-//
-//        try {
-//            String content = Files.readString(fileForSillyFile.toPath());
-//            return createSillyGitStorageFile(pathInStorageDir, content, realVersion);
-//        } catch (IOException e) {
-//            Logger.timestampedErrorPrint("Cannot read a file from storage " + fileForSillyFile.getPath());
-//            e.printStackTrace();
-//            throw new UncheckedIOException(e);
-//        }
+        //Find file in root e.g. bananica.txt
+        try {
+            resultSgfs.add(getOneFile(Path.of(""), pathInStorageDir, version, true));
+            return new GetResult(failedPaths, resultSgfs);
+        } catch (FileDoesntExistStorageException e) {
+            failedPaths.add(pathInStorageDir);
+            return new GetResult(failedPaths, resultSgfs);
+        }
     }
 
     private SillyGitStorageFile getOneFile(Path belongingFolder, String fileName, int version, boolean strictVersion) throws FileDoesntExistStorageException {

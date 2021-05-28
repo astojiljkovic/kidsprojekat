@@ -9,6 +9,7 @@ import app.storage.FileAlreadyAddedStorageException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AddCommand implements CLICommand {
@@ -26,11 +27,12 @@ public class AddCommand implements CLICommand {
 			String pathToFile = args;
 
 			try {
-				AddResult addResult = AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
+				Optional<AddResult> addResultOpt = AppConfig.chordState.addFileFromMyWorkDir(pathToFile);
 
-				if (addResult.getFailedPaths().isEmpty() && addResult.getSuccesses().isEmpty()) {
+				if (addResultOpt.isEmpty()) {
 					Logger.timestampedStandardPrint("Files will be added to the system...");
 				} else {
+					AddResult addResult = addResultOpt.get();
 					Logger.timestampedStandardPrint("Local add completed!");
 					Logger.timestampedStandardPrint("Results:");
 					Logger.timestampedStandardPrint("Success - " + addResult.getSuccesses().stream().map(SillyGitStorageFile::getPathInStorageDir).collect(Collectors.joining(" ")));
