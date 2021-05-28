@@ -1,11 +1,7 @@
 package servent.handler;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import app.*;
 import servent.message.Message;
@@ -45,7 +41,7 @@ public class NewNodeHandler implements MessageHandler {
 				
 				AppConfig.chordState.setPredecessor(newNodeInfo);
 
-				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredFilesPaths();
+				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeTo();
 				List<String> hisFilePaths = new ArrayList<>();
 
 				int myId = AppConfig.myServentInfo.getChordId();

@@ -322,6 +322,11 @@ public class ChordState {
 		//A list contains either only one file, or list of files in the same dir
 		List<SillyGitFile> sillyGitFiles = workDirectory.getFilesForPath(path);
 
+		System.out.println("paths found");
+		for (SillyGitFile sgf: sillyGitFiles) {
+			System.out.println("" + sgf.getPathInWorkDir());
+		}
+
 		Optional<AddResult> resultOpt = addSillyGitFilesToLocalStorage(sillyGitFiles);
 
 		if(resultOpt.isEmpty()) {

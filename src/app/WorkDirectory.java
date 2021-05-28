@@ -30,7 +30,9 @@ public class WorkDirectory {
 
         try {
             if (fileToAdd.isDirectory()) {
-                return Files.list(fileToAdd.toPath()) // chord/s0_work/dir/bananica...
+
+                return Files.walk(fileToAdd.toPath())
+                        .filter(path -> !Files.isDirectory(path))
                         .map(absolutePath -> { // dir/bananica
                             return root.toPath().relativize(absolutePath).toString();
                         })

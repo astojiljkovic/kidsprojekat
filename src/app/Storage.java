@@ -98,28 +98,35 @@ public class Storage {
     public GetResult get(String pathInStorageDir, int version) {
         List<SillyGitStorageFile> resultSgfs = new ArrayList<>();
         List<String> failedPaths = new ArrayList<>();
-        //dir/bananica.txt -> dir
+        //dir/bananica.txt -> dir <- WAT DA FUK?
         //dir -> dir
-        //bananica -> bananica
-        Path dirOrFileOnFirstPath = Path.of(pathInStorageDir).getName(0);
-        File fileForPotentialFolder = fileForRelativePathToWorkDir(dirOrFileOnFirstPath.toString());
+        //bananica -> bananica.txt
+//        Path dirOrFileOnFirstPath = Path.of(pathInStorageDir).getName(0);
+//        File fileForPotentialFolder = fileForRelativePathToWorkDir(dirOrFileOnFirstPath.toString());
+
+        File fileForPotentialFolder = fileForRelativePathToWorkDir(pathInStorageDir);
 
         if (fileForPotentialFolder.isDirectory()) {
-            Path dirPathRelativeToRoot = dirOrFileOnFirstPath;
-//            List<SillyGitStorageFile> foundFiles = new ArrayList<>();
+//            Path storageRootPath = Path.of("");
+            Path dirPathRelativeToRoot = Path.of(pathInStorageDir);
+//            Path dirPathRelativeToRoot = dirOrFileOnFirstPath;
 
-            List<String> filesToRetrieve;
+//            List<String> filesToRetrieve;
 
-            Path filePath = Path.of(pathInStorageDir);
+//            Path filePath = Path.of(pathInStorageDir);
 
-            if (filePath.getNameCount() == 2) {
-                String specificFile = filePath.getName(1).toString();
-                filesToRetrieve = List.of(specificFile);
-            } else {
-                filesToRetrieve = getAllStoredFilesPaths(dirPathRelativeToRoot); //bananica.txt, jogurt.txt (koji su u folderu "fileToGet")
-            }
+//            if (filePath.getNameCount() == 2) {
+//                String specificFile = filePath.getName(1).toString();
+//                filesToRetrieve = List.of(specificFile);
+//            } else {
+//                filesToRetrieve = getAllStoredUnversionedFileNamesRelativeTo(dirPathRelativeToRoot); //bananica.txt, dir/jogurt.txt (koji su u folderu "fileToGet")
+//            }
+            System.out.println("Files to retrieve in storage");
+            //Get all files in storage, with path relative to it
+            List<String> filesToRetrieve = getAllStoredUnversionedFileNamesRelativeTo(dirPathRelativeToRoot); //bananica.txt, dir/jogurt.txt (koji su u folderu "fileToGet")
 
             for(String storedFileName: filesToRetrieve) {
+                System.out.println("File " + storedFileName);
                 try {
                     String pathToFile = storedFileName; //Paths.get(directoryRoot.toString(), storedFilePath).toString();
                     SillyGitStorageFile sgsf = getOneFile(dirPathRelativeToRoot, pathToFile, version, false);
@@ -143,7 +150,7 @@ public class Storage {
     }
 
     private SillyGitStorageFile getOneFile(Path belongingFolder, String fileName, int version, boolean strictVersion) throws FileDoesntExistStorageException {
-        int latestStoredVersion = getLatestStoredVersion(belongingFolder, fileName);
+        int latestStoredVersion = getLatestStoredVersion(Path.of(belongingFolder.toString(), fileName));
         int realVersion;
         if (version == LATEST_STORAGE_FILE_VERSION) {
             realVersion = latestStoredVersion;
@@ -157,16 +164,21 @@ public class Storage {
 
         String versionedFilename = filenameWithVersion(fileName, realVersion);
 
-        File fileForSillyFile = fileForRelativePathToWorkDir(Path.of(belongingFolder.toString(), versionedFilename).toString());
+        String p = Path.of(belongingFolder.toString(), versionedFilename).toString();
+        System.out.println("File to open in getOneFile " + p);
+        File fileForSillyFile = fileForRelativePathToWorkDir(p);
 
         if (!fileForSillyFile.exists()) {
+            System.out.println("File doesn't exist");
             throw new FileDoesntExistStorageException(fileName);
         }
 
 
         try {
             String content = Files.readString(fileForSillyFile.toPath());
-            return createSillyGitStorageFile(Path.of(belongingFolder.toString(), fileName).normalize().toString(), content, realVersion);
+            String smtg = Path.of(belongingFolder.toString(), fileName).normalize().toString();
+            System.out.println("File SGSF to be created " + p);
+            return createSillyGitStorageFile(smtg, content, realVersion);
         } catch (IOException e) {
             Logger.timestampedErrorPrint("Cannot read a file from storage " + fileForSillyFile.getPath());
             e.printStackTrace();
@@ -174,21 +186,22 @@ public class Storage {
         }
     }
 
-    public List<String> getAllStoredFilesPaths() {
-        return getAllStoredFilesPaths(Path.of(""));
+    public List<String> getAllStoredUnversionedFileNamesRelativeTo() {
+        return getAllStoredUnversionedFileNamesRelativeTo(Path.of(""));
     }
 
-    private List<String> getAllStoredFilesPaths(Path folderRelativeToRoot) {
+    private List<String> getAllStoredUnversionedFileNamesRelativeTo(Path folderRelativeToRoot) {
         File folder = fileForRelativePathToWorkDir(folderRelativeToRoot.toString());
         try {
-            return Files.list(folder.toPath()) // /aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/jogurt.txt
-                    .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
+            return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
+                    .filter(path -> !Files.isDirectory(path))
+                    .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, dir/jogurt.txt_version_0
                         return folder.toPath().relativize(path).toString();
                     })
-                    .filter(path -> { // bananica.txt_version_0, jogurt.txt
+                    .filter(path -> { // bananica.txt_version_0, dir/jogurt.txt_version_1
                         return path.endsWith("_0");
                     })
-                    .map(path -> { // bananica.txt, jogurt.txt
+                    .map(path -> { // bananica.txt, dir/jogurt.txt
                         return filenameFromVersionedFilename(path);
                     })
                     .collect(Collectors.toList());
@@ -234,8 +247,11 @@ public class Storage {
         }
     }
 
-    private int getLatestStoredVersion(Path searchRoot, String fileName) throws FileDoesntExistStorageException {
-        File fileForSearchRoot = fileForRelativePathToWorkDir(searchRoot.toString());
+    private int getLatestStoredVersion(Path filePath) throws FileDoesntExistStorageException {
+        Path belongingFolder = filePath.getParent();
+        String fileName = filePath.getFileName().toString();
+
+        File fileForSearchRoot = fileForRelativePathToWorkDir(belongingFolder.toString());
         try {
             return Files.list(fileForSearchRoot.toPath())
                     .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
