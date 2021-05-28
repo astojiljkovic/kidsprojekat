@@ -12,7 +12,7 @@ public class RemoveResponseMessage extends ResponseMessage {
 	private final String requestedPath;
 
 	public RemoveResponseMessage(ServentInfo sender, ServentInfo receiver, String requestedPath, List<SillyGitStorageFile> removeResult) {
-		super(MessageType.PULL_RESPONSE, sender, receiver, "");
+		super(MessageType.REMOVE_RESPONSE, sender, receiver, "");
 		this.removeResult = removeResult;
 		this.requestedPath = requestedPath;
 	}

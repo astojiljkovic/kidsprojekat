@@ -6,7 +6,7 @@ public class RemoveCommand implements CLICommand {
 
     @Override
     public String commandName() {
-        return "removeFileForUs";
+        return "remove";
     }
 
     @Override
