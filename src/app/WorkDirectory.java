@@ -21,7 +21,7 @@ public class WorkDirectory {
         this.root = root;
     }
 
-    public List<SillyGitFile> getFileForPath(String pathRelativeToWorkDir) throws FileNotFoundException {
+    public List<SillyGitFile> getFilesForPath(String pathRelativeToWorkDir) throws FileNotFoundException {
         File fileToAdd = fileForRelativePathToWorkDir(pathRelativeToWorkDir);
 
         if (!fileToAdd.exists()) {
