@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.util.*;
 
 import app.git.add.AddResult;
@@ -46,7 +47,7 @@ public class ChordState {
 
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
-		int absValue = Math.abs(value); // TODO: 25.5.21. Fix dirty cheat for positive values
+		int absValue = Math.abs(value) % 5000; // TODO: 25.5.21. Fix dirty cheat for positive values
 		return 61 * absValue % CHORD_SIZE;
 	}
 	
@@ -81,7 +82,11 @@ public class ChordState {
 //		valueMap = new HashMap<>();
 		allNodeInfo = new ArrayList<>();
 	}
-	
+
+	public static int hashForFilePath(String pathInDir) {
+		return chordHash(Path.of(pathInDir).getName(0).toString().hashCode());
+	}
+
 	/**
 	 * This should be called once after we get <code>WELCOME</code> message.
 	 * It sets up our initial value map and our first successor so we can send <code>UPDATE</code>.
@@ -317,7 +322,7 @@ public class ChordState {
 		List<SillyGitFile> sillyGitFiles = workDirectory.getFileForPath(path);
 		SillyGitFile referenceFile = sillyGitFiles.get(0);
 
-		int key = chordHash(referenceFile.getValueToHash().hashCode());
+		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 		System.out.println("Dodajemo fajl " + path + " a hash mu je :" + key);
 
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
@@ -342,19 +347,8 @@ public class ChordState {
 	}
 
 	public void addFileForSomeoneElse(List<SillyGitFile> sillyGitFiles, AddMessage receivedMessage) {
-		String hashReference = sillyGitFiles.get(0).getValueToHash();
-		int key = chordHash(hashReference.hashCode());
+		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
 		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
-//			for(SillyGitFile sgf: sillyGitFiles) { //TODO: verovatno ne valja
-//				try {
-//					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
-//					sendAddResponseMessage(sgsf.getPathInStorageDir(), sgsf, receivedMessage);
-//				} catch (FileAlreadyAddedStorageException e) {
-//					sendAddResponseMessage(hashReference.getPathInWorkDir(), null, receivedMessage);
-//					throw e;
-//				}
-//			}
-
 			ArrayList<String> failedPaths = new ArrayList<>();
 			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
@@ -376,17 +370,16 @@ public class ChordState {
 	}
 
 	private void forwardAddFileMessage(List<SillyGitFile> sillyGitFiles, AddMessage message) {
-		String hashReference = sillyGitFiles.get(0).getValueToHash();
+		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
 
-		int key = chordHash(hashReference.hashCode());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		MessageUtil.sendAndForgetMessage(message.newMessageFor(nextNode));
 	}
 
 	private void sendAddFilesForMe(List<SillyGitFile> sillyGitFiles) {
-		SillyGitFile referenceFile = sillyGitFiles.get(0);
-		int key = chordHash(referenceFile.getValueToHash().hashCode());
+		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
+
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		AddMessage addMessage = new AddMessage(myServentInfo, nextNode, sillyGitFiles);
@@ -412,8 +405,11 @@ public class ChordState {
 
 	public void pullFileForUs(String filePath, int version, PullType pullType) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
 		try {
-			SillyGitStorageFile storageFile = retrieveFileFromOurStorage(filePath, version);
-			storeFileInWorkDir(storageFile, pullType == PullType.VIEW);
+			List<SillyGitStorageFile> storageFiles = retrieveFilesFromOurStorage(filePath, version);
+
+			for(SillyGitStorageFile sgsf: storageFiles) {
+				storeFileInWorkDir(sgsf, pullType == PullType.VIEW);
+			}
 		} catch (DataNotOnOurNodeException e) {
 			sendPullMessageForMe(filePath, version, pullType);
 			throw new DataNotOnOurNodeException();
@@ -430,8 +426,8 @@ public class ChordState {
 
 	public void pullFileForSomeoneElse(PullMessage requestMessage) {
 		try {
-			SillyGitStorageFile sgsf = retrieveFileFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
-			sendPullResponseMessage(sgsf, requestMessage);
+			List<SillyGitStorageFile> sillyGitStorageFiles = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+			sendPullResponseMessage(sillyGitStorageFiles, requestMessage);
 		} catch (FileDoesntExistStorageException e) {
 			sendPullResponseMessage(null, requestMessage);
 		} catch (DataNotOnOurNodeException e) {
@@ -439,8 +435,8 @@ public class ChordState {
 		}
 	}
 
-	private SillyGitStorageFile retrieveFileFromOurStorage(String fileName, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
-		int key = chordHash(fileName.hashCode());
+	private List<SillyGitStorageFile> retrieveFilesFromOurStorage(String fileName, int version) throws FileDoesntExistStorageException, DataNotOnOurNodeException {
+		int key = hashForFilePath(fileName);
 
 		if (isKeyMine(key)) {
 			return storage.get(fileName, version);
@@ -468,7 +464,7 @@ public class ChordState {
 		MessageUtil.sendTrackedMessageAwaitingResponse(message, new PullResponseHandler(pullType));
 	}
 
-	private void sendPullResponseMessage(SillyGitStorageFile sgsf, PullMessage askMessage) {
+	private void sendPullResponseMessage(List<SillyGitStorageFile> sgsf, PullMessage askMessage) {
 		PullResponseMessage responseMessage = new PullResponseMessage(myServentInfo, askMessage.getSender(), askMessage.getFileName(), sgsf);
 		responseMessage.copyContextFrom(askMessage);
 		MessageUtil.sendAndForgetMessage(responseMessage);

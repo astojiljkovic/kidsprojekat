@@ -8,7 +8,7 @@ import app.merge.UnexpectedPullResponseException;
 import servent.message.MessageType;
 import servent.message.PullResponseMessage;
 
-import static app.PullType.CONFLICT_PULL;
+import java.util.List;
 
 public class PullResponseHandler extends ResponseMessageHandler {
 
@@ -23,24 +23,28 @@ public class PullResponseHandler extends ResponseMessageHandler {
 	public void run() {
 		if (message.getMessageType() == MessageType.PULL_RESPONSE) {
 			PullResponseMessage pullResponseMessage = (PullResponseMessage) message;
-			String requestedPath = pullResponseMessage.getMessageText();
+			String requestedPath = pullResponseMessage.getMessageText(); //TODO: don't use - always empty
 
-			SillyGitStorageFile sgsf = pullResponseMessage.getSgsf();
+			List<SillyGitStorageFile> sgsf = pullResponseMessage.getSillyGitStorageFiles();
 
 			try {
 				switch (pullType) {
 					case PULL:
 						if (sgsf != null) {
-							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
-							Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+							for (SillyGitStorageFile file: sgsf) {
+								AppConfig.chordState.storeFileInWorkDir(file, false);
+								Logger.timestampedStandardPrint("Successfully pulled file " + file.getPathInStorageDir());
+							}
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
 						break;
 					case CONFLICT_PULL:
 						if (sgsf != null) {
-							AppConfig.chordState.storeFileInWorkDir(sgsf, false);
-							Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
+							for (SillyGitStorageFile file: sgsf) {
+								AppConfig.chordState.storeFileInWorkDir(file, false);
+								Logger.timestampedStandardPrint("Successfully pulled file " + file.getPathInStorageDir());
+							}
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
@@ -48,8 +52,10 @@ public class PullResponseHandler extends ResponseMessageHandler {
 						break;
 					case VIEW:
 						if (sgsf != null) {
-							Logger.timestampedStandardPrint("Successfully fetched 'view' file for " + sgsf.getPathInStorageDir());
-							AppConfig.chordState.storeFileInWorkDir(sgsf, true);
+							for (SillyGitStorageFile file: sgsf) {
+								Logger.timestampedStandardPrint("Successfully fetched 'view' file for " + file.getPathInStorageDir());
+								AppConfig.chordState.storeFileInWorkDir(file, true);
+							}
 						} else {
 							Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
 						}
@@ -59,39 +65,6 @@ public class PullResponseHandler extends ResponseMessageHandler {
 			} catch (UnexpectedPullResponseException e) {
 				Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
 			}
-//			if (shouldSaveAsTemp) { //conflict resolution
-//				if (sgsf == null) {
-//					try {
-//						AppConfig.mergeResolver.viewResponseReceived(false);
-//					} catch (UnexpectedPullResponseException e) {
-//						Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
-//					}
-//				} else {
-//
-//				}
-//			}
-
-//			if (sgsf == null) { //File not found in system
-//				if (shouldSaveAsTemp) { //is conflict resolution (pull)
-//					try {
-//						AppConfig.mergeResolver.pullResponseReceived(false);
-//					} catch (UnexpectedPullResponseException e) {
-//						Logger.timestampedErrorPrint("Merge resolver didn't expect pull response");
-//					}
-//				} else {
-//					Logger.timestampedStandardPrint("No such file with name: " + requestedPath);
-//				}
-//			} else {
-//				AppConfig.chordState.storeFileInWorkDir(sgsf, shouldSaveAsTemp);
-//				Logger.timestampedStandardPrint("Successfully pulled file " + sgsf);
-//				if (shouldSaveAsTemp) {
-//					try {
-//						AppConfig.mergeResolver.viewResponseReceived();
-//					} catch (UnexpectedPullResponseException e) {
-//						Logger.timestampedErrorPrint("Merge resolver didn't expect view response");
-//					}
-//				}
-//			}
 		} else {
 			Logger.timestampedErrorPrint("Tell get handler got a message that is not TELL_GET");
 		}

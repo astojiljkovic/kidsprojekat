@@ -14,9 +14,7 @@ public class PullCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		try {
-
 			if (args == null) { //Conflict resolution pull  |  `pull`
-//				if (AppConfig.mergeResolver.isWaitingForInput()) {
 				AppConfig.mergeResolver.pull();
 			} else { //Pull file from system |  bananica.txt   or   bananica.txt 1
 				String []splitArgs = args.split(" ");

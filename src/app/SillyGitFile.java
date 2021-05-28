@@ -39,12 +39,6 @@ public class SillyGitFile implements Serializable {
         return Optional.of(storageHash);
     }
 
-    public String getValueToHash() {
-        String somethingToHash = Path.of(pathInWorkDir).getName(0).toString();
-        System.out.println("Hash test - input: " + pathInWorkDir + " output: " + somethingToHash);
-        return somethingToHash;
-    }
-
     @Override
     public String toString() {
         return "SGF{" + pathInWorkDir + "|" + content + "|" + storageHash + "}";

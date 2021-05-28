@@ -62,6 +62,7 @@ public class WorkDirectory {
     public void addFile(String path, String content, String versionHash) {
         File fileToAdd = fileForRelativePathToWorkDir(path);
         try {
+            Files.createDirectories(fileToAdd.toPath().getParent());
             Files.writeString(fileToAdd.toPath(), content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             if (versionHash != null && !versionHash.isEmpty()) {
                 versionHashes.put(path, versionHash);
