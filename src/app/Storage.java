@@ -284,18 +284,7 @@ public class Storage {
                 .collect(Collectors.toList());
 
         //Clean up empty dirs
-        try {
-            Files.walk(root.toPath())
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .filter(File::isDirectory)
-                    .filter(file -> {
-                        return !file.toPath().equals(root.toPath());
-                    })
-                    .forEach(File::delete);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        FileSystemUtils.removeEmptyDirsInPath(root.toPath());
 
         return sgfs;
 

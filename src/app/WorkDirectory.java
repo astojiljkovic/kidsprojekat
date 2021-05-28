@@ -80,6 +80,8 @@ public class WorkDirectory {
         File fileToDelete = fileForRelativePathToWorkDir(path);
         fileToDelete.delete();
         versionHashes.remove(path);
+
+        FileSystemUtils.removeEmptyDirsInPath(root.toPath());
     }
 
     //returns chord/s0_work/filename
