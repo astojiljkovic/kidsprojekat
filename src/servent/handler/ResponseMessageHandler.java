@@ -3,7 +3,7 @@ package servent.handler;
 import servent.message.TrackedMessage;
 
 public abstract class ResponseMessageHandler implements MessageHandler {
-    TrackedMessage message = null;
+    public TrackedMessage message = null;
 
     public void setMessage(TrackedMessage message) {
         this.message = message;

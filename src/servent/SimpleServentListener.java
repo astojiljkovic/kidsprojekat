@@ -12,9 +12,12 @@ import app.AppConfig;
 import app.Cancellable;
 import app.Logger;
 import servent.handler.*;
+import servent.handler.data.AddHandler;
+import servent.handler.data.CommitHandler;
+import servent.handler.data.PullHandler;
+import servent.handler.data.RemoveHandler;
 import servent.message.Message;
 import servent.message.ResponseMessage;
-import servent.message.TrackedMessage;
 import servent.message.util.MessageUtil;
 
 public class SimpleServentListener implements Runnable, Cancellable {

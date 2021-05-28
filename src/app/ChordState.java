@@ -14,11 +14,12 @@ import app.git.pull.RemoveResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
-import servent.handler.AddResponseHandler;
-import servent.handler.CommitResponseHandler;
-import servent.handler.PullResponseHandler;
-import servent.handler.RemoveResponseHandler;
+import servent.handler.data.AddResponseHandler;
+import servent.handler.data.CommitResponseHandler;
+import servent.handler.data.PullResponseHandler;
+import servent.handler.data.RemoveResponseHandler;
 import servent.message.*;
+import servent.message.data.*;
 import servent.message.util.MessageUtil;
 
 import static app.AppConfig.*;
