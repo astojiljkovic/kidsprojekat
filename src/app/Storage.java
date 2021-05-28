@@ -122,7 +122,6 @@ public class Storage {
             for(String storedFileName: filesToRetrieve) {
                 try {
                     String pathToFile = storedFileName; //Paths.get(directoryRoot.toString(), storedFilePath).toString();
-                    System.out.println("Path to file u foru: " + pathToFile);
                     SillyGitStorageFile sgsf = getOneFile(dirPathRelativeToRoot, pathToFile, version, false);
                     resultSgfs.add(sgsf);
                 } catch (FileDoesntExistStorageException e) {
@@ -144,14 +143,9 @@ public class Storage {
     }
 
     private SillyGitStorageFile getOneFile(Path belongingFolder, String fileName, int version, boolean strictVersion) throws FileDoesntExistStorageException {
-
-        System.out.println("Get one file entry");
-
         int latestStoredVersion = getLatestStoredVersion(belongingFolder, fileName);
-        System.out.println("Latest stored version " + latestStoredVersion);
         int realVersion;
         if (version == LATEST_STORAGE_FILE_VERSION) {
-//            realVersion = getLatestStoredVersion(belongingFolder, fileName);
             realVersion = latestStoredVersion;
         } else {
             realVersion = version;
@@ -164,10 +158,6 @@ public class Storage {
         String versionedFilename = filenameWithVersion(fileName, realVersion);
 
         File fileForSillyFile = fileForRelativePathToWorkDir(Path.of(belongingFolder.toString(), versionedFilename).toString());
-
-        System.out.println("Get one file: =======");
-        System.out.println("VersionedFilename: " + versionedFilename);
-        System.out.println("FileFSF: " + fileForSillyFile.getPath());
 
         if (!fileForSillyFile.exists()) {
             throw new FileDoesntExistStorageException(fileName);
@@ -245,15 +235,12 @@ public class Storage {
     }
 
     private int getLatestStoredVersion(Path searchRoot, String fileName) throws FileDoesntExistStorageException {
-        System.out.println("Get latest ver " + fileName);
         File fileForSearchRoot = fileForRelativePathToWorkDir(searchRoot.toString());
         try {
             return Files.list(fileForSearchRoot.toPath())
                     .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
-                        System.out.println("In map " + path);
                         return fileForSearchRoot.toPath().relativize(path).toString();
                     }).filter(s -> { // bananica.txt_version_0, bananica.txt_version_1
-                        System.out.println("In filter " + s);
                         String filename = filenameFromVersionedFilename(s);
                         return filename.equals(fileName);
                     })
