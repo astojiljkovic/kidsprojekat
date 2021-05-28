@@ -447,7 +447,7 @@ public class ChordState {
 	}
 
 	private void forwardPullMessage(PullMessage originalMessage) {
-		int key = chordHash(originalMessage.getFileName().hashCode());
+		int key = hashForFilePath(originalMessage.getFileName());
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		PullMessage messageToForward = originalMessage.newMessageFor(nextNode);
@@ -455,7 +455,7 @@ public class ChordState {
 	}
 
 	private void sendPullMessageForMe(String filePath, int version, PullType pullType) {
-		int key = chordHash(filePath.hashCode());
+		int key = hashForFilePath(filePath);
 		ServentInfo nextNode = getNextNodeForKey(key);
 
 		PullMessage message = new PullMessage(myServentInfo, nextNode, filePath, version);
@@ -472,10 +472,10 @@ public class ChordState {
 	//Remove
 
 	public void remove(String removePath) {
-		int key = chordHash(removePath.hashCode());
+		int key = hashForFilePath(removePath);
 
 		if (isKeyMine(key)) {
-			storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath));
+			storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath)); // TODO: ne radi za dirove
 			workDirectory.removeFileForPath(removePath);
 		} else {
 			ServentInfo nextNode = getNextNodeForKey(key);
@@ -572,7 +572,6 @@ public class ChordState {
 		MessageUtil.sendAndForgetMessage(cm);
 	}
 
-	//sgsf can be null
 	private void sendCommitResponseMessage(CommitMessage message, CommitResult commitResult) {
 		CommitResponseMessage cm = new CommitResponseMessage(myServentInfo, message.getSender(), commitResult);
 		cm.copyContextFrom(message);

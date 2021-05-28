@@ -41,7 +41,7 @@ public class NewNodeHandler implements MessageHandler {
 				
 				AppConfig.chordState.setPredecessor(newNodeInfo);
 
-				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeTo();
+				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeToRoot();
 				List<String> hisFilePaths = new ArrayList<>();
 
 				int myId = AppConfig.myServentInfo.getChordId();
