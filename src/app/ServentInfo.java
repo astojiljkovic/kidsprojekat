@@ -1,6 +1,8 @@
 package app;
 
 import java.io.Serializable;
+import java.util.Objects;
+
 import servent.message.NetworkLocation;
 
 /**
@@ -23,7 +25,7 @@ public class ServentInfo implements Serializable {
 			this.chordId = -1;
 		}
 		else {
-			this.chordId = ChordState.chordHash(listenerPort); // hash(ip:port) //TODO: Ne radi
+			this.chordId = ChordState.hashForFilePath(ipAddress + listenerPort);//TODO: Ne radi
 		}
 		//hash(tim) ++ hash(ip:port)
 		// hash(tim:(ip:port))
@@ -31,6 +33,19 @@ public class ServentInfo implements Serializable {
 
 	public NetworkLocation getNetworkLocation() {
 		return networkLocation;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ServentInfo that = (ServentInfo) o;
+		return chordId == that.chordId && networkLocation.equals(that.networkLocation) && team.equals(that.team);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(networkLocation, team, chordId);
 	}
 
 	public int getChordId() {

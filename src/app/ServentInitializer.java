@@ -11,6 +11,29 @@ import servent.message.util.MessageUtil;
 
 public class ServentInitializer implements Runnable {
 
+	public static void notifyBootstrapAboutLeaving() {
+		int bsPort = AppConfig.BOOTSTRAP_PORT;
+		String bsIp = AppConfig.BOOTSTRAP_IP;
+
+		try {
+			Socket bsSocket = new Socket(bsIp, bsPort);
+
+			PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
+			//Send to bootstrap:
+			//Hail\n
+			//address\n
+			//port\n
+			bsWriter.write("Bye\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
+			bsWriter.flush();
+
+			bsSocket.close();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private String getSomeServentLocation() {
 		int bsPort = AppConfig.BOOTSTRAP_PORT;
 		String bsIp = AppConfig.BOOTSTRAP_IP;

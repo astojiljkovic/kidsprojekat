@@ -7,6 +7,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import app.git.add.AddResult;
 import app.git.commit.CommitResult;
@@ -51,7 +54,7 @@ public class ChordState {
 
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
-		int absValue = Math.abs(value) % 5000; // TODO: 25.5.21. Fix dirty cheat for positive values
+		int absValue = Math.abs(value) % 50000; // TODO: 25.5.21. Fix dirty cheat for positive values
 		return 61 * absValue % CHORD_SIZE;
 	}
 	
@@ -83,7 +86,6 @@ public class ChordState {
 		}
 		
 		predecessorInfo = null;
-//		valueMap = new HashMap<>();
 		allNodeInfo = new ArrayList<>();
 	}
 
@@ -318,6 +320,9 @@ public class ChordState {
 		
 		updateSuccessorTable();
 	}
+
+
+	//Add
 
 	public Optional<AddResult> addFileFromMyWorkDir(String path) throws FileNotFoundException {
 
@@ -628,5 +633,41 @@ public class ChordState {
 
 	public Optional<RemoveResult> getViewFile(String resolvingConflictPath) {
 		return pullFileForUs(resolvingConflictPath, Storage.LATEST_STORAGE_FILE_VERSION, PullType.VIEW);
+	}
+
+	// Chord maintenance
+
+	private java.util.function.Consumer<Integer> leaveHandler;
+	public void requestLeave(Consumer<Integer> lh) {
+		leaveHandler = lh;
+		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, getSuccessorInfo(), getPredecessor());
+		MessageUtil.sendAndForgetMessage(lrm);
+	}
+
+	public void handleLeave(ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
+		setPredecessor(sendersPredecessor);
+		SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, getPredecessor(), leaveInitiator);
+		MessageUtil.sendAndForgetMessage(slm);
+	}
+
+	public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
+		for(ServentInfo serventInfo: allNodeInfo) {
+			System.out.println("" + serventInfo.getChordId());
+		}
+		allNodeInfo.remove(leaveInitiator);
+		updateSuccessorTable();
+		for(ServentInfo serventInfo: allNodeInfo) {
+			System.out.println("" + serventInfo.getChordId());
+		}
+
+		LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
+		MessageUtil.sendAndForgetMessage(slm);
+		UpdateMessage update = new UpdateMessage(myServentInfo, getSuccessorInfo(), "");
+		MessageUtil.sendAndForgetMessage(update);
+	}
+
+	public void handleLeaveGranted() {
+		ServentInitializer.notifyBootstrapAboutLeaving();
+		leaveHandler.accept(5);
 	}
 }

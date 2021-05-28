@@ -1,6 +1,7 @@
 package cli.command;
 
 import app.AppConfig;
+import app.ChordState;
 import app.Logger;
 import cli.CLIParser;
 import servent.SimpleServentListener;
@@ -23,8 +24,12 @@ public class StopCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		Logger.timestampedStandardPrint("Stopping...");
+
+		AppConfig.chordState.requestLeave(integer -> {
+			listener.stop();
+		});
+
 		parser.stop();
-		listener.stop();
 	}
 
 }

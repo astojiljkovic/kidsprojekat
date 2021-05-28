@@ -117,8 +117,21 @@ public class BootstrapServer {
 					
 					activeServents.add(new ServentLocation(newServentIp, newServentPort));
 					newServentSocket.close();
+				} else if (message.equals("Bye")) {
+					/**
+					 * When a servent is confirmed not to be a collider, we add him to the list.
+					 */
+					String oldServentIp = socketScanner.nextLine();
+					int oldServentPort = socketScanner.nextInt();
+
+					System.out.println("removing " + oldServentIp + ":" + oldServentPort);
+
+					activeServents.removeIf(serventLocation -> {
+						return serventLocation.getPort() == oldServentPort && serventLocation.getIp().equals(oldServentIp);
+					});
+					newServentSocket.close();
 				}
-				
+
 			} catch (SocketTimeoutException e) {
 				
 			} catch (IOException e) {

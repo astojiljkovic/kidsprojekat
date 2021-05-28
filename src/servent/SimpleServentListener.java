@@ -88,24 +88,24 @@ public class SimpleServentListener implements Runnable, Cancellable {
 						case ADD:
 							messageHandler = new AddHandler(clientMessage);
 							break;
-//						case ADD_RESPONSE:
-//							messageHandler = new AddResponseHandler(clientMessage);
-//							break;
 						case PULL:
 							messageHandler = new PullHandler(clientMessage);
 							break;
-//						case PULL_RESPONSE:
-//							messageHandler = new TellGetHandler(clientMessage);
-//							break;
 						case REMOVE:
 							messageHandler = new RemoveHandler(clientMessage);
 							break;
 						case COMMIT:
 							messageHandler = new CommitHandler(clientMessage);
 							break;
-//						case COMMIT_RESPONSE:
-//							messageHandler = new CommitResponseHandler(clientMessage);
-//							break;
+						case LEAVE_REQUEST:
+							messageHandler = new LeaveRequestHandler(clientMessage);
+							break;
+						case SUCC_LEAVING:
+							messageHandler = new SuccLeavingHandler(clientMessage);
+							break;
+						case LEAVE_GRANTED:
+							messageHandler = new LeaveGrantedHandler(clientMessage);
+							break;
 						case POISON:
 							break;
 					}
