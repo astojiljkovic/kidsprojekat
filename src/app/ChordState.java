@@ -318,23 +318,91 @@ public class ChordState {
 	}
 
 	//Add
+//	public Optional<AddResult> addFileFromMyWorkDir(String path) throws FileNotFoundException {
+//
+//		//A list contains either only one file, or list of files the same dir
+//		List<SillyGitFile> sillyGitFiles = workDirectory.getFileForPath(path);
+//		SillyGitFile referenceFile = sillyGitFiles.get(0);
+//
+//		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+//		System.out.println("Dodajemo fajl " + path + " a hash mu je :" + key);
+//
+//		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+//			ArrayList<String> failedPaths = new ArrayList<>();
+//			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+//
+//			for (SillyGitFile sgf : sillyGitFiles) {
+//				try {
+//					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+//					workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
+//					successes.add(sgsf);
+//				} catch (FileAlreadyAddedStorageException e) {
+//					failedPaths.addAll(e.getPath());
+//				}
+//			}
+//
+//			return Optional.of(new AddResult(failedPaths, successes));
+//		} else {
+//			sendAddFilesForMe(sillyGitFiles);
+//			return Optional.empty();
+//		}
+//	}
+
 	public Optional<AddResult> addFileFromMyWorkDir(String path) throws FileNotFoundException {
 
 		//A list contains either only one file, or list of files the same dir
 		List<SillyGitFile> sillyGitFiles = workDirectory.getFileForPath(path);
-		SillyGitFile referenceFile = sillyGitFiles.get(0);
 
+		Optional<AddResult> resultOpt = addSillyGitFilesToLocalStorage(sillyGitFiles);
+
+		if(resultOpt.isEmpty()) {
+			sendAddFilesForMe(sillyGitFiles);
+		} else {
+			AddResult result = resultOpt.get();
+			for (SillyGitStorageFile sillyGitStorageFile : result.getSuccesses()) {
+				workDirectory.addFile(sillyGitStorageFile.getPathInStorageDir(), sillyGitStorageFile.getContent(), sillyGitStorageFile.getVersionHash());
+			}
+		}
+
+		return resultOpt;
+
+//		SillyGitFile referenceFile = sillyGitFiles.get(0);
+//
+//		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+//		System.out.println("Dodajemo fajl " + path + " a hash mu je :" + key);
+//
+//		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+//			ArrayList<String> failedPaths = new ArrayList<>();
+//			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+//
+//			for (SillyGitFile sgf : sillyGitFiles) {
+//				try {
+//					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+//					workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
+//					successes.add(sgsf);
+//				} catch (FileAlreadyAddedStorageException e) {
+//					failedPaths.addAll(e.getPath());
+//				}
+//			}
+//
+//			return Optional.of(new AddResult(failedPaths, successes));
+//		} else {
+//			sendAddFilesForMe(sillyGitFiles);
+//			return Optional.empty();
+//		}
+	}
+
+	private Optional<AddResult> addSillyGitFilesToLocalStorage(List<SillyGitFile> sgfs) {
+		SillyGitFile referenceFile = sgfs.get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
-		System.out.println("Dodajemo fajl " + path + " a hash mu je :" + key);
 
-		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+		if (isKeyMine(key)) {
 			ArrayList<String> failedPaths = new ArrayList<>();
 			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
-			for (SillyGitFile sgf : sillyGitFiles) {
+			for (SillyGitFile sgf : sgfs) {
 				try {
 					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
-					workDirectory.addFile(sgsf.getPathInStorageDir(), sgsf.getContent(), sgsf.getVersionHash());
 					successes.add(sgsf);
 				} catch (FileAlreadyAddedStorageException e) {
 					failedPaths.addAll(e.getPath());
@@ -343,32 +411,40 @@ public class ChordState {
 
 			return Optional.of(new AddResult(failedPaths, successes));
 		} else {
-			sendAddFilesForMe(sillyGitFiles);
 			return Optional.empty();
 		}
 	}
 
 	public void addFileForSomeoneElse(List<SillyGitFile> sillyGitFiles, AddMessage receivedMessage) {
-		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
-		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
-			ArrayList<String> failedPaths = new ArrayList<>();
-			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+		Optional<AddResult> resultOpt = addSillyGitFilesToLocalStorage(sillyGitFiles);
 
-			for (SillyGitFile sgf : sillyGitFiles) {
-				try {
-					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
-					successes.add(sgsf);
-				} catch (FileAlreadyAddedStorageException e) {
-					Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
-					failedPaths.addAll(e.getPath());
-				}
-			}
-
-			AddResult result = new AddResult(failedPaths, successes);
-			sendAddResponseMessage(result, receivedMessage);
-		} else {
+		if(resultOpt.isEmpty()) {
 			forwardAddFileMessage(sillyGitFiles, receivedMessage);
+		} else {
+			AddResult result = resultOpt.get();
+			sendAddResponseMessage(result, receivedMessage);
 		}
+
+//		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
+//		if (isKeyMine(key)) { //TODO: storage treba da odluci za kljuc
+//			ArrayList<String> failedPaths = new ArrayList<>();
+//			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+//
+//			for (SillyGitFile sgf : sillyGitFiles) {
+//				try {
+//					SillyGitStorageFile sgsf = AppConfig.storage.add(sgf.getPathInWorkDir(), sgf.getContent());
+//					successes.add(sgsf);
+//				} catch (FileAlreadyAddedStorageException e) {
+//					Logger.timestampedErrorPrint("Cannot add file - File already exists: " + e);
+//					failedPaths.addAll(e.getPath());
+//				}
+//			}
+//
+//			AddResult result = new AddResult(failedPaths, successes);
+//			sendAddResponseMessage(result, receivedMessage);
+//		} else {
+//			forwardAddFileMessage(sillyGitFiles, receivedMessage);
+//		}
 	}
 
 	private void forwardAddFileMessage(List<SillyGitFile> sillyGitFiles, AddMessage message) {
@@ -395,36 +471,21 @@ public class ChordState {
 		MessageUtil.sendAndForgetMessage(responseMessage);
 	}
 	
-	/**
-	 * The chord get operation. Gets the value locally if key is ours, otherwise asks someone else to give us the value.
-	 * @return <ul>
-	 *			<li>The value, if we have it</li>
-	 *			<li>-1 if we own the key, but there is nothing there</li>
-	 *			<li>-2 if we asked someone else</li>
-	 *		   </ul>
-	 */
-	//pull
 
-	/**
-	 *
-	 * @param filePath
-	 * @param version
-	 * @param pullType
-	 * @return PullResult will contain empty arrays if pull is forwarded to system for remote fetch
-	 */
+	//Pull
+
 	public Optional<PullResult> pullFileForUs(String filePath, int version, PullType pullType) {
-		try {
-			PullResult pullResult = retrieveFilesFromOurStorage(filePath, version);
+		Optional<PullResult> pullResultOptional = retrieveFilesFromOurStorage(filePath, version);
 
-			for(SillyGitStorageFile sgsf: pullResult.getSuccesses()) {
+		if(pullResultOptional.isEmpty()) {
+			sendPullMessageForMe(filePath, version, pullType);
+		} else {
+			for(SillyGitStorageFile sgsf: pullResultOptional.get().getSuccesses()) {
 				storeFileInWorkDir(sgsf, pullType == PullType.VIEW);
 			}
-
-			return Optional.of(pullResult);
-		} catch (DataNotOnOurNodeException e) {
-			sendPullMessageForMe(filePath, version, pullType);
-			return Optional.empty();
 		}
+
+		return pullResultOptional;
 	}
 
 	public void storeFileInWorkDir(SillyGitStorageFile sgsf, boolean isTmp) {
@@ -436,25 +497,44 @@ public class ChordState {
 	}
 
 	public void pullFileForSomeoneElse(PullMessage requestMessage) {
-		try {
-			PullResult pullResult = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+		Optional<PullResult> pullResultOpt = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+
+		if(pullResultOpt.isEmpty()) {
+			forwardPullMessage(requestMessage);
+		} else {
+			PullResult pullResult = pullResultOpt.get();
 			sendPullResponseMessage(pullResult, requestMessage);
 		}
-		catch (DataNotOnOurNodeException e) {
-			forwardPullMessage(requestMessage);
-		}
+//		try {
+//			PullResult pullResult = retrieveFilesFromOurStorage(requestMessage.getFileName(), requestMessage.getVersion());
+//			sendPullResponseMessage(pullResult, requestMessage);
+//		}
+//		catch (DataNotOnOurNodeException e) {
+//			forwardPullMessage(requestMessage);
+//		}
 	}
 
-	private PullResult retrieveFilesFromOurStorage(String fileName, int version) throws DataNotOnOurNodeException {
+	private Optional<PullResult> retrieveFilesFromOurStorage(String fileName, int version) {
 		int key = hashForFilePath(fileName);
 
 		if (isKeyMine(key)) {
 			Storage.GetResult storageResult = storage.get(fileName, version);
-			return new PullResult(storageResult.getFailedPaths(), storageResult.getSuccesses());
+			return Optional.of(new PullResult(storageResult.getFailedPaths(), storageResult.getSuccesses()));
 		}
 
-		throw new DataNotOnOurNodeException();
+		return Optional.empty();
 	}
+
+//	private PullResult retrieveFilesFromOurStorage(String fileName, int version) throws DataNotOnOurNodeException {
+//		int key = hashForFilePath(fileName);
+//
+//		if (isKeyMine(key)) {
+//			Storage.GetResult storageResult = storage.get(fileName, version);
+//			return new PullResult(storageResult.getFailedPaths(), storageResult.getSuccesses());
+//		}
+//
+//		throw new DataNotOnOurNodeException();
+//	}
 
 	private void forwardPullMessage(PullMessage originalMessage) {
 		int key = chordHash(originalMessage.getFileName().hashCode());
@@ -497,78 +577,145 @@ public class ChordState {
 	//Commit
 
 	public Optional<CommitResult> commitFileFromMyWorkDir(String filePath, boolean force) {
-		ArrayList<String> failedPaths = new ArrayList<>();
-		ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
-		ArrayList<SillyGitFile> conflicts = new ArrayList<>();
 
 		List<SillyGitFile> filesInWorkDir;
 		try {
 			filesInWorkDir = workDirectory.getFileForPath(filePath);
 		} catch (FileNotFoundException e) {
-			failedPaths.add(filePath);
-			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
+			return Optional.of(new CommitResult(List.of(filePath), Collections.emptyList(), Collections.emptyList()));
 		}
 
-		SillyGitFile referenceFile = filesInWorkDir.get(0);
+		Optional<CommitResult> commitResultOptional = commitFilesToOurStorage(filesInWorkDir, force);
+
+		if(commitResultOptional.isEmpty()) {
+			sendCommitMessageForUs(filesInWorkDir, myServentInfo, force);
+		} else {
+			CommitResult result = commitResultOptional.get();
+			for(SillyGitStorageFile sgfs: result.getSuccesses()) {
+				workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
+			}
+		}
+
+		return commitResultOptional;
+
+//		ArrayList<String> failedPaths = new ArrayList<>();
+//		ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+//		ArrayList<SillyGitFile> conflicts = new ArrayList<>();
+//
+//		List<SillyGitFile> filesInWorkDir;
+//		try {
+//			filesInWorkDir = workDirectory.getFileForPath(filePath);
+//		} catch (FileNotFoundException e) {
+//			failedPaths.add(filePath);
+//			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
+//		}
+//
+//		SillyGitFile referenceFile = filesInWorkDir.get(0);
+//		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+//
+//		if (isKeyMine(key)) {
+//
+//			for (SillyGitFile fileInWorkDir : filesInWorkDir) {
+//				try {
+//					if (fileInWorkDir.getStorageHash().isEmpty()) {
+//						failedPaths.add(fileInWorkDir.getPathInWorkDir());
+//						continue;
+//					}
+//					String hash = fileInWorkDir.getStorageHash().get();
+//					SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash, force);
+//					workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
+//					successes.add(sgfs);
+//				} catch (FileDoesntExistStorageException e) {
+//					failedPaths.add(fileInWorkDir.getPathInWorkDir());
+//				} catch (CommitConflictStorageException e) {
+//					conflicts.add(fileInWorkDir);
+//				}
+//			}
+//			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
+//		} else {
+//			sendCommitMessageForUs(filesInWorkDir, myServentInfo, force);
+//			return Optional.empty();
+//		}
+	}
+
+	private Optional<CommitResult> commitFilesToOurStorage(List<SillyGitFile> sillyGitFiles, boolean force) {
+		ArrayList<String> failedPaths = new ArrayList<>();
+		ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+		ArrayList<SillyGitFile> conflicts = new ArrayList<>();
+
+		SillyGitFile referenceFile = sillyGitFiles.get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
 		if (isKeyMine(key)) {
-
-			for (SillyGitFile fileInWorkDir : filesInWorkDir) {
+			for (SillyGitFile sillyGitFile : sillyGitFiles) {
 				try {
-					if (fileInWorkDir.getStorageHash().isEmpty()) {
-						failedPaths.add(fileInWorkDir.getPathInWorkDir());
+					if (sillyGitFile.getStorageHash().isEmpty()) {
+						failedPaths.add(sillyGitFile.getPathInWorkDir());
 						continue;
 					}
-					String hash = fileInWorkDir.getStorageHash().get();
-					SillyGitStorageFile sgfs = storage.commit(fileInWorkDir.getPathInWorkDir(), fileInWorkDir.getContent(), hash, force);
-					workDirectory.addFile(sgfs.getPathInStorageDir(), sgfs.getContent(), sgfs.getVersionHash());
+					String hash = sillyGitFile.getStorageHash().get();
+					SillyGitStorageFile sgfs = storage.commit(sillyGitFile.getPathInWorkDir(), sillyGitFile.getContent(), hash, force);
 					successes.add(sgfs);
 				} catch (FileDoesntExistStorageException e) {
-					failedPaths.add(fileInWorkDir.getPathInWorkDir());
+					Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sillyGitFile.getPathInWorkDir());
+					failedPaths.add(sillyGitFile.getPathInWorkDir());
 				} catch (CommitConflictStorageException e) {
-					conflicts.add(fileInWorkDir);
+					Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sillyGitFile.getPathInWorkDir());
+					conflicts.add(sillyGitFile);
 				}
 			}
+
 			return Optional.of(new CommitResult(failedPaths, successes, conflicts));
-		} else {
-			sendCommitMessageForUs(filesInWorkDir, myServentInfo, force);
-			return Optional.empty();
 		}
+
+		return Optional.empty();
 	}
 
 	public void commitFileFromSomeoneElse(CommitMessage message) {
-		SillyGitFile referenceFile = message.getFilesToCommit().get(0);
-		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
-		if (isKeyMine(key)) {
-			ArrayList<String> failedPaths = new ArrayList<>();
-			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
-			ArrayList<SillyGitFile> conflicts = new ArrayList<>();
+		Optional<CommitResult> commitResultOptional = commitFilesToOurStorage(message.getFilesToCommit(), message.getIsForce());
 
-			for (SillyGitFile sgf: message.getFilesToCommit()) {
-				if (sgf.getStorageHash().isEmpty()) {
-					failedPaths.add(sgf.getPathInWorkDir());
-				} else {
-					try {
-						String hash = sgf.getStorageHash().get();
-						SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash, message.getIsForce());
-						successes.add(sgsf);
-					} catch (FileDoesntExistStorageException e) {
-						Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sgf.getPathInWorkDir());
-						failedPaths.add(sgf.getPathInWorkDir());
-					} catch (CommitConflictStorageException e) {
-						Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sgf.getPathInWorkDir());
-						conflicts.add(sgf);
-					}
-				}
-			}
-
-			CommitResult commitResult = new CommitResult(failedPaths, successes, conflicts);
-			sendCommitResponseMessage(message, commitResult);
-		} else {
+		if(commitResultOptional.isEmpty()) {
 			forwardCommitMessageForSomeoneElse(message);
+//			sendCommitMessageForUs(filesInWorkDir, myServentInfo, force);
+		} else {
+			sendCommitResponseMessage(message, commitResultOptional.get());
 		}
+
+//		return commitResultOptional;
+
+
+//		SillyGitFile referenceFile = message.getFilesToCommit().get(0);
+//		int key = hashForFilePath(referenceFile.getPathInWorkDir());
+//
+//		if (isKeyMine(key)) {
+//			ArrayList<String> failedPaths = new ArrayList<>();
+//			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
+//			ArrayList<SillyGitFile> conflicts = new ArrayList<>();
+//
+//			for (SillyGitFile sgf: message.getFilesToCommit()) {
+//				if (sgf.getStorageHash().isEmpty()) {
+//					failedPaths.add(sgf.getPathInWorkDir());
+//				} else {
+//					try {
+//						String hash = sgf.getStorageHash().get();
+//						SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash, message.getIsForce());
+//						successes.add(sgsf);
+//					} catch (FileDoesntExistStorageException e) {
+//						Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sgf.getPathInWorkDir());
+//						failedPaths.add(sgf.getPathInWorkDir());
+//					} catch (CommitConflictStorageException e) {
+//						Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sgf.getPathInWorkDir());
+//						conflicts.add(sgf);
+//					}
+//				}
+//			}
+//
+//			CommitResult commitResult = new CommitResult(failedPaths, successes, conflicts);
+//			sendCommitResponseMessage(message, commitResult);
+//		} else {
+//			forwardCommitMessageForSomeoneElse(message);
+//		}
 	}
 
 	private void sendCommitMessageForUs(List<SillyGitFile> filesInWorkDir, ServentInfo myServentInfo, boolean isCommitResolution) {
