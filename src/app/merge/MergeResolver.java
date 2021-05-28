@@ -87,6 +87,7 @@ public class MergeResolver {
 
     public void viewResponseReceived(boolean isSuccess) throws UnexpectedPullResponseException {
         if (state != MergeState.WAITING_FOR_VIEW) {
+
             throw new UnexpectedPullResponseException();
         }
         state = MergeState.WAITING_FOR_INPUT;
@@ -169,6 +170,7 @@ public class MergeResolver {
 
             if(commitResultOpt.isEmpty()) {
                 Logger.timestampedStandardPrint("--- Merge initiated remotely. Please wait...");
+                return;
             }
 
             CommitResult commitResult = commitResultOpt.get();
