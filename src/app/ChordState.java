@@ -564,20 +564,21 @@ public class ChordState {
 					failedPaths.add(sgf.getPathInWorkDir());
 //					sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
 //					throw new FileNotAddedFirstCommitException();
-				}
-				try {
-					String hash = sgf.getStorageHash().get();
-					SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash, message.getIsForce());
-					successes.add(sgsf);
-//					sendCommitResponseMessage(message, sgsf.getPathInStorageDir(), sgsf);
-				} catch (FileDoesntExistStorageException e) {
-					Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sgf.getPathInWorkDir());
-					failedPaths.add(sgf.getPathInWorkDir());
-				} catch (CommitConflictStorageException e) {
-					Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sgf.getPathInWorkDir());
-					conflicts.add(sgf);
-//					sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
-//					throw e;
+				} else {
+					try {
+						String hash = sgf.getStorageHash().get();
+						SillyGitStorageFile sgsf = storage.commit(sgf.getPathInWorkDir(), sgf.getContent(), hash, message.getIsForce());
+						successes.add(sgsf);
+						//					sendCommitResponseMessage(message, sgsf.getPathInStorageDir(), sgsf);
+					} catch (FileDoesntExistStorageException e) {
+						Logger.timestampedErrorPrint("Commit unsuccessful, recording failure " + sgf.getPathInWorkDir());
+						failedPaths.add(sgf.getPathInWorkDir());
+					} catch (CommitConflictStorageException e) {
+						Logger.timestampedErrorPrint("Commit unsuccessful, recording conflict " + sgf.getPathInWorkDir());
+						conflicts.add(sgf);
+						//					sendCommitResponseMessage(message, message.getSgf().getPathInWorkDir(), null);
+						//					throw e;
+					}
 				}
 			}
 
