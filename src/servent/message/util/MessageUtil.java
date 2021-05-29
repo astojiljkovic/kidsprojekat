@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * For now, just the read and send implementation, based on Java serializing.
@@ -71,75 +70,51 @@ public class MessageUtil {
 		sendMessage(message);
 	}
 
-	private static Map<Integer, ResponseMessageHandler> trackedHandlers = new ConcurrentHashMap<>();
+	private static final List<SentMessage> sentMessages = new ArrayList<>();
+//	private static final Object sentMessagesListLock = new Object();
 
-	public static ResponseMessageHandler removeHandlerForId(int messageId) {
-		return trackedHandlers.remove(messageId);
+	public static Optional<ResponseMessageHandler> removeHandlerForId(int messageId) {
+		Optional<ResponseMessageHandler> messageHandler = Optional.empty();
+
+		synchronized(sentMessages) {
+
+			for (SentMessage sentMessage : sentMessages) {
+				if (sentMessage.getMessageId() == messageId) {
+					messageHandler = sentMessage.getMessageHandlerForExecution();
+					sentMessages.removeIf(sentMessage1 -> {
+						return sentMessage1.getMessageId() == messageId;
+					});
+					break;
+				}
+			}
+
+		}
+
+		return messageHandler;
 	}
 
-	public static void sendTrackedMessageAwaitingResponse(TrackedMessage message, ResponseMessageHandler handler) {
+	public static void sendTrackedMessageAwaitingResponse(TrackedMessage message, ResponseMessageHandler handler, long timeout, MessageTimeoutHandler timeoutHandler) {
 		int messageId = message.getMessageId();
-		trackedHandlers.put(messageId, handler);
+//		sentMessages.put(messageId, handler);
+
+		SentMessage sentMessage = new SentMessage(messageId, handler, timeout, timeoutHandler);
+		synchronized(sentMessages) {
+			sentMessages.add(sentMessage);
+		}
 
 		sendMessage(message);
 	}
 
-	class SentMessage {
+	public static void sendTrackedMessageAwaitingResponse(TrackedMessage message, ResponseMessageHandler handler) {
+		int messageId = message.getMessageId();
 
-		private final ResponseMessageHandler responseMessageHandler;
-
-		private final MessageTimeoutHandler messageTimeoutHandler;
-
-		private boolean messageTimedOut = false;
-
-		private final Timer timer = new Timer();
-		private boolean messageExecuted = false;
-
-		private final Object lock = new Object();
-
-		public Optional<ResponseMessageHandler> getMessageHandlerForExecution() {
-			synchronized (lock) {
-				messageExecuted = true;
-				timer.cancel();
-				if (messageTimedOut) {
-					return Optional.empty();
-				} else {
-					return Optional.of(responseMessageHandler);
-				}
-			}
+		SentMessage sentMessage = new SentMessage(messageId, handler);
+		synchronized(sentMessages) {
+			sentMessages.add(sentMessage);
 		}
 
-		public SentMessage(ResponseMessageHandler responseMessageHandler, long timeout, MessageTimeoutHandler messageTimeoutHandler) {
-			this.responseMessageHandler = responseMessageHandler;
-			this.messageTimeoutHandler = messageTimeoutHandler;
-			scheduleTimerTask(timeout, 0);
-		}
-
-		private void scheduleTimerTask(long timeout, int invocation) {
-			synchronized (lock) {
-				TimerTask task = new TimerTask() {
-					@Override
-					public void run() {
-						synchronized (lock) {
-							if (messageExecuted) {
-								return;
-							}
-							long extend = messageTimeoutHandler.execute(invocation);
-							if (extend == -1) {
-								messageTimedOut = true;
-							} else {
-								scheduleTimerTask(extend, invocation + 1);
-							}
-						}
-					}
-				};
-
-				timer.schedule(task, timeout);
-			}
-		}
+		sendMessage(message);
 	}
-
-
 
 	interface MessageTimeoutHandler {
 		/**

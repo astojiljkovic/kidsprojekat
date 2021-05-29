@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -64,9 +65,15 @@ public class SimpleServentListener implements Runnable, Cancellable {
 
 				if (clientMessage instanceof ResponseMessage) {
 					ResponseMessage trackedMessage = (ResponseMessage) clientMessage;
-					ResponseMessageHandler handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId()); //TODO: crashes when handler is null
-					handler.setMessage(trackedMessage);
-					messageHandler = handler;
+
+					Optional<ResponseMessageHandler> handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId());
+					if(handler.isPresent()) {
+						handler.get().setMessage(trackedMessage);
+						messageHandler = handler.get();
+					} else {
+						Logger.timestampedStandardPrint("Handler picked message that was already timedOut " + clientMessage);
+						continue;
+					}
 				}
 				else {
 
