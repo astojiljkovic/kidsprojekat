@@ -60,12 +60,15 @@ import static java.lang.System.exit;
 public class ChordState {
 
 	public static class State {
+		private ServentInfo[] successors = new ServentInfo[3];
+
 		private ServentInfo[] successorTable;
+
 		private ServentInfo predecessorInfo;
 
 		private final Set<ServentInfo> allNodeInfo = new HashSet<>();
 
-		private final int chordLevel; //log_2(CHORD_SIZE)
+//		private final int chordLevel; //log_2(CHORD_SIZE)
 
 		private final StateStabilizer stateStabilizer;
 
@@ -79,12 +82,10 @@ public class ChordState {
 				tmp /= 2;
 				tmpChordLvl++;
 			}
-			this.chordLevel = tmpChordLvl;
+//			this.chordLevel = tmpChordLvl;
 
-			successorTable = new ServentInfo[chordLevel];
-			for (int i = 0; i < chordLevel; i++) {
-				successorTable[i] = null;
-			}
+			successorTable = new ServentInfo[tmpChordLvl];
+			Arrays.fill(successorTable, null);
 
 			predecessorInfo = null;
 
@@ -213,7 +214,7 @@ public class ChordState {
 			//first node after me has to be successorTable[0]
 
 			List<Integer> values = new ArrayList<>();
-			for(int i = 0; i < chordLevel; i++) {
+			for(int i = 0; i < successorTable.length; i++) {
 				values.add((int) (myServentInfo.getChordId() + Math.pow(2, i)) % CHORD_SIZE);
 			}
 
@@ -233,7 +234,7 @@ public class ChordState {
 				}
 			}
 
-			for(int i = 0; i < chordLevel; i++) {
+			for(int i = 0; i < successorTable.length; i++) {
 				successorTable[i] = succis.get(i);
 			}
 

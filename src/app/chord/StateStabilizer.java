@@ -18,7 +18,7 @@ public class StateStabilizer {
         void nodeNotAnswering(ServentInfo node, boolean isSoftTimeout);
     }
 
-    private List<ServentInfo> pingers = new ArrayList<>();
+    private List<ServentInfo> serventsToPing = new ArrayList<>();
 
     private final NotAnsweringNotification notificationHandler;
 
@@ -27,8 +27,8 @@ public class StateStabilizer {
     }
 
     public synchronized void stopPingingNodeAndStartPingingAnother(ServentInfo nodeToStop, ServentInfo nodeToStart) {
-        pingers.remove(nodeToStop);
-        pingers.add(nodeToStart);
+        serventsToPing.remove(nodeToStop);
+        serventsToPing.add(nodeToStart);
 
         initiatePing(nodeToStart);
     }
@@ -59,7 +59,7 @@ public class StateStabilizer {
     }
 
     private synchronized void notifyNodeNotAnswering(boolean isSoftTimeout, ServentInfo node) {
-        if(pingers.contains(node)) {
+        if(serventsToPing.contains(node)) {
             notificationHandler.nodeNotAnswering(node, isSoftTimeout);
         }
     }
