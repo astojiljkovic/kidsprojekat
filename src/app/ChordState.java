@@ -3,7 +3,6 @@ package app;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -852,7 +851,7 @@ public class ChordState {
 	private java.util.function.Consumer<Integer> leaveHandler;
 	public void requestLeave(Consumer<Integer> lh) {
 		leaveHandler = lh;
-		List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToRoot();
+		List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
 		List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
 		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getSuccessorInfo(), state.getPredecessor(), data);
 		MessageUtil.sendAndForgetMessage(lrm);

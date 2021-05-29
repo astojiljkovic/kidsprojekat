@@ -25,7 +25,7 @@ public class RemoveResponseHandler extends ResponseMessageHandler {
 
 			Logger.timestampedStandardPrint("Remote Remove completed!");
 			Logger.timestampedStandardPrint("Results:");
-			Logger.timestampedStandardPrint("Success - " + addResult.stream().map(SillyGitStorageFile::getPathInStorageDir).collect(Collectors.joining(" ")));
+			Logger.timestampedStandardPrint("Success - " + addResult.stream().map(SillyGitStorageFile::toString).collect(Collectors.joining(" ")));
 
 		} else {
 			Logger.timestampedErrorPrint("Ask get handler got a message that is not ASK_GET");
