@@ -4,6 +4,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import app.*;
 import cli.command.SuccessorInfo;
@@ -111,7 +113,7 @@ public class NewNodeHandler implements MessageHandler {
 					mySuccs.remove(mySuccs.size() - 1);
 				}
 
-				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs);
+				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList()));
 				MessageUtil.sendAndForgetMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(newNodeInfo.getChordId());

@@ -109,8 +109,31 @@ public class ChordState {
 		public void addNodes(List<ServentInfo> newNodes) {
 			allNodeInfo.addAll(newNodes);
 
+			updateSuccessors();
+			fingerTable[0] = successors[0]; //TODO: fix generation of finger table
 			updatePredecessor();
 			updateFingerTable();
+		}
+
+		private void updateSuccessors() {
+			int myId = myServentInfo.getChordId();
+
+			//me 32
+			//bigger 48 56 67
+			//smaller 1 2 7
+//			List<ServentInfo> bigger = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() >= myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+//			List<ServentInfo> smaller = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() < myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+//
+//			List<ServentInfo> orderedSuccis = new ArrayList<>();
+//			orderedSuccis.addAll(bigger);
+//			orderedSuccis.addAll(smaller);
+//
+//			System.out.println("---Updating succies in update succs---");
+//			orderedSuccis.forEach(serventInfo -> {
+//				System.out.println("" + serventInfo);
+//			});
+
+			setSuccessors(new ArrayList<>(allNodeInfo));
 		}
 
 		/**
@@ -225,10 +248,20 @@ public class ChordState {
 			for(ServentInfo si: receivedSuccessors) {
 				System.out.println("" + si);
 			}
-			List<ServentInfo> sortedSuccis = receivedSuccessors.stream()
+
+			int myId = myServentInfo.getChordId();
+
+			List<ServentInfo> bigger = receivedSuccessors.stream().filter(serventInfo -> serventInfo.getChordId() >= myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+			List<ServentInfo> smaller = receivedSuccessors.stream().filter(serventInfo -> serventInfo.getChordId() < myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+
+			List<ServentInfo> orderedSuccis = new ArrayList<>();
+			orderedSuccis.addAll(bigger);
+			orderedSuccis.addAll(smaller);
+
+			List<ServentInfo> sortedSuccis = orderedSuccis.stream()
 					.filter(Objects::nonNull)
-					.filter(serventInfo -> serventInfo.equals(myServentInfo)) // in case when our successor has us as one if his successors
-					.sorted(Comparator.comparingInt(ServentInfo::getChordId))
+					.filter(serventInfo -> !serventInfo.equals(myServentInfo)) // in case when our successor has us as one if his successors
+//					.sorted(Comparator.comparingInt(ServentInfo::getChordId))
 					.collect(Collectors.toList());
 			for(int i = 0; i < sortedSuccis.size(); i++) {
 				this.successors[i] = sortedSuccis.get(i);
@@ -238,7 +271,13 @@ public class ChordState {
 
 			stateStabilizer.pingNodes(succisToPing);
 
+			System.out.println("New Succis");
+			for(ServentInfo si: receivedSuccessors) {
+				System.out.println("" + si);
+			}
+
 			fingerTable[0] = successors[0]; //TODO: fix
+//			updateFingerTable();
 		}
 
 		public boolean isCollision(int chordId) {

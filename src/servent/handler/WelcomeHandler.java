@@ -25,6 +25,8 @@ public class WelcomeHandler implements MessageHandler {
 			WelcomeMessage welcomeMsg = (WelcomeMessage)clientMessage;
 			
 			AppConfig.chordState.init(welcomeMsg);
+
+			System.out.println("My Servent info in Welcome handler " + AppConfig.myServentInfo);
 			
 			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.state.getClosestSuccessor(), List.of(AppConfig.myServentInfo));
 			MessageUtil.sendAndForgetMessage(um);
