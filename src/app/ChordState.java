@@ -68,6 +68,8 @@ public class ChordState {
 		private final int chordLevel; //log_2(CHORD_SIZE)
 
 		private State(ServentInfo firstSucc) {
+			successorTable[0] = firstSucc;
+
 			int tmpChordLvl = 1;
 			int tmp = CHORD_SIZE;
 			while (tmp != 2) {
