@@ -60,8 +60,6 @@ public class StateStabilizer {
     }
 
     private synchronized TimerTask timerTask(ServentInfo node) {
-//        Timer existingTimer = serventsToPing.get(node);
-//        if(existingTimer != null) {
 
         TimerTask timerTask = new TimerTask() {
             @Override

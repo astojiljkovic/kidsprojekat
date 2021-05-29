@@ -3,6 +3,7 @@ package servent.message.util;
 import app.Logger;
 import servent.handler.ResponseMessageHandler;
 import servent.message.Message;
+import servent.message.MessageType;
 import servent.message.SendAndForgetMessage;
 import servent.message.TrackedMessage;
 
@@ -30,7 +31,8 @@ public class MessageUtil {
 	 * Flip this to false to disable printing every message send / receive.
 	 */
 	public static final boolean MESSAGE_UTIL_PRINTING = true;
-	
+	public static boolean MESSAGE_UTIL_PING_PRINTING = false;
+
 	public static Message readMessage(Socket socket) {
 		
 		Message clientMessage = null;
@@ -49,7 +51,9 @@ public class MessageUtil {
 		}
 		
 		if (MESSAGE_UTIL_PRINTING) {
-			Logger.timestampedStandardPrint("Got message " + clientMessage);
+			if (MESSAGE_UTIL_PING_PRINTING || (!(clientMessage.getMessageType() == MessageType.PONG || clientMessage.getMessageType() == MessageType.PING))) {
+				Logger.timestampedStandardPrint("Got message " + clientMessage);
+			}
 		}
 				
 		return clientMessage;
