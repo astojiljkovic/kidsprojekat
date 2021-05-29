@@ -340,47 +340,6 @@ public class ChordState {
             return predecessorInfo;
         }
 
-//		public void setPredecessor(ServentInfo newNodeInfo) {
-//			this.predecessorInfo = newNodeInfo;
-//		}
-
-//		public void setSuccessors(List<ServentInfo> receivedSuccessors) {
-//			System.out.println("Received Succis");
-//			for(ServentInfo si: receivedSuccessors) {
-//				System.out.println("" + si);
-//			}
-//
-//			int myId = myServentInfo.getChordId();
-//
-//			List<ServentInfo> bigger = receivedSuccessors.stream().filter(serventInfo -> serventInfo.getChordId() >= myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
-//			List<ServentInfo> smaller = receivedSuccessors.stream().filter(serventInfo -> serventInfo.getChordId() < myId).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
-//
-//			List<ServentInfo> orderedSuccis = new ArrayList<>();
-//			orderedSuccis.addAll(bigger);
-//			orderedSuccis.addAll(smaller);
-//
-//			List<ServentInfo> sortedSuccis = orderedSuccis.stream()
-//					.filter(Objects::nonNull)
-//					.filter(serventInfo -> !serventInfo.equals(myServentInfo)) // in case when our successor has us as one if his successors
-////					.sorted(Comparator.comparingInt(ServentInfo::getChordId))
-//					.collect(Collectors.toList());
-//			for(int i = 0; i < sortedSuccis.size(); i++) {
-//				this.successors[i] = sortedSuccis.get(i);
-//			}
-//
-//			List<ServentInfo> succisToPing = Arrays.stream(successors).filter(Objects::nonNull).collect(Collectors.toList());
-//
-//			stateStabilizer.pingNodes(succisToPing);
-//
-//			System.out.println("New Succis");
-//			for(ServentInfo si: receivedSuccessors) {
-//				System.out.println("" + si);
-//			}
-//
-//			fingerTable[0] = successors[0]; //TODO: fix
-////			updateFingerTable();
-//		}
-
         public boolean isCollision(int chordId) {
             if (chordId == myServentInfo.getChordId()) {
                 return true;
@@ -408,11 +367,6 @@ public class ChordState {
                     biggerIdNodes.add(serventInfo);
                 }
             }
-
-//			allNodeInfo.clear();
-//			allNodeInfo.addAll(biggerIdNodes);
-//			allNodeInfo.addAll(smallerIdNodes);
-
 
             if (smallerIdNodes.size() > 0) {
                 predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
@@ -839,23 +793,14 @@ public class ChordState {
     public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
         ServentInfo leaveInitiator = leaveRequestMessage.getSender();
         state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
-//            removeNodeFromAllNodes(leaveInitiator);
-//            state.setPredecessor(leaveRequestMessage.getPredecessor());
         storage.addTransferedFiles(leaveRequestMessage.getData());
 
         SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
     }
 
-//        private void removeNodeFromAllNodes(ServentInfo node) {
-//            state.allNodeInfo.remove(node);
-//            state.updatePredecessor();
-//            state.updateFingerTable();
-//        }
-
     public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
         state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
-//            removeNodeFromAllNodes(leaveInitiator);
         LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
         UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
