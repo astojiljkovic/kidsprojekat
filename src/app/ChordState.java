@@ -3,7 +3,6 @@ package app;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -22,7 +21,6 @@ import app.git.pull.RemoveResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
-import cli.command.SuccessorInfo;
 import servent.handler.ResponseMessageHandler;
 import servent.handler.data.AddResponseHandler;
 import servent.handler.data.CommitResponseHandler;
@@ -169,7 +167,7 @@ public class ChordState {
 						setSuccessors(response.getSuccessors());
 						allNodeInfo.removeIf(everyNode -> everyNode.getChordId() == sn.get().getServentInfo().getChordId());
 						updateFingerTable();
-						UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo));
+						UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo), List.of(sn.get().getServentInfo()));
 						MessageUtil.sendAndForgetMessage(um);
 					}
 				});
@@ -184,8 +182,9 @@ public class ChordState {
 		 * Once the list is created, we invoke <code>updateSuccessorTable()</code> to do the rest of the work.
 		 *
 		 */
-		public void addNodes(List<ServentInfo> newNodes) {
+		public void addNodes(List<ServentInfo> newNodes, List<ServentInfo> removedNodes) {
 			allNodeInfo.addAll(newNodes);
+			allNodeInfo.removeAll(removedNodes);
 
 			updateSuccessors();
 			fingerTable[0] = successors[0]; //TODO: fix generation of finger table
@@ -836,7 +835,7 @@ public class ChordState {
 		removeNodeFromAllNodes(leaveInitiator);
 		LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);
-		UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo));
+		UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
 		MessageUtil.sendAndForgetMessage(update);
 	}
 

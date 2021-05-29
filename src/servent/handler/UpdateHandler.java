@@ -1,6 +1,5 @@
 package servent.handler;
 
-import java.rmi.server.ServerCloneException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,11 +32,11 @@ public class UpdateHandler implements MessageHandler {
 					return serventInfo.getChordId() != AppConfig.myServentInfo.getChordId();
 				}).collect(Collectors.toList());
 
-				AppConfig.chordState.state.addNodes(newNodes);
+				AppConfig.chordState.state.addNodes(newNodes, message.getRemovedNodes());
 
 				newNodes.add(AppConfig.myServentInfo);
 
-				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.state.getClosestSuccessor(), newNodes);
+				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.state.getClosestSuccessor(), newNodes, message.getRemovedNodes());
 				MessageUtil.sendAndForgetMessage(nextUpdate);
 			} else {
 
@@ -46,7 +45,7 @@ public class UpdateHandler implements MessageHandler {
 					return serventInfo.getChordId() != AppConfig.myServentInfo.getChordId();
 				}).collect(Collectors.toList());
 
-				AppConfig.chordState.state.addNodes(newNodes);
+				AppConfig.chordState.state.addNodes(newNodes, message.getRemovedNodes());
 			}
 		} else {
 			Logger.timestampedErrorPrint("Update message handler got message that is not UPDATE");
