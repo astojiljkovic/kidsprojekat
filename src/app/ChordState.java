@@ -3,6 +3,7 @@ package app;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -14,12 +15,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import app.chord.StateStabilizer;
+import app.chord.SuspiciousNode;
 import app.git.add.AddResult;
 import app.git.commit.CommitResult;
 import app.git.pull.RemoveResult;
 import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
+import cli.command.SuccessorInfo;
 import servent.handler.data.AddResponseHandler;
 import servent.handler.data.CommitResponseHandler;
 import servent.handler.data.PullResponseHandler;
@@ -60,9 +63,13 @@ import static java.lang.System.exit;
 public class ChordState {
 
 	public static class State {
-		private ServentInfo[] successors = new ServentInfo[3];
 
-		private ServentInfo[] successorTable;
+		public static final int MAX_SUCCESSORS = 3;
+		private ServentInfo[] successors = new ServentInfo[MAX_SUCCESSORS];
+
+		private List<SuspiciousNode> suspiciousNodes = new ArrayList<>();
+
+		private ServentInfo[] fingerTable;
 
 		private ServentInfo predecessorInfo;
 
@@ -84,8 +91,8 @@ public class ChordState {
 			}
 //			this.chordLevel = tmpChordLvl;
 
-			successorTable = new ServentInfo[tmpChordLvl];
-			Arrays.fill(successorTable, null);
+			fingerTable = new ServentInfo[tmpChordLvl];
+			Arrays.fill(fingerTable, null);
 
 			predecessorInfo = null;
 
@@ -103,7 +110,7 @@ public class ChordState {
 			allNodeInfo.addAll(newNodes);
 
 			updatePredecessor();
-			updateSuccessorTable();
+			updateFingerTable();
 		}
 
 		/**
@@ -149,42 +156,44 @@ public class ChordState {
 			//we know that such a node must exist, because otherwise we would own this key
 			if (key < myServentInfo.getChordId()) {
 				int skip = 1;
-				while (successorTable[skip].getChordId() > successorTable[startInd].getChordId()) {
+				while (fingerTable[skip].getChordId() > fingerTable[startInd].getChordId()) {
 					startInd++;
 					skip++;
 				}
 			}
 
-			int previousId = successorTable[startInd].getChordId();
+			int previousId = fingerTable[startInd].getChordId();
 
-			for (int i = startInd + 1; i < successorTable.length; i++) {
-				if (successorTable[i] == null) {
+			for (int i = startInd + 1; i < fingerTable.length; i++) {
+				if (fingerTable[i] == null) {
 					Logger.timestampedErrorPrint("Couldn't find successor for " + key);
 					break;
 				}
 
-				int successorId = successorTable[i].getChordId();
+				int successorId = fingerTable[i].getChordId();
 
 				if (successorId >= key) {
-					return successorTable[i-1];
+					return fingerTable[i-1];
 				}
 				if (key > previousId && successorId < previousId) { //overflow
-					return successorTable[i-1];
+					return fingerTable[i-1];
 				}
 				previousId = successorId;
 			}
 			//if we have only one node in all slots in the table, we might get here
 			//then we can return any item
-			return successorTable[0];
+			return fingerTable[0];
 		}
 
-		public ServentInfo[] getSuccessorTable() {
-			return successorTable;
+		public ServentInfo[] getFingerTable() {
+			return fingerTable;
 		}
 
 		public ServentInfo getSuccessorInfo() {
-			return successorTable[0];
+			return fingerTable[0];
 		}
+
+		public ServentInfo[] getSuccessors() { return successors; }
 
 		public ServentInfo getPredecessor() {
 			return predecessorInfo;
@@ -193,8 +202,25 @@ public class ChordState {
 		public void setPredecessor(ServentInfo newNodeInfo) {
 			this.predecessorInfo = newNodeInfo;
 		}
-		public void setSuccessor(ServentInfo newNodeInfo) {
-			this.successorTable[0] = newNodeInfo;
+
+		public void setSuccessors(List<ServentInfo> receivedSuccessors) {
+			System.out.println("Received Succis");
+			for(ServentInfo si: receivedSuccessors) {
+				System.out.println("" + si);
+			}
+			List<ServentInfo> sortedSuccis = receivedSuccessors.stream()
+					.filter(Objects::nonNull)
+					.sorted(Comparator.comparingInt(ServentInfo::getChordId))
+					.collect(Collectors.toList());
+			for(int i = 0; i < sortedSuccis.size(); i++) {
+				this.successors[i] = sortedSuccis.get(i);
+			}
+
+			List<ServentInfo> succisToPing = Arrays.stream(successors).filter(Objects::nonNull).collect(Collectors.toList());
+
+			stateStabilizer.pingNodes(succisToPing);
+
+			fingerTable[0] = successors[0]; //TODO: fix
 		}
 
 		public boolean isCollision(int chordId) {
@@ -209,12 +235,11 @@ public class ChordState {
 			return false;
 		}
 
-		private void updateSuccessorTable() {
-			ServentInfo oldSucci = successorTable[0]; // TODO: 29.5.21. remove
+		private void updateFingerTable() {
 			//first node after me has to be successorTable[0]
 
 			List<Integer> values = new ArrayList<>();
-			for(int i = 0; i < successorTable.length; i++) {
+			for(int i = 0; i < fingerTable.length; i++) {
 				values.add((int) (myServentInfo.getChordId() + Math.pow(2, i)) % CHORD_SIZE);
 			}
 
@@ -234,20 +259,19 @@ public class ChordState {
 				}
 			}
 
-			for(int i = 0; i < successorTable.length; i++) {
-				successorTable[i] = succis.get(i);
+			for(int i = 0; i < fingerTable.length; i++) {
+				fingerTable[i] = succis.get(i);
 			}
 
 			System.out.println("New succ table" );
 
-			for(int i = 0; i < successorTable.length; i++) {
-				System.out.println("" + (((int) (myServentInfo.getChordId() + Math.pow(2, i))) % CHORD_SIZE) + " " + successorTable[i]);
+			for(int i = 0; i < fingerTable.length; i++) {
+				System.out.println("" + (((int) (myServentInfo.getChordId() + Math.pow(2, i))) % CHORD_SIZE) + " " + fingerTable[i]);
 			}
 //		for(ServentInfo info: successorTable) {
 //
 //			System.out.println("" + info);
 //		}
-			stateStabilizer.stopPingingNodeAndStartPingingAnother(oldSucci, successorTable[0]);
 		}
 
 		private void updatePredecessor() {
@@ -308,7 +332,7 @@ public class ChordState {
 	 * It also lets bootstrap know that we did not collide.
 	 */
 	public void init(WelcomeMessage welcomeMsg) {
-		state.setSuccessor(welcomeMsg.getSender());
+		state.setSuccessors(welcomeMsg.getSuccessors());
 
 		storage.addTransferedFiles(welcomeMsg.getFiles());
 		
@@ -667,7 +691,7 @@ public class ChordState {
 	private void removeNodeFromAllNodes(ServentInfo node) {
 		state.allNodeInfo.remove(node);
 		state.updatePredecessor();
-		state.updateSuccessorTable();
+		state.updateFingerTable();
 	}
 
 	public void handleSuccessorLeaving(ServentInfo leaveInitiator) {

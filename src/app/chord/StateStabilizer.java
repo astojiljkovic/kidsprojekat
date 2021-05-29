@@ -7,10 +7,7 @@ import servent.handler.ResponseMessageHandler;
 import servent.message.chord.stabilize.PingMessage;
 import servent.message.util.MessageUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class StateStabilizer {
 
@@ -18,7 +15,7 @@ public class StateStabilizer {
         void nodeNotAnswering(ServentInfo node, boolean isSoftTimeout);
     }
 
-    private List<ServentInfo> serventsToPing = new ArrayList<>();
+    private HashMap<ServentInfo, Timer> serventsToPing = new HashMap<>();
 
     private final NotAnsweringNotification notificationHandler;
 
@@ -26,14 +23,46 @@ public class StateStabilizer {
         this.notificationHandler = notificationHandler;
     }
 
-    public synchronized void stopPingingNodeAndStartPingingAnother(ServentInfo nodeToStop, ServentInfo nodeToStart) {
-        serventsToPing.remove(nodeToStop);
-        serventsToPing.add(nodeToStart);
+//    public synchronized void stopPingingNodeAndStartPingingAnother(ServentInfo nodeToStop, ServentInfo nodeToStart) {
+//        serventsToPing.remove(nodeToStop);
+//        serventsToPing.add(nodeToStart);
+//
+//        initiatePing(nodeToStart);
+//    }
 
-        initiatePing(nodeToStart);
+    public synchronized void pingNodes(List<ServentInfo> newServentsToPing) {
+        List<ServentInfo> toRemove = new ArrayList<>();
+        for (Map.Entry<ServentInfo, Timer> entry: serventsToPing.entrySet()) {
+            if(!newServentsToPing.contains(entry.getKey())) {
+                entry.getValue().cancel();
+                toRemove.add(entry.getKey());
+            }
+        }
+
+        for(ServentInfo remove: toRemove) {
+            serventsToPing.remove(remove);
+        }
+
+        for (ServentInfo newServent: newServentsToPing) {
+            if (serventsToPing.containsKey(newServent)){
+                continue;
+            }
+            TimerTask tt = timerTask(newServent);
+            Timer timer = new Timer();
+            timer.schedule(tt, 1000);
+            serventsToPing.put(newServent, timer);
+        }
+
+        System.out.println("---Nodes to ping---");
+        for (ServentInfo servent: serventsToPing.keySet()) {
+            System.out.println("" + servent);
+        }
     }
 
-    private synchronized void initiatePing(ServentInfo node) {
+    private synchronized TimerTask timerTask(ServentInfo node) {
+//        Timer existingTimer = serventsToPing.get(node);
+//        if(existingTimer != null) {
+
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -41,8 +70,7 @@ public class StateStabilizer {
                 MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
                     @Override
                     public void run() {
-                        Logger.timestampedStandardPrint("Pong received " + node.getChordId());
-                        initiatePing(node);
+                        rescheduleForNode(node);
                     }
                 }, 1000, invocation -> {
                     if (invocation == 0) {
@@ -54,12 +82,21 @@ public class StateStabilizer {
                 });
             }
         };
-        Timer timer = new Timer();
-        timer.schedule(timerTask, 1000);
+
+        return timerTask;
+//        Timer timer = new Timer();
+//        timer.schedule(timerTask, 1000);
+    }
+
+    private synchronized void rescheduleForNode(ServentInfo node) {
+        Timer t = serventsToPing.get(node);
+        if (t != null) {
+            t.schedule(timerTask(node), 1000);
+        }
     }
 
     private synchronized void notifyNodeNotAnswering(boolean isSoftTimeout, ServentInfo node) {
-        if(serventsToPing.contains(node)) {
+        if(serventsToPing.containsKey(node)) {
             notificationHandler.nodeNotAnswering(node, isSoftTimeout);
         }
     }

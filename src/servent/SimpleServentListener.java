@@ -22,7 +22,11 @@ import servent.handler.data.PullHandler;
 import servent.handler.data.RemoveHandler;
 import servent.message.Message;
 import servent.message.ResponseMessage;
+import servent.message.TrackedMessage;
+import servent.message.chord.stabilize.PongMessage;
 import servent.message.util.MessageUtil;
+
+import javax.sound.midi.Track;
 
 public class SimpleServentListener implements Runnable, Cancellable {
 
@@ -116,6 +120,15 @@ public class SimpleServentListener implements Runnable, Cancellable {
 						case LEAVE_GRANTED:
 							messageHandler = new LeaveGrantedHandler(clientMessage);
 							break;
+						case PING:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									PongMessage pm = new PongMessage(AppConfig.myServentInfo, clientMessage.getSender());
+									pm.copyContextFrom((TrackedMessage) clientMessage);
+									MessageUtil.sendAndForgetMessage(pm);
+								}
+							};
 						case POISON:
 							break;
 					}

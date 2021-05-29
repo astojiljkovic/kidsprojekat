@@ -12,7 +12,7 @@ public class SuccessorInfo implements CLICommand {
 
 	@Override
 	public void execute(String args) {
-		ServentInfo[] successorTable = AppConfig.chordState.state.getSuccessorTable();
+		ServentInfo[] successorTable = AppConfig.chordState.state.getFingerTable();
 
 		int num = 0;
 		for (ServentInfo serventInfo : successorTable) {

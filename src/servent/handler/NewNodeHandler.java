@@ -1,9 +1,12 @@
 package servent.handler;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import app.*;
+import cli.command.SuccessorInfo;
 import servent.message.Message;
 import servent.message.MessageType;
 import servent.message.NewNodeMessage;
@@ -94,8 +97,16 @@ public class NewNodeHandler implements MessageHandler {
 				for(SillyGitStorageFile file: hisFiles) {
 					System.out.println("" + file.getPathInStorageDir());
 				}
-				
-				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
+
+				List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
+
+				mySuccs.add(0, AppConfig.myServentInfo);
+
+				if (mySuccs.size() > ChordState.State.MAX_SUCCESSORS) {
+					mySuccs.remove(mySuccs.size() - 1);
+				}
+
+				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs);
 				MessageUtil.sendAndForgetMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(newNodeInfo.getChordId());

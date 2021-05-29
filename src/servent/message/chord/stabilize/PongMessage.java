@@ -2,9 +2,10 @@ package servent.message.chord.stabilize;
 
 import app.ServentInfo;
 import servent.message.MessageType;
+import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
 
-public class PongMessage extends TrackedMessage {
+public class PongMessage extends ResponseMessage {
 
 	public PongMessage(ServentInfo sender, ServentInfo receiver) {
 		super(MessageType.PONG, sender, receiver, "");
