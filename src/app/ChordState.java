@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import app.chord.StateStabilizer;
 import app.git.add.AddResult;
 import app.git.commit.CommitResult;
 import app.git.pull.RemoveResult;
@@ -67,6 +68,8 @@ public class ChordState {
 
 		private final int chordLevel; //log_2(CHORD_SIZE)
 
+		private final StateStabilizer stateStabilizer;
+
 		private State() {
 			int tmpChordLvl = 1;
 			int tmp = CHORD_SIZE;
@@ -85,6 +88,10 @@ public class ChordState {
 			}
 
 			predecessorInfo = null;
+
+			stateStabilizer = new StateStabilizer((node, isSoftTimeout) -> {
+				System.out.println("The node is slacking " + node + "is soft? " + isSoftTimeout);
+			});
 		}
 
 		/**
@@ -203,6 +210,7 @@ public class ChordState {
 		}
 
 		private void updateSuccessorTable() {
+			ServentInfo oldSucci = successorTable[0]; // TODO: 29.5.21. remove
 			//first node after me has to be successorTable[0]
 
 			List<Integer> values = new ArrayList<>();
@@ -239,6 +247,7 @@ public class ChordState {
 //
 //			System.out.println("" + info);
 //		}
+			stateStabilizer.stopPingingNodeAndStartPingingAnother(oldSucci, successorTable[0]);
 		}
 
 		private void updatePredecessor() {

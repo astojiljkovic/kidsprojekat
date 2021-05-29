@@ -115,7 +115,7 @@ public class MessageUtil {
 		sendMessage(message);
 	}
 
-	interface MessageTimeoutHandler {
+	public interface MessageTimeoutHandler {
 		/**
 		 * Return number of milliseconds to extend timeout, or -1 if done
 		 */
