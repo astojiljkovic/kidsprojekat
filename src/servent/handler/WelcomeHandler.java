@@ -8,6 +8,9 @@ import servent.message.UpdateMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 public class WelcomeHandler implements MessageHandler {
 
 	private Message clientMessage;
@@ -23,7 +26,7 @@ public class WelcomeHandler implements MessageHandler {
 			
 			AppConfig.chordState.init(welcomeMsg);
 			
-			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.getSuccessorInfo(), "");
+			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.getSuccessorInfo(), List.of(AppConfig.myServentInfo));
 			MessageUtil.sendAndForgetMessage(um);
 			
 		} else {
