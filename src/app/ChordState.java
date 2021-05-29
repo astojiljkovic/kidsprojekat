@@ -32,6 +32,8 @@ import servent.message.*;
 import servent.message.chord.leave.LeaveGrantedMessage;
 import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.chord.leave.SuccessorLeavingMessage;
+import servent.message.chord.stabilize.NewPredecessorMessage;
+import servent.message.chord.stabilize.NewPredecessorResponseMessage;
 import servent.message.chord.stabilize.QuestionExistenceMessage;
 import servent.message.chord.stabilize.QuestionExistenceResponseMessage;
 import servent.message.data.*;
@@ -121,13 +123,12 @@ public class ChordState {
 
 			if (node.getState() == SuspiciousNode.State.SOFT_DEAD && node.getServentInfo().equals(getClosestSuccessor())) { //start questioning his existence
 				//get successor of questionable node
-				ServentInfo succiOfSucci = getSuccessor(1); //// TODO: 29.5.21. Check if obtained succ is already in our suspicious table
+				ServentInfo succiOfSucci = getSucciOfFailingSucci(node.getServentInfo()); //// TODO: 29.5.21. Check if obtained succ is already in our suspicious table
 				if (succiOfSucci == node.getServentInfo()) { //we don't have successor of troubled node - edge case
 					Logger.timestampedErrorPrint("No successor of failed node, can't recover " + node.getServentInfo()); //TODO: fix if possible (going back through predecessors)
 					return;
 				}
 				QuestionExistenceMessage question = new QuestionExistenceMessage(myServentInfo, succiOfSucci, node.getServentInfo());
-
 
 				MessageUtil.sendTrackedMessageAwaitingResponse(question, new ResponseMessageHandler() {
 					@Override
@@ -139,6 +140,19 @@ public class ChordState {
 			}
 		}
 
+		private ServentInfo getSucciOfFailingSucci(ServentInfo failingSucc) {
+			boolean isNextValid = false;
+			for(ServentInfo succ: getSuccessors()) {
+				if(succ != null && succ.getChordId() == failingSucc.getChordId()) {
+					isNextValid = true;
+				} else if(succ != null && isNextValid) {
+					return succ;
+				}
+			}
+			Logger.timestampedErrorPrint("No successor of failed node, can't recover " + failingSucc); //TODO: fix if possible (going back through predecessors)
+			return failingSucc; //This is not true
+		}
+
 		private void handleSuspiciousNodeUpdate(ServentInfo serventInfo, boolean didDie) {
 			Optional<SuspiciousNode> sn = suspiciousNodes.stream().filter(suspiciousNode -> suspiciousNode.getServentInfo().equals(serventInfo)).findFirst();
 			if(sn.isEmpty()) { //node not suspicious anymore (ping came in the meantime)
@@ -146,6 +160,19 @@ public class ChordState {
 			}
 			if (didDie && sn.get().getState() == SuspiciousNode.State.DEAD) { //start recovery
 
+				NewPredecessorMessage newPredMessage = new NewPredecessorMessage(myServentInfo, getSucciOfFailingSucci(serventInfo), myServentInfo);
+				MessageUtil.sendTrackedMessageAwaitingResponse(newPredMessage, new ResponseMessageHandler() {
+					@Override
+					public void run() {
+						NewPredecessorResponseMessage response = (NewPredecessorResponseMessage) message;
+
+						setSuccessors(response.getSuccessors());
+						allNodeInfo.removeIf(everyNode -> everyNode.getChordId() == sn.get().getServentInfo().getChordId());
+						updateFingerTable();
+						UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo));
+						MessageUtil.sendAndForgetMessage(um);
+					}
+				});
 			} else if (didDie && sn.get().getState() == SuspiciousNode.State.SOFT_DEAD) { //We just wait for either all good or DEAD from our stabilizer
 				//do nothing
 			} else if (!didDie) { //Someone else returned that node is ok

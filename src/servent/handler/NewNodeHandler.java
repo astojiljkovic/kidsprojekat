@@ -105,6 +105,7 @@ public class NewNodeHandler implements MessageHandler {
 					System.out.println("" + file.getPathInStorageDir());
 				}
 
+				//TODO: this looks sketchy
 				List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
 
 				mySuccs.add(0, AppConfig.myServentInfo);
@@ -113,6 +114,7 @@ public class NewNodeHandler implements MessageHandler {
 					mySuccs.remove(mySuccs.size() - 1);
 				}
 
+				//TODO: don't return null successors
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList()));
 				MessageUtil.sendAndForgetMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it

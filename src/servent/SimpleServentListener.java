@@ -5,13 +5,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
-import app.AppConfig;
-import app.Cancellable;
-import app.Logger;
+import app.*;
 import servent.handler.*;
 import servent.handler.chord.leave.LeaveGrantedHandler;
 import servent.handler.chord.leave.LeaveRequestHandler;
@@ -23,7 +22,7 @@ import servent.handler.data.RemoveHandler;
 import servent.message.Message;
 import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
-import servent.message.chord.stabilize.PongMessage;
+import servent.message.chord.stabilize.*;
 import servent.message.util.MessageUtil;
 
 import javax.sound.midi.Track;
@@ -129,6 +128,55 @@ public class SimpleServentListener implements Runnable, Cancellable {
 									MessageUtil.sendAndForgetMessage(pm);
 								}
 							};
+							break;
+						case QUESTION_EXISTENCE:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									QuestionExistenceMessage qm = (QuestionExistenceMessage) clientMessage;
+									ServentInfo softDeadNode = qm.getSoftDeadNode();
+									PingMessage ping = new PingMessage(AppConfig.myServentInfo, softDeadNode);
+									MessageUtil.sendTrackedMessageAwaitingResponse(ping, new ResponseMessageHandler() {
+											@Override
+											public void run() {
+												QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), false, softDeadNode);
+												response.copyContextFrom(qm);
+												MessageUtil.sendAndForgetMessage(response);
+											}
+										}, 10000,
+										invocation -> { //timeout
+											QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), true, softDeadNode);
+											response.copyContextFrom(qm);
+											MessageUtil.sendAndForgetMessage(response);
+											return -1;
+										});
+								}
+							};
+							break;
+						case NEW_PREDECESSOR:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									NewPredecessorMessage npm = (NewPredecessorMessage) clientMessage;
+									AppConfig.chordState.state.setPredecessor(npm.getNewPredecessor());
+
+									//TODO: don't return null successors
+									List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
+
+									mySuccs.add(0, AppConfig.myServentInfo);
+
+									if (mySuccs.size() > ChordState.State.MAX_SUCCESSORS) {
+										mySuccs.remove(mySuccs.size() - 1);
+									}
+
+									List<ServentInfo> succis = mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList());
+									NewPredecessorResponseMessage response = new NewPredecessorResponseMessage(AppConfig.myServentInfo, clientMessage.getSender(),
+											succis);
+									response.copyContextFrom(npm);
+									MessageUtil.sendAndForgetMessage(response);
+								}
+							};
+							break;
 						case POISON:
 							break;
 					}
