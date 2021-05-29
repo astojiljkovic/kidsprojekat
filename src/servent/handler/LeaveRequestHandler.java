@@ -18,7 +18,7 @@ public class LeaveRequestHandler implements MessageHandler {
 		if (clientMessage.getMessageType() == MessageType.LEAVE_REQUEST) {
 			LeaveRequestMessage leaveRequestMessage = (LeaveRequestMessage)clientMessage;
 			
-			AppConfig.chordState.handleLeave(leaveRequestMessage.getSender(), leaveRequestMessage.getPredecessor());
+			AppConfig.chordState.handleLeave(leaveRequestMessage);
 			
 //			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.getSuccessorInfo(), "");
 //			MessageUtil.sendAndForgetMessage(um);

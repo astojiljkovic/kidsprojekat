@@ -27,8 +27,6 @@ import servent.message.*;
 import servent.message.data.*;
 import servent.message.util.MessageUtil;
 
-import javax.print.attribute.standard.Severity;
-
 import static app.AppConfig.*;
 import static java.lang.System.exit;
 
@@ -70,7 +68,7 @@ public class ChordState {
 	private ServentInfo predecessorInfo;
 	
 	//we DO NOT use this to send messages, but only to construct the successor table
-	private List<ServentInfo> allNodeInfo;
+	private Set<ServentInfo> allNodeInfo = new HashSet<>();
 	
 	public ChordState() {
 		int tmpChordLvl = 1;
@@ -90,12 +88,12 @@ public class ChordState {
 		}
 		
 		predecessorInfo = null;
-		allNodeInfo = new ArrayList<>();
+//		allNodeInfo = new ArrayList<>();
 	}
 
 	public static int hashForFilePath(String pathInDir) {
 		try {
-			byte []shaBytes = MessageDigest.getInstance("SHA-1").digest(pathInDir.getBytes());
+			byte []shaBytes = MessageDigest.getInstance("SHA-1").digest(Path.of(pathInDir).getName(0).toString().getBytes());
 			ByteBuffer wrapped = ByteBuffer.wrap(shaBytes);
 //			wrapped.getInt();
 //			return wrapped.getInt();
@@ -118,13 +116,15 @@ public class ChordState {
 		successorTable[0] = welcomeMsg.getSender();
 //		this.valueMap = welcomeMsg.getValues();
 
-		for(SillyGitStorageFile sgsf: welcomeMsg.getFiles()) {
-			try {
-				storage.add(sgsf.getPathInStorageDir(), sgsf.getContent());
-			} catch (FileAlreadyAddedStorageException e) {
-				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgsf);
-			}
-		}
+		storage.addTransferedFiles(welcomeMsg.getFiles());
+//		for(SillyGitStorageFile sgsf: welcomeMsg.getFiles()) {
+//			try {
+//				storage.addTransferedFiles(sgsf);
+//				storage.add(sgsf.getPathInStorageDir(), sgsf.getContent());
+//			} catch (FileAlreadyAddedStorageException e) {
+//				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgsf);
+//			}
+//		}
 		
 		//tell bootstrap this node is not a collider
 		try {
@@ -347,23 +347,25 @@ public class ChordState {
 	 */
 	public void addNodes(List<ServentInfo> newNodes) {
 		allNodeInfo.addAll(newNodes);
-
-		Set<ServentInfo> servents = new HashSet<>(allNodeInfo);
-
-		allNodeInfo = new ArrayList<>(servents);
 		
-		allNodeInfo.sort(new Comparator<ServentInfo>() {
-			
-			@Override
-			public int compare(ServentInfo o1, ServentInfo o2) {
-				return o1.getChordId() - o2.getChordId();
-			}
-			
-		});
+//		allNodeInfo.sort(new Comparator<ServentInfo>() {
+//
+//			@Override
+//			public int compare(ServentInfo o1, ServentInfo o2) {
+//				return o1.getChordId() - o2.getChordId();
+//			}
+//
+//		});
 
-		
-		List<ServentInfo> biggerIdNodes = new ArrayList<>();
-		List<ServentInfo> smallerIdNodes = new ArrayList<>();
+
+
+		updatePredecessor();
+		updateSuccessorTable();
+	}
+
+	private void updatePredecessor() {
+		Set<ServentInfo> biggerIdNodes = new HashSet<>();
+		Set<ServentInfo> smallerIdNodes = new HashSet<>();
 
 		System.out.println("---- All current nodes ----");
 
@@ -376,19 +378,19 @@ public class ChordState {
 				biggerIdNodes.add(serventInfo);
 			}
 		}
-		
+
 		allNodeInfo.clear();
 		allNodeInfo.addAll(biggerIdNodes);
 		allNodeInfo.addAll(smallerIdNodes);
+
+
 		if (smallerIdNodes.size() > 0) {
-			predecessorInfo = smallerIdNodes.get(smallerIdNodes.size()-1);
+			predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
 		} else {
-			predecessorInfo = biggerIdNodes.get(biggerIdNodes.size()-1);
+			predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
 		}
 		System.out.println("predecessor " + predecessorInfo);
 		System.out.println("succi " + getSuccessorInfo());
-		
-		updateSuccessorTable();
 	}
 
 
@@ -710,25 +712,38 @@ public class ChordState {
 	private java.util.function.Consumer<Integer> leaveHandler;
 	public void requestLeave(Consumer<Integer> lh) {
 		leaveHandler = lh;
-		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, getSuccessorInfo(), getPredecessor());
+		List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToRoot();
+		List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
+		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, getSuccessorInfo(), getPredecessor(), data);
 		MessageUtil.sendAndForgetMessage(lrm);
 	}
 
-	public void handleLeave(ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
-		setPredecessor(sendersPredecessor);
+	public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
+		ServentInfo leaveInitiator = leaveRequestMessage.getSender();
+		removeNodeFromAllNodes(leaveInitiator);
+		setPredecessor(leaveRequestMessage.getPredecessor());
+		storage.addTransferedFiles(leaveRequestMessage.getData());
+
 		SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, getPredecessor(), leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);
 	}
 
-	public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
-		for(ServentInfo serventInfo: allNodeInfo) {
-			System.out.println("" + serventInfo.getChordId());
-		}
-		allNodeInfo.remove(leaveInitiator);
+	private void removeNodeFromAllNodes(ServentInfo node) {
+		allNodeInfo.remove(node);
+		updatePredecessor();
 		updateSuccessorTable();
-		for(ServentInfo serventInfo: allNodeInfo) {
-			System.out.println("" + serventInfo.getChordId());
-		}
+	}
+
+	public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
+		removeNodeFromAllNodes(leaveInitiator);
+//		for(ServentInfo serventInfo: allNodeInfo) {
+//			System.out.println("" + serventInfo.getChordId());
+//		}
+//		allNodeInfo.remove(leaveInitiator);
+//		updateSuccessorTable();
+//		for(ServentInfo serventInfo: allNodeInfo) {
+//			System.out.println("" + serventInfo.getChordId());
+//		}
 
 		LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);

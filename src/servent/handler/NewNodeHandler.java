@@ -11,6 +11,8 @@ import servent.message.SorryMessage;
 import servent.message.WelcomeMessage;
 import servent.message.util.MessageUtil;
 
+import static app.ChordState.hashForFilePath;
+
 public class NewNodeHandler implements MessageHandler {
 
 	private Message clientMessage;
@@ -41,6 +43,7 @@ public class NewNodeHandler implements MessageHandler {
 				
 				AppConfig.chordState.setPredecessor(newNodeInfo);
 
+				System.out.println("* * * MY files * * *");
 				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeToRoot();
 				List<String> hisFilePaths = new ArrayList<>();
 
@@ -49,7 +52,11 @@ public class NewNodeHandler implements MessageHandler {
 				int newNodeId = newNodeInfo.getChordId();
 				
 				for (String storedFilePath : myStoredFilePaths) {
-					int entryKey = AppConfig.chordState.chordHash(storedFilePath.hashCode()); // TODO: 25.5.21. Move hashing from here
+					;
+//					int entryKey = AppConfig.chordState.chordHash(storedFilePath.hashCode()); // TODO: 25.5.21. Move hashing from here
+					int entryKey = hashForFilePath(storedFilePath);
+					System.out.println("" + storedFilePath + " | " + entryKey);
+
 					if (hisPredId == myId) { //i am first and he is second
 						if (myId < newNodeId) {
 							if (entryKey <= newNodeId && entryKey > myId) {
@@ -80,8 +87,13 @@ public class NewNodeHandler implements MessageHandler {
 					
 				}
 
+				System.out.println("*** His paths ***");
+
 				// removeFileForUs his values from my storage
 				List<SillyGitStorageFile> hisFiles = AppConfig.storage.removeFilesOnRelativePathsReturningGitFiles(hisFilePaths);
+				for(SillyGitStorageFile file: hisFiles) {
+					System.out.println("" + file.getPathInStorageDir());
+				}
 				
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
 				MessageUtil.sendAndForgetMessage(wm);

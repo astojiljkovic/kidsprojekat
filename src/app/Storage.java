@@ -47,6 +47,16 @@ public class Storage {
         }
     }
 
+    public void addTransferedFiles(List<SillyGitStorageFile> list) {
+        for(SillyGitStorageFile file: list) {
+            try {
+                save(file.getPathInStorageDir(), file.getContent(), file.getVersion());
+            } catch (FileAlreadyExistsException e) {
+                Logger.timestampedStandardPrint("Adding transfered file failed but it's all good - file already exists");
+            }
+        }
+    }
+
     private void save(String path, String content, int version) throws FileAlreadyExistsException {
         String versionedFilename = filenameWithVersion(path, version);
         File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
@@ -212,24 +222,6 @@ public class Storage {
                 .map(path -> { // bananica.txt, dir/jogurt.txt
                     return filenameFromVersionedFilename(path);
                 }).collect(Collectors.toList());
-
-//        File folder = fileForRelativePathToWorkDir(folderRelativeToRoot.toString());
-//        try {
-//            return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
-//                    .filter(path -> !Files.isDirectory(path))
-//                    .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, dir/jogurt.txt_version_0
-//                        return folder.toPath().relativize(path).toString();
-//                    })
-//                    .filter(path -> { // bananica.txt_version_0, dir/jogurt.txt_version_1
-//                        return path.endsWith("_0");
-//                    })
-//                    .map(path -> { // bananica.txt, dir/jogurt.txt
-//                        return filenameFromVersionedFilename(path);
-//                    })
-//                    .collect(Collectors.toList());
-//        } catch (IOException e) {
-//            throw new UncheckedIOException(e);
-//        }
     }
 
     //Used before transfering files to others
@@ -287,42 +279,6 @@ public class Storage {
         FileSystemUtils.removeEmptyDirsInPath(root.toPath());
 
         return sgfs;
-
-
-        //paths => bananica.txt, jogurt.txt
-        //paths => dir, dir/dir, dir/bananica.txt, dir/dir/jogurt.txt
-//        try {
-//            // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
-//            List<Path> matchingPaths = Files.list(root.toPath()) // /aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/jogurt.txt
-//                    .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt, mucak.txt_version_0, mucak.txt_version_1
-//                        return root.toPath().relativize(path);
-//                    })
-//                    .filter(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
-//                        String nameWithoutVersion = filenameFromVersionedFilename(path.toString());
-//                        return paths.contains(nameWithoutVersion);
-//                    }).collect(Collectors.toList());
-//
-//            return matchingPaths // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
-//                    .stream().map(Path::toString)
-//                    .map(this::fileForRelativePathToWorkDir)
-//                    .map(file -> {
-//                        return file.toPath();
-//                    })
-//                    .map(path -> {
-//                        try {
-//                            String content = Files.readString(path);
-//                            String relativePathToStorage = root.toPath().relativize(path).toString();
-//                            String fileName = filenameFromVersionedFilename(relativePathToStorage);
-//                            int version = versionFromVersionedFilename(relativePathToStorage);
-//                            Files.delete(path);
-//                            return createSillyGitStorageFile(fileName, content, version);
-//                        } catch (IOException e) {
-//                            throw new UncheckedIOException(e);
-//                        }
-//                    }).collect(Collectors.toList());
-//        } catch (IOException e) {
-//            throw new UncheckedIOException(e);
-//        }
     }
 
     private int getLatestStoredVersion(Path filePath) throws FileDoesntExistStorageException {
