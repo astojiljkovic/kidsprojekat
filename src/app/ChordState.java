@@ -63,7 +63,7 @@ public class ChordState {
 		private ServentInfo[] successorTable;
 		private ServentInfo predecessorInfo;
 
-		private Set<ServentInfo> allNodeInfo = new HashSet<>();
+		private final Set<ServentInfo> allNodeInfo = new HashSet<>();
 
 		private final int chordLevel; //log_2(CHORD_SIZE)
 
@@ -85,6 +85,7 @@ public class ChordState {
 			}
 
 			predecessorInfo = null;
+			successorTable[0] = firstSucc;
 		}
 
 		public ServentInfo[] getSuccessorTable() {
