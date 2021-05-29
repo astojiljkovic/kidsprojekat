@@ -227,6 +227,7 @@ public class ChordState {
 			}
 			List<ServentInfo> sortedSuccis = receivedSuccessors.stream()
 					.filter(Objects::nonNull)
+					.filter(serventInfo -> serventInfo.equals(myServentInfo)) // in case when our successor has us as one if his successors
 					.sorted(Comparator.comparingInt(ServentInfo::getChordId))
 					.collect(Collectors.toList());
 			for(int i = 0; i < sortedSuccis.size(); i++) {

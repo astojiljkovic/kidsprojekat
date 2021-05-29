@@ -46,6 +46,11 @@ public class NewNodeHandler implements MessageHandler {
 				
 				AppConfig.chordState.state.setPredecessor(newNodeInfo);
 
+				//System is starting, we don't have succ (we are first node)
+				if (AppConfig.chordState.state.getClosestSuccessor() == null) {
+					AppConfig.chordState.state.setSuccessors(List.of(newNodeInfo));
+				}
+
 				System.out.println("* * * MY files * * *");
 				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
 				List<String> hisFilePaths = new ArrayList<>();
