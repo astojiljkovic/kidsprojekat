@@ -59,7 +59,7 @@ import static java.lang.System.exit;
  */
 public class ChordState {
 
-	public class State {
+	public static class State {
 		private ServentInfo[] successorTable;
 		private ServentInfo predecessorInfo;
 
@@ -67,7 +67,7 @@ public class ChordState {
 
 		private final int chordLevel; //log_2(CHORD_SIZE)
 
-		private State(ServentInfo firstSucc) {
+		private State() {
 			int tmpChordLvl = 1;
 			int tmp = CHORD_SIZE;
 			while (tmp != 2) {
@@ -85,7 +85,7 @@ public class ChordState {
 			}
 
 			predecessorInfo = null;
-			successorTable[0] = firstSucc;
+//			successorTable[0] = firstSucc;
 		}
 
 		public ServentInfo[] getSuccessorTable() {
@@ -102,6 +102,9 @@ public class ChordState {
 
 		public void setPredecessor(ServentInfo newNodeInfo) {
 			this.predecessorInfo = newNodeInfo;
+		}
+		public void setSuccessor(ServentInfo newNodeInfo) {
+			this.successorTable[0] = newNodeInfo;
 		}
 
 		public boolean isCollision(int chordId) {
@@ -270,7 +273,7 @@ public class ChordState {
 		}
 	}
 
-	public static State state;
+	public State state = new State();
 
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
@@ -326,8 +329,9 @@ public class ChordState {
 	 * It also lets bootstrap know that we did not collide.
 	 */
 	public void init(WelcomeMessage welcomeMsg) {
-		state = new State(welcomeMsg.getSender());
+//		state = new State(welcomeMsg.getSender());
 		//set a temporary pointer to next node, for sending of update message
+		state.setSuccessor(welcomeMsg.getSender());
 //		successorTable[0] = welcomeMsg.getSender();
 
 		storage.addTransferedFiles(welcomeMsg.getFiles());
