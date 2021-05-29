@@ -23,6 +23,7 @@ import app.storage.CommitConflictStorageException;
 import app.storage.FileAlreadyAddedStorageException;
 import app.storage.FileDoesntExistStorageException;
 import cli.command.SuccessorInfo;
+import servent.handler.ResponseMessageHandler;
 import servent.handler.data.AddResponseHandler;
 import servent.handler.data.CommitResponseHandler;
 import servent.handler.data.PullResponseHandler;
@@ -31,6 +32,8 @@ import servent.message.*;
 import servent.message.chord.leave.LeaveGrantedMessage;
 import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.chord.leave.SuccessorLeavingMessage;
+import servent.message.chord.stabilize.QuestionExistenceMessage;
+import servent.message.chord.stabilize.QuestionExistenceResponseMessage;
 import servent.message.data.*;
 import servent.message.util.MessageUtil;
 
@@ -67,7 +70,7 @@ public class ChordState {
 		public static final int MAX_SUCCESSORS = 3;
 		private ServentInfo[] successors = new ServentInfo[MAX_SUCCESSORS];
 
-		private List<SuspiciousNode> suspiciousNodes = new ArrayList<>();
+		private Set<SuspiciousNode> suspiciousNodes = new HashSet<>();
 
 		private ServentInfo[] fingerTable;
 
@@ -96,11 +99,59 @@ public class ChordState {
 
 			predecessorInfo = null;
 
-			stateStabilizer = new StateStabilizer((node, isSoftTimeout) -> {
-				System.out.println("The node is slacking " + node + "is soft? " + isSoftTimeout);
-			});
+			stateStabilizer = new StateStabilizer(
+					nodeInfo -> { //node answered
+						removeSuspiciousNode(nodeInfo);
+					},
+					(node, isSoftTimeout) -> { //node didn't answer
+						System.out.println("The node is slacking " + node + "is soft? " + isSoftTimeout);
+
+						addSuspiciousNode(new SuspiciousNode(node, isSoftTimeout ? SuspiciousNode.State.SOFT_DEAD : SuspiciousNode.State.DEAD));
+					});
 		}
 
+		private void removeSuspiciousNode(ServentInfo nodeInfo) {
+			suspiciousNodes.removeIf(suspiciousNode -> suspiciousNode.getServentInfo().equals(nodeInfo));
+		}
+
+		private void addSuspiciousNode(SuspiciousNode node) {
+			suspiciousNodes.removeIf(suspiciousNode -> suspiciousNode.getServentInfo().equals(node.getServentInfo()));
+
+			suspiciousNodes.add(node);
+
+			if (node.getState() == SuspiciousNode.State.SOFT_DEAD && node.getServentInfo().equals(getClosestSuccessor())) { //start questioning his existence
+				//get successor of questionable node
+				ServentInfo succiOfSucci = getSuccessor(1); //// TODO: 29.5.21. Check if obtained succ is already in our suspicious table
+				if (succiOfSucci == node.getServentInfo()) { //we don't have successor of troubled node - edge case
+					Logger.timestampedErrorPrint("No successor of failed node, can't recover " + node.getServentInfo()); //TODO: fix if possible (going back through predecessors)
+					return;
+				}
+				QuestionExistenceMessage question = new QuestionExistenceMessage(myServentInfo, succiOfSucci, node.getServentInfo());
+
+
+				MessageUtil.sendTrackedMessageAwaitingResponse(question, new ResponseMessageHandler() {
+					@Override
+					public void run() {
+						QuestionExistenceResponseMessage msg = (QuestionExistenceResponseMessage) message;
+						handleSuspiciousNodeUpdate(msg.getNode(), msg.isDead());
+					}
+				});
+			}
+		}
+
+		private void handleSuspiciousNodeUpdate(ServentInfo serventInfo, boolean didDie) {
+			Optional<SuspiciousNode> sn = suspiciousNodes.stream().filter(suspiciousNode -> suspiciousNode.getServentInfo().equals(serventInfo)).findFirst();
+			if(sn.isEmpty()) { //node not suspicious anymore (ping came in the meantime)
+				return;
+			}
+			if (didDie && sn.get().getState() == SuspiciousNode.State.DEAD) { //start recovery
+
+			} else if (didDie && sn.get().getState() == SuspiciousNode.State.SOFT_DEAD) { //We just wait for either all good or DEAD from our stabilizer
+				//do nothing
+			} else if (!didDie) { //Someone else returned that node is ok
+				suspiciousNodes.removeIf(suspiciousNode -> suspiciousNode.getServentInfo().equals(serventInfo));
+			}
+		}
 		/**
 		 * This method constructs an ordered list of all nodes. They are ordered by chordId, starting from this node.
 		 * Once the list is created, we invoke <code>updateSuccessorTable()</code> to do the rest of the work.

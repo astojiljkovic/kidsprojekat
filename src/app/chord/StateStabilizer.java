@@ -15,11 +15,17 @@ public class StateStabilizer {
         void nodeNotAnswering(ServentInfo node, boolean isSoftTimeout);
     }
 
+    public interface AnsweredNotification {
+        void nodeAnswered(ServentInfo node);
+    }
+
     private HashMap<ServentInfo, Timer> serventsToPing = new HashMap<>();
 
     private final NotAnsweringNotification notificationHandler;
+    private final AnsweredNotification answeredNotificationHandler;
 
-    public StateStabilizer(NotAnsweringNotification notificationHandler) {
+    public StateStabilizer(AnsweredNotification answeredNotificationHandler, NotAnsweringNotification notificationHandler) {
+        this.answeredNotificationHandler = answeredNotificationHandler;
         this.notificationHandler = notificationHandler;
     }
 
@@ -68,6 +74,7 @@ public class StateStabilizer {
                 MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
                     @Override
                     public void run() {
+                        answeredNotificationHandler.nodeAnswered(node);
                         rescheduleForNode(node);
                     }
                 }, 1000, invocation -> {
@@ -76,7 +83,7 @@ public class StateStabilizer {
                         return 9000;
                     }
                     notifyNodeNotAnswering(false, node);
-                    return -1;
+                    return 10000;
                 });
             }
         };
