@@ -189,8 +189,25 @@ public class ChordState {
 			return fingerTable;
 		}
 
-		public ServentInfo getSuccessorInfo() {
-			return fingerTable[0];
+		public ServentInfo[] getSuccessorInfoForPrint() {
+			return successors;
+		}
+
+		public ServentInfo getClosestSuccessor() {
+			return getSuccessor(0);
+		}
+
+		public ServentInfo getSuccessor(int desiredSucc) { //0 closest - 2 furthest
+			for(int i = successors.length - 1; i > 0; i--) {
+				if (i == desiredSucc && successors[i] != null) {
+					return successors[i];
+				}
+				if (desiredSucc > i && successors[i] != null) {
+					return successors[i];
+				}
+			}
+
+			return successors[0]; //this shouldn't be reached
 		}
 
 		public ServentInfo[] getSuccessors() { return successors; }
@@ -301,7 +318,10 @@ public class ChordState {
 				predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
 			}
 			System.out.println("predecessor " + predecessorInfo);
-			System.out.println("succi " + getSuccessorInfo());
+
+			for(ServentInfo succ: successors) {
+				System.out.println("succi " + succ);
+			}
 		}
 	}
 
@@ -674,7 +694,7 @@ public class ChordState {
 		leaveHandler = lh;
 		List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
 		List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getSuccessorInfo(), state.getPredecessor(), data);
+		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getClosestSuccessor(), state.getPredecessor(), data);
 		MessageUtil.sendAndForgetMessage(lrm);
 	}
 
@@ -698,7 +718,7 @@ public class ChordState {
 		removeNodeFromAllNodes(leaveInitiator);
 		LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);
-		UpdateMessage update = new UpdateMessage(myServentInfo, state.getSuccessorInfo(), List.of(myServentInfo));
+		UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo));
 		MessageUtil.sendAndForgetMessage(update);
 	}
 

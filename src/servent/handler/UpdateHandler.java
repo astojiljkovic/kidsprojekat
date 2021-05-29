@@ -37,7 +37,7 @@ public class UpdateHandler implements MessageHandler {
 
 				newNodes.add(AppConfig.myServentInfo);
 
-				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.state.getSuccessorInfo(), newNodes);
+				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.state.getClosestSuccessor(), newNodes);
 				MessageUtil.sendAndForgetMessage(nextUpdate);
 			} else {
 
