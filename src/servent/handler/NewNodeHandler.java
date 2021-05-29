@@ -1,20 +1,11 @@
 package servent.handler;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import app.*;
-import cli.command.SuccessorInfo;
-import servent.message.Message;
-import servent.message.MessageType;
-import servent.message.NewNodeMessage;
-import servent.message.SorryMessage;
-import servent.message.WelcomeMessage;
+import servent.message.*;
 import servent.message.util.MessageUtil;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static app.ChordState.hashForFilePath;
 
@@ -45,13 +36,15 @@ public class NewNodeHandler implements MessageHandler {
 				if (hisPred == null) {
 					hisPred = AppConfig.myServentInfo;
 				}
+
+				AppConfig.chordState.state.addNodes(List.of(newNodeInfo), Collections.emptyList());
 				
-				AppConfig.chordState.state.setPredecessor(newNodeInfo);
+//				AppConfig.chordState.state.setPredecessor(newNodeInfo);
 
 				//System is starting, we don't have succ (we are first node)
-				if (AppConfig.chordState.state.getClosestSuccessor() == null) {
-					AppConfig.chordState.state.setSuccessors(List.of(newNodeInfo));
-				}
+//				if (AppConfig.chordState.state.getClosestSuccessor() == null) {
+//					AppConfig.chordState.state.setSuccessors(List.of(newNodeInfo));
+//				}
 
 				System.out.println("* * * MY files * * *");
 				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();

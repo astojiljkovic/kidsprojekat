@@ -158,7 +158,11 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									NewPredecessorMessage npm = (NewPredecessorMessage) clientMessage;
-									AppConfig.chordState.state.setPredecessor(npm.getNewPredecessor());
+
+									ServentInfo currentPred = AppConfig.chordState.state.getPredecessor();
+
+									AppConfig.chordState.state.addNodes(Collections.emptyList(), List.of(currentPred));
+//									AppConfig.chordState.state.setPredecessor(npm.getNewPredecessor());
 
 									//TODO: don't return null successors
 									List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
