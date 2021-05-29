@@ -3,6 +3,7 @@ package app;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -58,49 +59,229 @@ import static java.lang.System.exit;
  */
 public class ChordState {
 
+	public class State {
+		private ServentInfo[] successorTable;
+		private ServentInfo predecessorInfo;
+
+		private Set<ServentInfo> allNodeInfo = new HashSet<>();
+
+		private final int chordLevel; //log_2(CHORD_SIZE)
+
+		private State(ServentInfo firstSucc) {
+			int tmpChordLvl = 1;
+			int tmp = CHORD_SIZE;
+			while (tmp != 2) {
+				if (tmp % 2 != 0) { //not a power of 2
+					throw new NumberFormatException();
+				}
+				tmp /= 2;
+				tmpChordLvl++;
+			}
+			this.chordLevel = tmpChordLvl;
+
+			successorTable = new ServentInfo[chordLevel];
+			for (int i = 0; i < chordLevel; i++) {
+				successorTable[i] = null;
+			}
+
+			predecessorInfo = null;
+		}
+
+		public ServentInfo[] getSuccessorTable() {
+			return successorTable;
+		}
+
+		public ServentInfo getSuccessorInfo() {
+			return successorTable[0];
+		}
+
+		public ServentInfo getPredecessor() {
+			return predecessorInfo;
+		}
+
+		public void setPredecessor(ServentInfo newNodeInfo) {
+			this.predecessorInfo = newNodeInfo;
+		}
+
+		public boolean isCollision(int chordId) {
+			if (chordId == myServentInfo.getChordId()) {
+				return true;
+			}
+			for (ServentInfo serventInfo : allNodeInfo) {
+				if (serventInfo.getChordId() == chordId) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Returns true if we are the owner of the specified key.
+		 */
+		public boolean isKeyMine(int key) {
+			if (predecessorInfo == null) {
+				return true;
+			}
+
+			int predecessorChordId = predecessorInfo.getChordId();
+			int myChordId = myServentInfo.getChordId();
+
+			if (predecessorChordId < myChordId) { //no overflow
+				if (key <= myChordId && key > predecessorChordId) {
+					return true;
+				}
+			} else { //overflow
+				if (key <= myChordId || key > predecessorChordId) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Main chord operation - find the nearest node to hop to to find a specific key.
+		 * We have to take a value that is smaller than required to make sure we don't overshoot.
+		 * We can only be certain we have found the required node when it is our first next node.
+		 */
+		public ServentInfo getNextNodeForKey(int key) {
+			if (isKeyMine(key)) {
+				return myServentInfo;
+			}
+
+			//normally we start the search from our first successor
+			int startInd = 0;
+
+			//if the key is smaller than us, and we are not the owner,
+			//then all nodes up to CHORD_SIZE will never be the owner,
+			//so we start the search from the first item in our table after CHORD_SIZE
+			//we know that such a node must exist, because otherwise we would own this key
+			if (key < myServentInfo.getChordId()) {
+				int skip = 1;
+				while (successorTable[skip].getChordId() > successorTable[startInd].getChordId()) {
+					startInd++;
+					skip++;
+				}
+			}
+
+			int previousId = successorTable[startInd].getChordId();
+
+			for (int i = startInd + 1; i < successorTable.length; i++) {
+				if (successorTable[i] == null) {
+					Logger.timestampedErrorPrint("Couldn't find successor for " + key);
+					break;
+				}
+
+				int successorId = successorTable[i].getChordId();
+
+				if (successorId >= key) {
+					return successorTable[i-1];
+				}
+				if (key > previousId && successorId < previousId) { //overflow
+					return successorTable[i-1];
+				}
+				previousId = successorId;
+			}
+			//if we have only one node in all slots in the table, we might get here
+			//then we can return any item
+			return successorTable[0];
+		}
+
+		private void updateSuccessorTable() {
+			//first node after me has to be successorTable[0]
+
+			List<Integer> values = new ArrayList<>();
+			for(int i = 0; i < chordLevel; i++) {
+				values.add((int) (myServentInfo.getChordId() + Math.pow(2, i)) % CHORD_SIZE);
+			}
+
+			//[12(raketa)|localhost:1200]
+			//[54(raketa)|localhost:1100]
+			List<ServentInfo> succis = new ArrayList<>();
+			for(int value: values) {
+				List<ServentInfo> bigger = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() >= value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+				List<ServentInfo> smaller = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() < value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+
+				Optional<ServentInfo> firstBigger = bigger.stream().findFirst();
+				if (firstBigger.isPresent()) {
+					succis.add(firstBigger.get());
+				} else {
+					ServentInfo smallestSmall = smaller.get(0);
+					succis.add(smallestSmall);
+				}
+			}
+
+			for(int i = 0; i < chordLevel; i++) {
+				successorTable[i] = succis.get(i);
+			}
+
+			System.out.println("New succ table" );
+
+			for(int i = 0; i < successorTable.length; i++) {
+				System.out.println("" + (((int) (myServentInfo.getChordId() + Math.pow(2, i))) % CHORD_SIZE) + " " + successorTable[i]);
+			}
+//		for(ServentInfo info: successorTable) {
+//
+//			System.out.println("" + info);
+//		}
+		}
+
+		/**
+		 * This method constructs an ordered list of all nodes. They are ordered by chordId, starting from this node.
+		 * Once the list is created, we invoke <code>updateSuccessorTable()</code> to do the rest of the work.
+		 *
+		 */
+		public void addNodes(List<ServentInfo> newNodes) {
+			allNodeInfo.addAll(newNodes);
+
+			updatePredecessor();
+			updateSuccessorTable();
+		}
+
+		private void updatePredecessor() {
+			Set<ServentInfo> biggerIdNodes = new HashSet<>();
+			Set<ServentInfo> smallerIdNodes = new HashSet<>();
+
+			System.out.println("---- All current nodes ----");
+
+			int myId = myServentInfo.getChordId();
+			for (ServentInfo serventInfo : allNodeInfo) {
+				System.out.println("" + serventInfo);
+				if (serventInfo.getChordId() < myId) {
+					smallerIdNodes.add(serventInfo);
+				} else {
+					biggerIdNodes.add(serventInfo);
+				}
+			}
+
+			allNodeInfo.clear();
+			allNodeInfo.addAll(biggerIdNodes);
+			allNodeInfo.addAll(smallerIdNodes);
+
+
+			if (smallerIdNodes.size() > 0) {
+				predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
+			} else {
+				predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
+			}
+			System.out.println("predecessor " + predecessorInfo);
+			System.out.println("succi " + getSuccessorInfo());
+		}
+	}
+
+	public static State state;
+
 	public static int CHORD_SIZE;
 	public static int chordHash(int value) {
 		System.out.println("Hash " + value);
 		int absValue = Math.abs(value) % 50000; // TODO: 25.5.21. Fix dirty cheat for positive values
 		return 61 * absValue % CHORD_SIZE;
 	}
-	
-	private final int chordLevel; //log_2(CHORD_SIZE)
-	
-	private ServentInfo[] successorTable;
-	private ServentInfo predecessorInfo;
-	
-	//we DO NOT use this to send messages, but only to construct the successor table
-	private Set<ServentInfo> allNodeInfo = new HashSet<>();
-	
-	public ChordState() {
-		int tmpChordLvl = 1;
-		int tmp = CHORD_SIZE;
-		while (tmp != 2) {
-			if (tmp % 2 != 0) { //not a power of 2
-				throw new NumberFormatException();
-			}
-			tmp /= 2;
-			tmpChordLvl++;
-		}
-		this.chordLevel = tmpChordLvl;
-
-		successorTable = new ServentInfo[chordLevel];
-		for (int i = 0; i < chordLevel; i++) {
-			successorTable[i] = null;
-		}
-		
-		predecessorInfo = null;
-//		allNodeInfo = new ArrayList<>();
-	}
 
 	public static int hashForFilePath(String pathInDir) {
 		try {
 			byte []shaBytes = MessageDigest.getInstance("SHA-1").digest(Path.of(pathInDir).getName(0).toString().getBytes());
 			ByteBuffer wrapped = ByteBuffer.wrap(shaBytes);
-//			wrapped.getInt();
-//			return wrapped.getInt();
-//			return chordHash(Path.of(pathInDir).getName(0).toString().hashCode());
 			return chordHash(wrapped.getInt());
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
@@ -108,6 +289,35 @@ public class ChordState {
 		exit(1);
 		return -1;
 	}
+//	private final int chordLevel; //log_2(CHORD_SIZE)
+	
+//	private ServentInfo[] successorTable;
+//	private ServentInfo predecessorInfo;
+//
+//	//we DO NOT use this to send messages, but only to construct the successor table
+//	private Set<ServentInfo> allNodeInfo = new HashSet<>();
+	
+//	public ChordState() {
+//		int tmpChordLvl = 1;
+//		int tmp = CHORD_SIZE;
+//		while (tmp != 2) {
+//			if (tmp % 2 != 0) { //not a power of 2
+//				throw new NumberFormatException();
+//			}
+//			tmp /= 2;
+//			tmpChordLvl++;
+//		}
+//		this.chordLevel = tmpChordLvl;
+
+//		successorTable = new ServentInfo[chordLevel];
+//		for (int i = 0; i < chordLevel; i++) {
+//			successorTable[i] = null;
+//		}
+//
+//		predecessorInfo = null;
+//	}
+
+
 
 	/**
 	 * This should be called once after we get <code>WELCOME</code> message.
@@ -115,19 +325,11 @@ public class ChordState {
 	 * It also lets bootstrap know that we did not collide.
 	 */
 	public void init(WelcomeMessage welcomeMsg) {
+		state = new State(welcomeMsg.getSender());
 		//set a temporary pointer to next node, for sending of update message
-		successorTable[0] = welcomeMsg.getSender();
-//		this.valueMap = welcomeMsg.getValues();
+//		successorTable[0] = welcomeMsg.getSender();
 
 		storage.addTransferedFiles(welcomeMsg.getFiles());
-//		for(SillyGitStorageFile sgsf: welcomeMsg.getFiles()) {
-//			try {
-//				storage.addTransferedFiles(sgsf);
-//				storage.add(sgsf.getPathInStorageDir(), sgsf.getContent());
-//			} catch (FileAlreadyAddedStorageException e) {
-//				Logger.timestampedErrorPrint("Cannot add file to storage on Welcome message: " + sgsf);
-//			}
-//		}
 		
 		//tell bootstrap this node is not a collider
 		try {
@@ -145,256 +347,186 @@ public class ChordState {
 		}
 	}
 	
-	public ServentInfo[] getSuccessorTable() {
-		return successorTable;
-	}
-
-	public ServentInfo getSuccessorInfo() {
-		return successorTable[0];
-	}
-	
-	public ServentInfo getPredecessor() {
-		return predecessorInfo;
-	}
-	
-	public void setPredecessor(ServentInfo newNodeInfo) {
-		this.predecessorInfo = newNodeInfo;
-	}
-	
-	public boolean isCollision(int chordId) {
-		if (chordId == myServentInfo.getChordId()) {
-			return true;
-		}
-		for (ServentInfo serventInfo : allNodeInfo) {
-			if (serventInfo.getChordId() == chordId) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	/**
-	 * Returns true if we are the owner of the specified key.
-	 */
-	public boolean isKeyMine(int key) {
-		if (predecessorInfo == null) {
-			return true;
-		}
-		
-		int predecessorChordId = predecessorInfo.getChordId();
-		int myChordId = myServentInfo.getChordId();
-		
-		if (predecessorChordId < myChordId) { //no overflow
-			if (key <= myChordId && key > predecessorChordId) {
-				return true;
-			}
-		} else { //overflow
-			if (key <= myChordId || key > predecessorChordId) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Main chord operation - find the nearest node to hop to to find a specific key.
-	 * We have to take a value that is smaller than required to make sure we don't overshoot.
-	 * We can only be certain we have found the required node when it is our first next node.
-	 */
-	public ServentInfo getNextNodeForKey(int key) {
-		if (isKeyMine(key)) {
-			return myServentInfo;
-		}
-		
-		//normally we start the search from our first successor
-		int startInd = 0;
-		
-		//if the key is smaller than us, and we are not the owner,
-		//then all nodes up to CHORD_SIZE will never be the owner,
-		//so we start the search from the first item in our table after CHORD_SIZE
-		//we know that such a node must exist, because otherwise we would own this key
-		if (key < myServentInfo.getChordId()) {
-			int skip = 1;
-			while (successorTable[skip].getChordId() > successorTable[startInd].getChordId()) {
-				startInd++;
-				skip++;
-			}
-		}
-		
-		int previousId = successorTable[startInd].getChordId();
-		
-		for (int i = startInd + 1; i < successorTable.length; i++) {
-			if (successorTable[i] == null) {
-				Logger.timestampedErrorPrint("Couldn't find successor for " + key);
-				break;
-			}
-			
-			int successorId = successorTable[i].getChordId();
-			
-			if (successorId >= key) {
-				return successorTable[i-1];
-			}
-			if (key > previousId && successorId < previousId) { //overflow
-				return successorTable[i-1];
-			}
-			previousId = successorId;
-		}
-		//if we have only one node in all slots in the table, we might get here
-		//then we can return any item
-		return successorTable[0];
-	}
-
-	private void updateSuccessorTable() {
-		//first node after me has to be successorTable[0]
-
-//		System.out.println("---Current succ table---" );
+//	public ServentInfo[] getSuccessorTable() {
+//		return successorTable;
+//	}
 //
-//		for(ServentInfo info: successorTable) {
-//			System.out.println("" + info);
+//	public ServentInfo getSuccessorInfo() {
+//		return successorTable[0];
+//	}
+//
+//	public ServentInfo getPredecessor() {
+//		return predecessorInfo;
+//	}
+//
+//	public void setPredecessor(ServentInfo newNodeInfo) {
+//		this.predecessorInfo = newNodeInfo;
+//	}
+	
+//	public boolean isCollision(int chordId) {
+//		if (chordId == myServentInfo.getChordId()) {
+//			return true;
 //		}
-
-		List<Integer> values = new ArrayList<>();
-		for(int i = 0; i < chordLevel; i++) {
-			values.add((int) (myServentInfo.getChordId() + Math.pow(2, i)) % CHORD_SIZE);
-		}
-
-		//[12(raketa)|localhost:1200]
-		//[54(raketa)|localhost:1100]
-		List<ServentInfo> succis = new ArrayList<>();
-		for(int value: values) {
-			List<ServentInfo> bigger = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() >= value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
-			List<ServentInfo> smaller = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() < value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
-
-			Optional<ServentInfo> firstBigger = bigger.stream().findFirst();
-			if (firstBigger.isPresent()) {
-				succis.add(firstBigger.get());
-			} else {
-				ServentInfo smallestSmall = smaller.get(0);
-				succis.add(smallestSmall);
-			}
-		}
-
-		for(int i = 0; i < chordLevel; i++) {
-			successorTable[i] = succis.get(i);
-		}
-
-//		int currentNodeIndex = 0;
-//		ServentInfo currentNode = allNodeInfo.get(currentNodeIndex);
-//		successorTable[0] = currentNode;
-//
-//		int currentIncrement = 2;
-//
-//		ServentInfo previousNode = myServentInfo;
-//
-//		//i is successorTable index
-//		for(int i = 1; i < chordLevel; i++, currentIncrement *= 2) {
-//			//we are looking for the node that has larger chordId than this
-//			int currentValue = (myServentInfo.getChordId() + currentIncrement) % CHORD_SIZE;
-//
-//			int currentId = currentNode.getChordId();
-//			int previousId = previousNode.getChordId();
-//
-//			//this loop needs to skip all nodes that have smaller chordId than currentValue
-//			while (true) {
-//				if (currentValue > currentId) {
-//					//before skipping, check for overflow
-//					if (currentId > previousId || currentValue < previousId) {
-//						//try same value with the next node
-//						previousId = currentId;
-//						currentNodeIndex = (currentNodeIndex + 1) % allNodeInfo.size();
-//						currentNode = allNodeInfo.get(currentNodeIndex);
-//						currentId = currentNode.getChordId();
-//					} else {
-//						System.out.println("Dodaje se" );
-//						System.out.println("successorTable[" + i + "]" + "= " + currentNode + " | " + "currentValue = " + currentValue + " | currentId = " + currentId + " | previousId = " + previousId + " | currentValue = " + currentValue);
-//
-//						successorTable[i] = currentNode;
-//						break;
-//					}
-//				} else { //node id is larger
-//					ServentInfo nextNode = allNodeInfo.get((currentNodeIndex + 1) % allNodeInfo.size());
-//					int nextNodeId = nextNode.getChordId();
-//					//check for overflow
-//					if (nextNodeId < currentId && currentValue <= nextNodeId) {
-//						//try same value with the next node
-//						previousId = currentId;
-//						currentNodeIndex = (currentNodeIndex + 1) % allNodeInfo.size();
-//						currentNode = allNodeInfo.get(currentNodeIndex);
-//						currentId = currentNode.getChordId();
-//					} else {
-//						System.out.println("Dodaje se" );
-//						System.out.println("successorTable[" + i + "]" + "= " + currentNode + " | " + "currentValue = " + currentValue + " | currentId = " + currentId + " | previousId = " + previousId + " | currentValue = " + currentValue);
-//						successorTable[i] = currentNode;
-//						break;
-//					}
-//				}
+//		for (ServentInfo serventInfo : allNodeInfo) {
+//			if (serventInfo.getChordId() == chordId) {
+//				return true;
 //			}
 //		}
-
-		System.out.println("New succ table" );
-
-		for(int i = 0; i < successorTable.length; i++) {
-			System.out.println("" + (((int) (myServentInfo.getChordId() + Math.pow(2, i))) % CHORD_SIZE) + " " + successorTable[i]);
-		}
-//		for(ServentInfo info: successorTable) {
-//
-//			System.out.println("" + info);
+//		return false;
+//	}
+	
+//	/**
+//	 * Returns true if we are the owner of the specified key.
+//	 */
+//	public boolean isKeyMine(int key) {
+//		if (predecessorInfo == null) {
+//			return true;
 //		}
-	}
-
-	/**
-	 * This method constructs an ordered list of all nodes. They are ordered by chordId, starting from this node.
-	 * Once the list is created, we invoke <code>updateSuccessorTable()</code> to do the rest of the work.
-	 * 
-	 */
-	public void addNodes(List<ServentInfo> newNodes) {
-		allNodeInfo.addAll(newNodes);
-		
-//		allNodeInfo.sort(new Comparator<ServentInfo>() {
 //
-//			@Override
-//			public int compare(ServentInfo o1, ServentInfo o2) {
-//				return o1.getChordId() - o2.getChordId();
+//		int predecessorChordId = predecessorInfo.getChordId();
+//		int myChordId = myServentInfo.getChordId();
+//
+//		if (predecessorChordId < myChordId) { //no overflow
+//			if (key <= myChordId && key > predecessorChordId) {
+//				return true;
+//			}
+//		} else { //overflow
+//			if (key <= myChordId || key > predecessorChordId) {
+//				return true;
+//			}
+//		}
+//
+//		return false;
+//	}
+	
+//	/**
+//	 * Main chord operation - find the nearest node to hop to to find a specific key.
+//	 * We have to take a value that is smaller than required to make sure we don't overshoot.
+//	 * We can only be certain we have found the required node when it is our first next node.
+//	 */
+//	public ServentInfo getNextNodeForKey(int key) {
+//		if (isKeyMine(key)) {
+//			return myServentInfo;
+//		}
+//
+//		//normally we start the search from our first successor
+//		int startInd = 0;
+//
+//		//if the key is smaller than us, and we are not the owner,
+//		//then all nodes up to CHORD_SIZE will never be the owner,
+//		//so we start the search from the first item in our table after CHORD_SIZE
+//		//we know that such a node must exist, because otherwise we would own this key
+//		if (key < myServentInfo.getChordId()) {
+//			int skip = 1;
+//			while (successorTable[skip].getChordId() > successorTable[startInd].getChordId()) {
+//				startInd++;
+//				skip++;
+//			}
+//		}
+//
+//		int previousId = successorTable[startInd].getChordId();
+//
+//		for (int i = startInd + 1; i < successorTable.length; i++) {
+//			if (successorTable[i] == null) {
+//				Logger.timestampedErrorPrint("Couldn't find successor for " + key);
+//				break;
 //			}
 //
-//		});
+//			int successorId = successorTable[i].getChordId();
+//
+//			if (successorId >= key) {
+//				return successorTable[i-1];
+//			}
+//			if (key > previousId && successorId < previousId) { //overflow
+//				return successorTable[i-1];
+//			}
+//			previousId = successorId;
+//		}
+//		//if we have only one node in all slots in the table, we might get here
+//		//then we can return any item
+//		return successorTable[0];
+//	}
 
+//	private void updateSuccessorTable() {
+//		//first node after me has to be successorTable[0]
+//
+//		List<Integer> values = new ArrayList<>();
+//		for(int i = 0; i < chordLevel; i++) {
+//			values.add((int) (myServentInfo.getChordId() + Math.pow(2, i)) % CHORD_SIZE);
+//		}
+//
+//		//[12(raketa)|localhost:1200]
+//		//[54(raketa)|localhost:1100]
+//		List<ServentInfo> succis = new ArrayList<>();
+//		for(int value: values) {
+//			List<ServentInfo> bigger = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() >= value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+//			List<ServentInfo> smaller = allNodeInfo.stream().filter(serventInfo -> serventInfo.getChordId() < value).sorted(Comparator.comparingInt(ServentInfo::getChordId)).collect(Collectors.toList());
+//
+//			Optional<ServentInfo> firstBigger = bigger.stream().findFirst();
+//			if (firstBigger.isPresent()) {
+//				succis.add(firstBigger.get());
+//			} else {
+//				ServentInfo smallestSmall = smaller.get(0);
+//				succis.add(smallestSmall);
+//			}
+//		}
+//
+//		for(int i = 0; i < chordLevel; i++) {
+//			successorTable[i] = succis.get(i);
+//		}
+//
+//		System.out.println("New succ table" );
+//
+//		for(int i = 0; i < successorTable.length; i++) {
+//			System.out.println("" + (((int) (myServentInfo.getChordId() + Math.pow(2, i))) % CHORD_SIZE) + " " + successorTable[i]);
+//		}
+////		for(ServentInfo info: successorTable) {
+////
+////			System.out.println("" + info);
+////		}
+//	}
 
-
-		updatePredecessor();
-		updateSuccessorTable();
-	}
-
-	private void updatePredecessor() {
-		Set<ServentInfo> biggerIdNodes = new HashSet<>();
-		Set<ServentInfo> smallerIdNodes = new HashSet<>();
-
-		System.out.println("---- All current nodes ----");
-
-		int myId = myServentInfo.getChordId();
-		for (ServentInfo serventInfo : allNodeInfo) {
-			System.out.println("" + serventInfo);
-			if (serventInfo.getChordId() < myId) {
-				smallerIdNodes.add(serventInfo);
-			} else {
-				biggerIdNodes.add(serventInfo);
-			}
-		}
-
-		allNodeInfo.clear();
-		allNodeInfo.addAll(biggerIdNodes);
-		allNodeInfo.addAll(smallerIdNodes);
-
-
-		if (smallerIdNodes.size() > 0) {
-			predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
-		} else {
-			predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
-		}
-		System.out.println("predecessor " + predecessorInfo);
-		System.out.println("succi " + getSuccessorInfo());
-	}
+//	/**
+//	 * This method constructs an ordered list of all nodes. They are ordered by chordId, starting from this node.
+//	 * Once the list is created, we invoke <code>updateSuccessorTable()</code> to do the rest of the work.
+//	 *
+//	 */
+//	public void addNodes(List<ServentInfo> newNodes) {
+//		allNodeInfo.addAll(newNodes);
+//
+//		updatePredecessor();
+//		updateSuccessorTable();
+//	}
+//
+//	private void updatePredecessor() {
+//		Set<ServentInfo> biggerIdNodes = new HashSet<>();
+//		Set<ServentInfo> smallerIdNodes = new HashSet<>();
+//
+//		System.out.println("---- All current nodes ----");
+//
+//		int myId = myServentInfo.getChordId();
+//		for (ServentInfo serventInfo : allNodeInfo) {
+//			System.out.println("" + serventInfo);
+//			if (serventInfo.getChordId() < myId) {
+//				smallerIdNodes.add(serventInfo);
+//			} else {
+//				biggerIdNodes.add(serventInfo);
+//			}
+//		}
+//
+//		allNodeInfo.clear();
+//		allNodeInfo.addAll(biggerIdNodes);
+//		allNodeInfo.addAll(smallerIdNodes);
+//
+//
+//		if (smallerIdNodes.size() > 0) {
+//			predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
+//		} else {
+//			predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
+//		}
+//		System.out.println("predecessor " + predecessorInfo);
+//		System.out.println("succi " + getSuccessorInfo());
+//	}
 
 
 	//Add
@@ -427,7 +559,7 @@ public class ChordState {
 		SillyGitFile referenceFile = sgfs.get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
-		if (isKeyMine(key)) {
+		if (state.isKeyMine(key)) {
 			ArrayList<String> failedPaths = new ArrayList<>();
 			ArrayList<SillyGitStorageFile> successes = new ArrayList<>();
 
@@ -460,7 +592,7 @@ public class ChordState {
 	private void forwardAddFileMessage(List<SillyGitFile> sillyGitFiles, AddMessage message) {
 		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		MessageUtil.sendAndForgetMessage(message.newMessageFor(nextNode));
 	}
@@ -468,7 +600,7 @@ public class ChordState {
 	private void sendAddFilesForMe(List<SillyGitFile> sillyGitFiles) {
 		int key = hashForFilePath(sillyGitFiles.get(0).getPathInWorkDir());
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		AddMessage addMessage = new AddMessage(myServentInfo, nextNode, sillyGitFiles);
 		MessageUtil.sendTrackedMessageAwaitingResponse(addMessage, new AddResponseHandler());
@@ -520,7 +652,7 @@ public class ChordState {
 	private Optional<RemoveResult> retrieveFilesFromOurStorage(String fileName, int version) {
 		int key = hashForFilePath(fileName);
 
-		if (isKeyMine(key)) {
+		if (state.isKeyMine(key)) {
 			Storage.GetResult storageResult = storage.get(fileName, version);
 			return Optional.of(new RemoveResult(storageResult.getFailedPaths(), storageResult.getSuccesses()));
 		}
@@ -530,7 +662,7 @@ public class ChordState {
 
 	private void forwardPullMessage(PullMessage originalMessage) {
 		int key = hashForFilePath(originalMessage.getFileName());
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		PullMessage messageToForward = originalMessage.newMessageFor(nextNode);
 		MessageUtil.sendAndForgetMessage(messageToForward);
@@ -538,7 +670,7 @@ public class ChordState {
 
 	private void sendPullMessageForMe(String filePath, int version, PullType pullType) {
 		int key = hashForFilePath(filePath);
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		PullMessage message = new PullMessage(myServentInfo, nextNode, filePath, version);
 
@@ -571,7 +703,7 @@ public class ChordState {
 	private Optional<List<SillyGitStorageFile>> removeFilesFromOurStorage(String removePath) {
 		int key = hashForFilePath(removePath);
 
-		if (isKeyMine(key)) {
+		if (state.isKeyMine(key)) {
 			List<SillyGitStorageFile> removedFiles = storage.removeFilesOnRelativePathsReturningGitFiles(List.of(removePath));
 			return Optional.of(removedFiles);
 		}
@@ -591,7 +723,7 @@ public class ChordState {
 	private void sendRemoveMessageForUs(String removePath) {
 		int key = hashForFilePath(removePath);
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 		RemoveMessage rm = new RemoveMessage(myServentInfo, nextNode, removePath);
 
 		MessageUtil.sendTrackedMessageAwaitingResponse(rm, new RemoveResponseHandler());
@@ -600,7 +732,7 @@ public class ChordState {
 	private void forwardRemoveMessageForSomeoneElse(RemoveMessage originalMessage) {
 		int key = hashForFilePath(originalMessage.getRemovePath());
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		RemoveMessage rm = originalMessage.newMessageFor(nextNode);
 		MessageUtil.sendAndForgetMessage(rm);
@@ -645,7 +777,7 @@ public class ChordState {
 		SillyGitFile referenceFile = sillyGitFiles.get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
-		if (isKeyMine(key)) {
+		if (state.isKeyMine(key)) {
 			for (SillyGitFile sillyGitFile : sillyGitFiles) {
 				try {
 					if (sillyGitFile.getStorageHash().isEmpty()) {
@@ -684,7 +816,7 @@ public class ChordState {
 		SillyGitFile referenceFile = filesInWorkDir.get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 		CommitMessage cm = new CommitMessage(myServentInfo, nextNode, filesInWorkDir, isCommitResolution);
 
 		MessageUtil.sendTrackedMessageAwaitingResponse(cm, new CommitResponseHandler(isCommitResolution));
@@ -694,7 +826,7 @@ public class ChordState {
 		SillyGitFile referenceFile = originalMessage.getFilesToCommit().get(0);
 		int key = hashForFilePath(referenceFile.getPathInWorkDir());
 
-		ServentInfo nextNode = getNextNodeForKey(key);
+		ServentInfo nextNode = state.getNextNodeForKey(key);
 
 		CommitMessage cm = originalMessage.newMessageFor(nextNode);
 		MessageUtil.sendAndForgetMessage(cm);
@@ -717,40 +849,31 @@ public class ChordState {
 		leaveHandler = lh;
 		List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToRoot();
 		List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, getSuccessorInfo(), getPredecessor(), data);
+		LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getSuccessorInfo(), state.getPredecessor(), data);
 		MessageUtil.sendAndForgetMessage(lrm);
 	}
 
 	public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
 		ServentInfo leaveInitiator = leaveRequestMessage.getSender();
 		removeNodeFromAllNodes(leaveInitiator);
-		setPredecessor(leaveRequestMessage.getPredecessor());
+		state.setPredecessor(leaveRequestMessage.getPredecessor());
 		storage.addTransferedFiles(leaveRequestMessage.getData());
 
-		SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, getPredecessor(), leaveInitiator);
+		SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);
 	}
 
 	private void removeNodeFromAllNodes(ServentInfo node) {
-		allNodeInfo.remove(node);
-		updatePredecessor();
-		updateSuccessorTable();
+		state.allNodeInfo.remove(node);
+		state.updatePredecessor();
+		state.updateSuccessorTable();
 	}
 
 	public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
 		removeNodeFromAllNodes(leaveInitiator);
-//		for(ServentInfo serventInfo: allNodeInfo) {
-//			System.out.println("" + serventInfo.getChordId());
-//		}
-//		allNodeInfo.remove(leaveInitiator);
-//		updateSuccessorTable();
-//		for(ServentInfo serventInfo: allNodeInfo) {
-//			System.out.println("" + serventInfo.getChordId());
-//		}
-
 		LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
 		MessageUtil.sendAndForgetMessage(slm);
-		UpdateMessage update = new UpdateMessage(myServentInfo, getSuccessorInfo(), List.of(myServentInfo));
+		UpdateMessage update = new UpdateMessage(myServentInfo, state.getSuccessorInfo(), List.of(myServentInfo));
 		MessageUtil.sendAndForgetMessage(update);
 	}
 

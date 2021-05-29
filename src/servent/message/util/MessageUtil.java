@@ -95,7 +95,6 @@ public class MessageUtil {
 
 	public static void sendTrackedMessageAwaitingResponse(TrackedMessage message, ResponseMessageHandler handler, long timeout, MessageTimeoutHandler timeoutHandler) {
 		int messageId = message.getMessageId();
-//		sentMessages.put(messageId, handler);
 
 		SentMessage sentMessage = new SentMessage(messageId, handler, timeout, timeoutHandler);
 		synchronized(sentMessages) {

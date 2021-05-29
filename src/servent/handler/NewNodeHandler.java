@@ -27,21 +27,21 @@ public class NewNodeHandler implements MessageHandler {
 			ServentInfo newNodeInfo = clientMessage.getSender();
 			
 			//check if the new node collides with another existing node.
-			if (AppConfig.chordState.isCollision(newNodeInfo.getChordId())) {
+			if (AppConfig.chordState.state.isCollision(newNodeInfo.getChordId())) {
 				SorryMessage sry = new SorryMessage(AppConfig.myServentInfo, newNodeInfo);
 				MessageUtil.sendAndForgetMessage(sry);
 				return;
 			}
 			
 			//check if he is my predecessor
-			boolean isMyPred = AppConfig.chordState.isKeyMine(newNodeInfo.getChordId());
+			boolean isMyPred = AppConfig.chordState.state.isKeyMine(newNodeInfo.getChordId());
 			if (isMyPred) { //if yes, prepare and send welcome message
-				ServentInfo hisPred = AppConfig.chordState.getPredecessor();
+				ServentInfo hisPred = AppConfig.chordState.state.getPredecessor();
 				if (hisPred == null) {
 					hisPred = AppConfig.myServentInfo;
 				}
 				
-				AppConfig.chordState.setPredecessor(newNodeInfo);
+				AppConfig.chordState.state.setPredecessor(newNodeInfo);
 
 				System.out.println("* * * MY files * * *");
 				List<String> myStoredFilePaths = AppConfig.storage.getAllStoredUnversionedFileNamesRelativeToRoot();
@@ -98,7 +98,7 @@ public class NewNodeHandler implements MessageHandler {
 				WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles);
 				MessageUtil.sendAndForgetMessage(wm);
 			} else { //if he is not my predecessor, let someone else take care of it
-				ServentInfo nextNode = AppConfig.chordState.getNextNodeForKey(newNodeInfo.getChordId());
+				ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(newNodeInfo.getChordId());
 				NewNodeMessage nnm = new NewNodeMessage(newNodeInfo, nextNode);
 				MessageUtil.sendAndForgetMessage(nnm);
 			}
