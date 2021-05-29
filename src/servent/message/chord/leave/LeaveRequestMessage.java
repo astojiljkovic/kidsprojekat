@@ -1,7 +1,9 @@
-package servent.message;
+package servent.message.chord.leave;
 
 import app.ServentInfo;
 import app.SillyGitStorageFile;
+import servent.message.MessageType;
+import servent.message.SendAndForgetMessage;
 
 import java.util.List;
 

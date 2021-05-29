@@ -1,12 +1,11 @@
-package servent.handler;
+package servent.handler.chord.leave;
 
 import app.AppConfig;
 import app.Logger;
-import com.sun.net.httpserver.Authenticator;
-import servent.message.LeaveRequestMessage;
+import servent.handler.MessageHandler;
 import servent.message.Message;
 import servent.message.MessageType;
-import servent.message.SuccessorLeavingMessage;
+import servent.message.chord.leave.SuccessorLeavingMessage;
 
 public class SuccLeavingHandler implements MessageHandler {
 

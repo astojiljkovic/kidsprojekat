@@ -1,10 +1,10 @@
-package servent.handler;
+package servent.handler.chord.leave;
 
 import app.AppConfig;
 import app.Logger;
+import servent.handler.MessageHandler;
 import servent.message.Message;
 import servent.message.MessageType;
-import servent.message.SuccessorLeavingMessage;
 
 public class LeaveGrantedHandler implements MessageHandler {
 

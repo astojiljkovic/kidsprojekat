@@ -1,9 +1,10 @@
-package servent.handler;
+package servent.handler.chord.leave;
 
 import app.AppConfig;
 import app.Logger;
+import servent.handler.MessageHandler;
 import servent.message.*;
-import servent.message.util.MessageUtil;
+import servent.message.chord.leave.LeaveRequestMessage;
 
 public class LeaveRequestHandler implements MessageHandler {
 

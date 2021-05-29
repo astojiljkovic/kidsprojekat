@@ -9,7 +9,7 @@ import servent.message.TrackedMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -82,5 +82,69 @@ public class MessageUtil {
 		trackedHandlers.put(messageId, handler);
 
 		sendMessage(message);
+	}
+
+	class SentMessage {
+
+		private final ResponseMessageHandler responseMessageHandler;
+
+		private final MessageTimeoutHandler messageTimeoutHandler;
+
+		private boolean messageTimedOut = false;
+
+		private final Timer timer = new Timer();
+		private boolean messageExecuted = false;
+
+		private final Object lock = new Object();
+
+		public Optional<ResponseMessageHandler> getMessageHandlerForExecution() {
+			synchronized (lock) {
+				messageExecuted = true;
+				timer.cancel();
+				if (messageTimedOut) {
+					return Optional.empty();
+				} else {
+					return Optional.of(responseMessageHandler);
+				}
+			}
+		}
+
+		public SentMessage(ResponseMessageHandler responseMessageHandler, long timeout, MessageTimeoutHandler messageTimeoutHandler) {
+			this.responseMessageHandler = responseMessageHandler;
+			this.messageTimeoutHandler = messageTimeoutHandler;
+			scheduleTimerTask(timeout, 0);
+		}
+
+		private void scheduleTimerTask(long timeout, int invocation) {
+			synchronized (lock) {
+				TimerTask task = new TimerTask() {
+					@Override
+					public void run() {
+						synchronized (lock) {
+							if (messageExecuted) {
+								return;
+							}
+							long extend = messageTimeoutHandler.execute(invocation);
+							if (extend == -1) {
+								messageTimedOut = true;
+							} else {
+								scheduleTimerTask(extend, invocation + 1);
+							}
+						}
+					}
+				};
+
+				timer.schedule(task, timeout);
+			}
+		}
+	}
+
+
+
+	interface MessageTimeoutHandler {
+		/**
+		 * Return number of milliseconds to extend timeout, or -1 if done
+		 */
+		long execute(int invocation);
 	}
 }

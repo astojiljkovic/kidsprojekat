@@ -1,6 +1,8 @@
-package servent.message;
+package servent.message.chord.leave;
 
 import app.ServentInfo;
+import servent.message.MessageType;
+import servent.message.SendAndForgetMessage;
 
 public class SuccessorLeavingMessage extends SendAndForgetMessage {
 
