@@ -50,9 +50,6 @@ public class Storage {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        this.storageRoot = new File(root, "storage");
-//        this.replicationRoot = new File(root, "replication");
     }
 
     public SillyGitStorageFile add(String path, String content) throws FileAlreadyAddedStorageException {
@@ -79,7 +76,8 @@ public class Storage {
     }
 
     public List<SillyGitStorageFile> dumpAllStoredFiles(){
-        return getAllStoredFilesRelativeTo(Path.of(""));
+        return getAllStoredFilesRelativeTo(storageRoot);
+//        return getAllStoredFilesRelativeTo(Path.of(""));
     }
 
     public void storeReplicationData(int nodeId, List<SillyGitStorageFile> allData) {
@@ -102,6 +100,13 @@ public class Storage {
             Logger.timestampedStandardPrint("Issue deleting folder in replication (shouldn't really happen)" + e);
         }
         saveTransferedFilesRelativeTo(allData, rootPath);
+    }
+
+    public void consumeReplicaOfNodeId(int nodeId) {
+        Path replicationRootPath = Path.of(replicationRoot.toString(), getReplicationPathForNodeId(nodeId).toString());
+        List<SillyGitStorageFile> sgfs = getAllStoredFilesRelativeTo(replicationRootPath);
+        addTransferedFiles(sgfs);
+        storeReplicationData(nodeId, Collections.emptyList());
     }
 
     private Path getReplicationPathForNodeId(int nodeId) {
@@ -241,8 +246,40 @@ public class Storage {
         return getAllStoredUnversionedFileNamesRelativeToRoot(Path.of(""));
     }
 
+//    private List<SillyGitStorageFile> getAllStoredFilesRelativeTo(Path folderRelativeToRoot) {
+//        File folder = new File(folderRelativeToRoot.toString()); //fileForRelativePathToStorageDir(folderRelativeToRoot.toString());
+//        try {
+//            return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
+//                    .sorted(Comparator.reverseOrder())
+//                    .filter(path -> !Files.isDirectory(path))
+//                    .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, dir/jogurt.txt_version_0
+//                        return folder.toPath().relativize(path).toString();
+//                    }).map(s -> {
+//                        Path pathForWorkingWithFileSystem = fileForRelativePathToStorageDir(s).toPath();
+//                        String content = null;
+//                        try {
+//                            content = Files.readString(pathForWorkingWithFileSystem);
+//                        } catch (IOException e) {
+//                            throw new UncheckedIOException(e);
+//                        }
+//                        String fileName = filenameFromVersionedFilename(s);
+//                        int version = versionFromVersionedFilename(s);
+//
+//                        return createSillyGitStorageFile(fileName, content, version);
+//                    })
+//
+//                    .collect(Collectors.toList());
+//        } catch (IOException e) {
+//            throw new UncheckedIOException(e);
+//        }
+//    }
+
     private List<SillyGitStorageFile> getAllStoredFilesRelativeTo(Path folderRelativeToRoot) {
-        File folder = fileForRelativePathToStorageDir(folderRelativeToRoot.toString());
+//        File folder = fileForRelativePathToStorageDir(folderRelativeToRoot.toString());
+        File folder = new File(folderRelativeToRoot.toString());
+        if(!folder.exists()) {
+            return Collections.emptyList();
+        }
         try {
             return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
                     .sorted(Comparator.reverseOrder())
@@ -297,8 +334,8 @@ public class Storage {
     public List<SillyGitStorageFile> removeFilesOnRelativePathsReturningGitFiles(List<String> paths) {
         Set<String> requestedDeletePaths = new HashSet<>(paths);
         //paths => dir, dir/dir, dir/bananica.txt, dir/dir/jogurt.txt
-        Path storageRootPath = Path.of("");
-        List<SillyGitStorageFile> allFilesInStorageWithRelativePaths = getAllStoredFilesRelativeTo(storageRootPath);
+//        Path storageRootPath = Path.of("");
+        List<SillyGitStorageFile> allFilesInStorageWithRelativePaths = getAllStoredFilesRelativeTo(storageRoot);
         // dir/dir/bananica.txt_version_0, /dir/jogurt.txt_version_0, samofajl.txt_version_0, bananica.txt_version_0
 
         List<SillyGitStorageFile> sgfs = allFilesInStorageWithRelativePaths

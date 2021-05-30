@@ -354,6 +354,7 @@ public class ChordState {
 
 
         private void updatePredecessor() {
+            ServentInfo oldPred = predecessorInfo;
             System.out.println("Old predecessor " + predecessorInfo);
 
             Set<ServentInfo> biggerIdNodes = new HashSet<>();
@@ -374,6 +375,11 @@ public class ChordState {
                 predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
             }
 
+            ServentInfo newPred = predecessorInfo;
+
+            if(oldPred != null && !oldPred.equals(newPred)) { //If we had a predaccessor (we don't when system is starting) and it changed
+                storage.consumeReplicaOfNodeId(oldPred.getChordId());
+            }
             System.out.println("New predecessor " + predecessorInfo);
         }
 
