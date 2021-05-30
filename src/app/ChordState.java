@@ -130,13 +130,36 @@ public class ChordState {
                 }
                 QuestionExistenceMessage question = new QuestionExistenceMessage(myServentInfo, succiOfSucci, node.getServentInfo());
 
-                MessageUtil.sendTrackedMessageAwaitingResponse(question, new ResponseMessageHandler() {
-                    @Override
-                    public void run() {
-                        QuestionExistenceResponseMessage msg = (QuestionExistenceResponseMessage) message;
-                        handleSuspiciousNodeUpdate(msg.getNode(), msg.isDead());
-                    }
-                });
+                MessageUtil.sendTrackedMessageAwaitingResponse(question,
+                        new ResponseMessageHandler() {
+                            @Override
+                            public void run() {
+                                QuestionExistenceResponseMessage msg = (QuestionExistenceResponseMessage) message;
+                                handleSuspiciousNodeUpdate(msg.getNode(), msg.isDead());
+                            }
+                        },
+                        20000,
+                        invocation -> { //succiOfsucci didn't answer. Possibly dead as well
+                            ServentInfo thirdSucc = getSucciOfFailingSucci(succiOfSucci);
+                            if (thirdSucc == succiOfSucci) {
+                                Logger.timestampedErrorPrint("Two successors dead and no third successor. Cannot recover | failing node " + node.getServentInfo() + "| failed succ " + succiOfSucci);
+                                return -1;
+                            }
+
+                            //TODO: add check if succiOfSucci is in suspicious nodes with state DEAD
+
+                            //ask 3rd to confirm 2nd is dead
+                            QuestionExistenceMessage questionForThirdSucc = new QuestionExistenceMessage(myServentInfo, thirdSucc, succiOfSucci);
+
+                            MessageUtil.sendTrackedMessageAwaitingResponse(questionForThirdSucc, new ResponseMessageHandler() {
+                                @Override
+                                public void run() {
+                                    QuestionExistenceResponseMessage msg = (QuestionExistenceResponseMessage) message;
+                                    handleSuspiciousNodeUpdate(msg.getNode(), msg.isDead());
+                                }
+                            });
+                            return -1;
+                        });
             }
         }
 
@@ -159,18 +182,25 @@ public class ChordState {
                 return;
             }
             if (didDie && sn.get().getState() == SuspiciousNode.State.DEAD) { //start recovery
+                ServentInfo newSucci = getSucciOfFailingSucci(serventInfo);
 
-                NewPredecessorMessage newPredMessage = new NewPredecessorMessage(myServentInfo, getSucciOfFailingSucci(serventInfo), myServentInfo);
+                NewPredecessorMessage newPredMessage = new NewPredecessorMessage(myServentInfo, newSucci, myServentInfo);
                 MessageUtil.sendTrackedMessageAwaitingResponse(newPredMessage, new ResponseMessageHandler() {
                     @Override
                     public void run() {
                         NewPredecessorResponseMessage response = (NewPredecessorResponseMessage) message;
 
-                        addNodes(Collections.emptyList(), List.of(sn.get().getServentInfo()));
-//                        setSuccessors(response.getSuccessors());
-//                        allNodeInfo.removeIf(everyNode -> everyNode.getChordId() == sn.get().getServentInfo().getChordId());
-//                        updateFingerTable();
-                        UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo), List.of(sn.get().getServentInfo()));
+                        Set<ServentInfo> removedSuccis = new HashSet<>();
+                        for (int i = 0; i < successors.length; i++) {
+                            if (getSuccessor(i).getChordId() == newSucci.getChordId()) {
+                                break;
+                            }
+                            removedSuccis.add(getSuccessor(i));
+                        }
+
+//                        addNodes(Collections.emptyList(), new ArrayList<>(removedSuccis));
+                        addNodes(response.getSuccessors(), new ArrayList<>(removedSuccis));
+                        UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo), new ArrayList<>(removedSuccis));
                         MessageUtil.sendAndForgetMessage(um);
                     }
                 });
@@ -195,7 +225,7 @@ public class ChordState {
 
             //if some nodes are gone, remove replica for them
             //but first set predecessor to have a chance to copy data
-            for(ServentInfo node: removedNodes) {
+            for (ServentInfo node : removedNodes) {
                 storage.purgeReplicaForNodeId(node.getChordId());
             }
         }
@@ -382,7 +412,7 @@ public class ChordState {
 
             ServentInfo newPred = predecessorInfo;
 
-            if(oldPred != null && !oldPred.equals(newPred)) { //If we had a predaccessor (we don't when system is starting) and it changed
+            if (oldPred != null && !oldPred.equals(newPred)) { //If we had a predaccessor (we don't when system is starting) and it changed
                 storage.consumeReplicaOfNodeId(oldPred.getChordId());
             }
             System.out.println("New predecessor " + predecessorInfo);
@@ -452,7 +482,7 @@ public class ChordState {
         private List<SillyGitStorageFile> previousFiles = new ArrayList<>();
 
         boolean shouldSendFor(ServentInfo s, List<SillyGitStorageFile> files) {
-            if(servent == null) {
+            if (servent == null) {
                 return true;
             }
             if (!servent.equals(s)) {
@@ -469,7 +499,9 @@ public class ChordState {
             this.previousFiles = files;
         }
     }
+
     private final Timer storageReplicatorTimer = new Timer();
+
     {
         TimerTask tt = new TimerTask() {
             ReplicationTracker tracker1 = new ReplicationTracker();
@@ -484,7 +516,7 @@ public class ChordState {
             public void run() {
 //                System.out.println("NOOOODE" + myServentInfo);
                 ServentInfo s1 = state.getSuccessor(0);
-                if(s1 != null && !s1.equals(myServentInfo)) {
+                if (s1 != null && !s1.equals(myServentInfo)) {
 //                    System.out.println("Rep if1");
                     replicateStorageTo(s1, tracker1);
                 }
@@ -492,7 +524,7 @@ public class ChordState {
                 ServentInfo s2 = state.getSuccessor(1);
 //                System.out.println("Rep sucs " + s1 + "|" + s2);
 
-                if(s1 != null && s2 != null && !s2.equals(myServentInfo) && !s1.equals(s2)) {
+                if (s1 != null && s2 != null && !s2.equals(myServentInfo) && !s1.equals(s2)) {
 //                    System.out.println("Rep if 2");
                     replicateStorageTo(s2, tracker2);
                 }
@@ -501,7 +533,7 @@ public class ChordState {
             private void replicateStorageTo(ServentInfo replicationTarget, ReplicationTracker tracker) {
                 List<SillyGitStorageFile> allFiles = storage.dumpAllStoredFiles();
                 if (tracker.shouldSendFor(replicationTarget, allFiles)) {
-                    RedundantCopyMessage rcp = new RedundantCopyMessage(myServentInfo, replicationTarget, myServentInfo, replicationTarget , allFiles);
+                    RedundantCopyMessage rcp = new RedundantCopyMessage(myServentInfo, replicationTarget, myServentInfo, replicationTarget, allFiles);
                     MessageUtil.sendAndForgetMessage(rcp);
                     tracker.update(replicationTarget, allFiles);
                 }
@@ -509,6 +541,7 @@ public class ChordState {
         };
         storageReplicatorTimer.schedule(tt, 1000, 1000);
     }
+
     /**
      * This should be called once after we get <code>WELCOME</code> message.
      * It sets up our initial value map and our first successor so we can send <code>UPDATE</code>.
@@ -534,7 +567,6 @@ public class ChordState {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
 
     }
