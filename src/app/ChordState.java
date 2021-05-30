@@ -219,6 +219,8 @@ public class ChordState {
             allNodeInfo.addAll(newNodes);
             removedNodes.forEach(allNodeInfo::remove);
 
+            allNodeInfo.remove(myServentInfo);
+
             updateSuccessors();
             updatePredecessor();
             updateFingerTable();
@@ -422,6 +424,11 @@ public class ChordState {
 
         private void updateFingerTable() {
             //first node after me has to be successorTable[0]
+
+            if (allNodeInfo.isEmpty()){
+                Arrays.fill(fingerTable,null);
+                return;
+            }
 
             List<Integer> values = new ArrayList<>();
             for (int i = 0; i < fingerTable.length; i++) {
@@ -913,11 +920,17 @@ public class ChordState {
 
     public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
         ServentInfo leaveInitiator = leaveRequestMessage.getSender();
-        state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
-        storage.addTransferedFiles(leaveRequestMessage.getData());
+        if(leaveInitiator.equals(state.getPredecessor()) && leaveInitiator.equals(state.getSuccessor(0)) ) {
+            LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
+            MessageUtil.sendAndForgetMessage(slm);
+            state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
+        }else{
+            state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
+            storage.addTransferedFiles(leaveRequestMessage.getData());
+            SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
+            MessageUtil.sendAndForgetMessage(slm);
+        }
 
-        SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
-        MessageUtil.sendAndForgetMessage(slm);
     }
 
     public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
