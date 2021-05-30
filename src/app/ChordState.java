@@ -349,7 +349,7 @@ public class ChordState {
             if (chordId == myServentInfo.getChordId()) {
                 return true;
             }
-            for (ServentInfo serventInfo : allNodeInfo) {
+            for (ServentInfo serventInfo : allNodeInfo) { // TODO: node might stay in allNode info for non direct succis
                 if (serventInfo.getChordId() == chordId) {
                     return true;
                 }
