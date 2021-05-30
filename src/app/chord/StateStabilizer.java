@@ -56,7 +56,7 @@ public class StateStabilizer {
                 continue;
             }
             TimerTask tt = timerTask(newServent);
-            Timer timer = new Timer();
+            Timer timer = new Timer(true);
             timer.schedule(tt, 1000);
             serventsToPing.put(newServent, timer);
         }
@@ -76,10 +76,7 @@ public class StateStabilizer {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                System.out.println("stabilizer timer");
-                Thread.currentThread().setName("Stabilizer timer");
                 if(!shouldStop) {
-                    System.out.println("stabilizer timer");
                     PingMessage pingMessage = new PingMessage(AppConfig.myServentInfo, node);
                     MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
                         @Override
@@ -88,7 +85,6 @@ public class StateStabilizer {
                             rescheduleForNode(node);
                         }
                     }, 1000, invocation -> {
-                        System.out.println("stabilizer timer");
                         if (invocation == 0) {
                             notifyNodeNotAnswering(true, node);
                             return 9000;

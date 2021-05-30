@@ -15,14 +15,16 @@ class SentMessage {
     private boolean messageTimedOut = false; //timeoutHandlerExecuted
     private boolean messageExecuted = false; //messageHandlerExecuted
 
-    private final Timer timer = new Timer();
+    private final Timer timer;
 
     private final Object lock = new Object();
 
     public Optional<ResponseMessageHandler> getMessageHandlerForExecution() {
         synchronized (lock) {
             messageExecuted = true;
-            timer.cancel();
+            if(timer != null) {
+                timer.cancel();
+            }
             if (messageTimedOut) {
                 return Optional.empty();
             } else {
@@ -35,6 +37,7 @@ class SentMessage {
         this.messageId = messageId;
         this.responseMessageHandler = responseMessageHandler;
         this.messageTimeoutHandler = null;
+        timer = null;
     }
 
     public SentMessage(int messageId, ResponseMessageHandler responseMessageHandler, long timeout, MessageUtil.MessageTimeoutHandler messageTimeoutHandler) {
@@ -42,7 +45,10 @@ class SentMessage {
         this.responseMessageHandler = responseMessageHandler;
         this.messageTimeoutHandler = messageTimeoutHandler;
         if (timeout > 0) {
+            timer = new Timer(true);
             scheduleTimerTask(timeout, 0);
+        } else {
+            timer = null;
         }
     }
 

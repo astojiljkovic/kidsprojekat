@@ -562,7 +562,7 @@ public class ChordState {
         }
     }
 
-    private final Timer storageReplicatorTimer = new Timer();
+    private final Timer storageReplicatorTimer = new Timer(true);
 
     {
         TimerTask tt = new TimerTask() {
