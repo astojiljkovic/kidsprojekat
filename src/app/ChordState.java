@@ -406,8 +406,10 @@ public class ChordState {
 
             if (smallerIdNodes.size() > 0) {
                 predecessorInfo = smallerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get();// smallerIdNodes.get(smallerIdNodes.size()-1);
-            } else {
+            } else if (biggerIdNodes.size() > 0){
                 predecessorInfo = biggerIdNodes.stream().max(Comparator.comparingInt(ServentInfo::getChordId)).get(); //.get(biggerIdNodes.size()-1);
+            } else { //if there is no node bigger than us, or smaller than us, then we are alone :(
+                predecessorInfo = null;
             }
 
             ServentInfo newPred = predecessorInfo;
@@ -899,10 +901,14 @@ public class ChordState {
 
     public void requestLeave(Consumer<Integer> lh) {
         leaveHandler = lh;
-        List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
-        List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-        LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getClosestSuccessor(), state.getPredecessor(), data);
-        MessageUtil.sendAndForgetMessage(lrm);
+        if(state.getSuccessor(0) != null) {
+            List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
+            List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
+            LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getClosestSuccessor(), state.getPredecessor(), data);
+            MessageUtil.sendAndForgetMessage(lrm);
+        } else {
+            handleLeaveGranted();
+        }
     }
 
     public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
@@ -918,8 +924,10 @@ public class ChordState {
         state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
         LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
-        UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
-        MessageUtil.sendAndForgetMessage(update);
+        if (state.getSuccessor(0) != null) { //if there is at least somebody to receive an update
+            UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
+            MessageUtil.sendAndForgetMessage(update);
+        }
     }
 
     public void handleLeaveGranted() {
