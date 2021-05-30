@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -87,10 +89,20 @@ public class ChordState {
 
 //        private boolean isBalancing = false;
         private int lockHoldingId = -1;
+        private LocalDateTime lockTimestamp;
 
         public synchronized boolean acquireBalancingLock(int chordId) {
             if (lockHoldingId == -1) {
                 lockHoldingId = chordId;
+                lockTimestamp = LocalDateTime.now();
+                return true;
+            }
+            LocalDateTime now = LocalDateTime.now();
+            if(ChronoUnit.SECONDS.between(now, lockTimestamp) > 60) { //TODO: improve - go throught allNodes and detect that owner is not there anymore. Edge cases!
+                Logger.timestampedStandardPrint("Stale lock identified for id " + lockHoldingId);
+                Logger.timestampedStandardPrint("Giving it to " + chordId);
+                lockHoldingId = chordId;
+                lockTimestamp = LocalDateTime.now();
                 return true;
             }
             return false;
@@ -106,6 +118,20 @@ public class ChordState {
             } else {
                 Logger.timestampedErrorPrint("Chord id asking to release lock that was not locked by him " + chordId);
             }
+        }
+
+        public void acquireOwnLock() {
+            Logger.timestampedStandardPrint("Going to grab my own balancing lock");
+
+            while (!acquireBalancingLock(myServentInfo.getChordId())) {
+                System.out.println("Couldn't get my own lock, going to sleep a bit");
+                try {
+                    Thread.sleep(3000); //This is silly, but comes from console, and somebody entered "stop" so it's fine
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            Logger.timestampedStandardPrint("Lock acquired");
         }
 
         private State() {
@@ -208,6 +234,7 @@ public class ChordState {
                 return;
             }
             if (didDie && sn.get().getState() == SuspiciousNode.State.DEAD) { //start recovery
+
                 ServentInfo newSucci = getSucciOfFailingSucci(serventInfo);
 
                 NewPredecessorMessage newPredMessage = new NewPredecessorMessage(myServentInfo, newSucci, myServentInfo);
@@ -596,8 +623,12 @@ public class ChordState {
             e.printStackTrace();
         }
 
-
+//        ss = new StateStabilizer(node -> {
+//            System.out.println("asdf");
+//        });
     }
+
+//    private StateStabilizer ss
 
     //Add
 
@@ -928,16 +959,7 @@ public class ChordState {
     public void requestLeave(Consumer<Integer> lh) {
         leaveHandler = lh;
 
-        Logger.timestampedStandardPrint("Going to grab my own balancing lock");
-        while (!state.acquireBalancingLock(myServentInfo.getChordId())) {
-            System.out.println("Couldn't get my own lock, going to sleep a bit");
-            try {
-                Thread.sleep(3000); //This is silly, but comes from console, and somebody entered "stop" so it's fine
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Logger.timestampedStandardPrint("Lock acquired");
+        state.acquireOwnLock();
         doLeaveRequest();
     }
 

@@ -58,11 +58,11 @@ public class UpdateHandler extends ResponseMessageHandler {
 //					AppConfig.chordState.state.releaseBalancingLock();
 //				}
 				if (unlockRemoteServent != null) {
-					try {
-						Thread.sleep(10000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+//					try {
+//						Thread.sleep(10000);
+//					} catch (InterruptedException e) {
+//						e.printStackTrace();
+//					}
 					ReleaseLockMessage rlm = new ReleaseLockMessage(AppConfig.myServentInfo, unlockRemoteServent, AppConfig.myServentInfo);
 					MessageUtil.sendAndForgetMessage(rlm);
 				}

@@ -254,16 +254,18 @@ public class SimpleServentListener implements Runnable, Cancellable {
 				threadPool.execute(messageHandler);
 			} catch (SocketTimeoutException timeoutEx) {
 				//Uncomment the next line to see that we are waking up every second.
-//				AppConfig.timedStandardPrint("Waiting...");
+//				Logger.timestampedStandardPrint("Waiting...");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+		Logger.timestampedStandardPrint("Simple Servent listener stopped");
 	}
 
 	@Override
 	public void stop() {
 		this.working = false;
+
 	}
 
 }

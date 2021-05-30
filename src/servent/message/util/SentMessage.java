@@ -52,15 +52,21 @@ class SentMessage {
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
+                    Thread.currentThread().setName("SENT message timer");
+                    System.out.println("sent timer");
                     synchronized (lock) {
+                        System.out.println("sent timer");
                         if (messageExecuted) {
                             return;
                         }
+                        System.out.println("sent timer");
                         long extend = messageTimeoutHandler.execute(invocation);
                         if (extend == -1) {
+                            System.out.println("sent timer");
                             messageTimedOut = true;
                             timer.cancel();
                         } else {
+                            System.out.println("sent timer");
                             scheduleTimerTask(extend, invocation + 1);
                         }
                     }

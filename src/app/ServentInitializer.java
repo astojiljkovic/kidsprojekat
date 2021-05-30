@@ -104,8 +104,9 @@ public class ServentInitializer implements Runnable {
 				try {
 					if ( message instanceof BusyMessage) {
 						Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
-						Thread.sleep(10000);
-						initiateNewNodeMsg(someServentIp, someServentPort);
+						Thread.sleep(2000);
+//						initiateNewNodeMsg(someServentIp, someServentPort);
+						initiateNewNodeMsg(message.getSender().getNetworkLocation().getIp(), message.getSender().getNetworkLocation().getPort());
 					} else { //Welcome message <= never enters here (see comment ^)
 						new WelcomeHandler(message);
 					}

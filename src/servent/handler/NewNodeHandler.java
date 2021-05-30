@@ -23,14 +23,6 @@ public class NewNodeHandler implements MessageHandler {
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.NEW_NODE) {
 			ServentInfo newNodeInfo = clientMessage.getSender();
-
-			boolean getBalancingLock = AppConfig.chordState.state.acquireBalancingLock(newNodeInfo.getChordId());
-			if (!getBalancingLock) { //lock acquired
-				BusyMessage bm = new BusyMessage(AppConfig.myServentInfo, newNodeInfo);
-				bm.copyContextFrom((TrackedMessage) clientMessage);
-				MessageUtil.sendAndForgetMessage(bm);
-				return;
-			}
 			
 			//check if the new node collides with another existing node.
 			if (AppConfig.chordState.state.isCollision(newNodeInfo.getChordId())) {
@@ -42,6 +34,16 @@ public class NewNodeHandler implements MessageHandler {
 			//check if he is my predecessor
 			boolean isMyPred = AppConfig.chordState.state.isKeyMine(newNodeInfo.getChordId());
 			if (isMyPred) { //if yes, prepare and send welcome message
+
+				//Get lock first
+				boolean getBalancingLock = AppConfig.chordState.state.acquireBalancingLock(newNodeInfo.getChordId());
+				if (!getBalancingLock) { //lock acquired
+					BusyMessage bm = new BusyMessage(AppConfig.myServentInfo, newNodeInfo);
+					bm.copyContextFrom((TrackedMessage) clientMessage);
+					MessageUtil.sendAndForgetMessage(bm);
+					return;
+				}
+
 				ServentInfo hisPred = AppConfig.chordState.state.getPredecessor();
 				if (hisPred == null) {
 					hisPred = AppConfig.myServentInfo;

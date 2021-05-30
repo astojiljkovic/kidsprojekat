@@ -24,7 +24,7 @@ public class StateStabilizer {
     private final NotAnsweringNotification notificationHandler;
     private final AnsweredNotification answeredNotificationHandler;
 
-    private boolean shouldStop = false;
+    private volatile boolean shouldStop = false;
 
     public StateStabilizer(AnsweredNotification answeredNotificationHandler, NotAnsweringNotification notificationHandler) {
         this.answeredNotificationHandler = answeredNotificationHandler;
@@ -33,6 +33,9 @@ public class StateStabilizer {
 
     public synchronized void stopStabilizer() {
         shouldStop = true;
+        for(Timer t: serventsToPing.values()) {
+            t.cancel();
+        }
     }
 
     public synchronized void pingNodes(List<ServentInfo> newServentsToPing) {
@@ -62,13 +65,21 @@ public class StateStabilizer {
         for (ServentInfo servent: serventsToPing.keySet()) {
             System.out.println("" + servent);
         }
+
+        System.out.println("---Nodes to remove from ping---");
+        for (ServentInfo servent: toRemove) {
+            System.out.println("" + servent);
+        }
     }
 
     private synchronized TimerTask timerTask(ServentInfo node) {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
+                System.out.println("stabilizer timer");
+                Thread.currentThread().setName("Stabilizer timer");
                 if(!shouldStop) {
+                    System.out.println("stabilizer timer");
                     PingMessage pingMessage = new PingMessage(AppConfig.myServentInfo, node);
                     MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
                         @Override
@@ -77,6 +88,7 @@ public class StateStabilizer {
                             rescheduleForNode(node);
                         }
                     }, 1000, invocation -> {
+                        System.out.println("stabilizer timer");
                         if (invocation == 0) {
                             notifyNodeNotAnswering(true, node);
                             return 9000;
@@ -93,6 +105,7 @@ public class StateStabilizer {
 
     private synchronized void rescheduleForNode(ServentInfo node) {
         if (!shouldStop) {
+
             Timer t = serventsToPing.get(node);
             if (t != null) {
                 t.schedule(timerTask(node), 1000);
