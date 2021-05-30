@@ -26,6 +26,8 @@ import servent.handler.data.CommitResponseHandler;
 import servent.handler.data.PullResponseHandler;
 import servent.handler.data.RemoveResponseHandler;
 import servent.message.*;
+import servent.message.chord.BusyMessage;
+import servent.message.chord.ReleaseLockMessage;
 import servent.message.chord.leave.LeaveGrantedMessage;
 import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.chord.leave.SuccessorLeavingMessage;
@@ -94,9 +96,9 @@ public class ChordState {
             return false;
         }
 
-        public int getBalancingLockHoldingId() {
-            return lockHoldingId;
-        }
+//        public int getBalancingLockHoldingId() {
+//            return lockHoldingId;
+//        }
 
         public synchronized void releaseBalancingLock(int chordId) {
             if (chordId == lockHoldingId) {
@@ -925,18 +927,53 @@ public class ChordState {
 
     public void requestLeave(Consumer<Integer> lh) {
         leaveHandler = lh;
+
+        Logger.timestampedStandardPrint("Going to grab my own balancing lock");
+        while (!state.acquireBalancingLock(myServentInfo.getChordId())) {
+            System.out.println("Couldn't get my own lock, going to sleep a bit");
+            try {
+                Thread.sleep(3000); //This is silly, but comes from console, and somebody entered "stop" so it's fine
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Logger.timestampedStandardPrint("Lock acquired");
+        doLeaveRequest();
+    }
+
+    private void doLeaveRequest() {
         if(state.getSuccessor(0) != null) {
             List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
             List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
             LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getClosestSuccessor(), state.getPredecessor(), data);
-            MessageUtil.sendAndForgetMessage(lrm);
+            MessageUtil.sendTrackedMessageAwaitingResponse(lrm, new ResponseMessageHandler() {
+                @Override
+                public void run() { //Busy handler
+                    Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + state.getClosestSuccessor());
+                    try {
+                        Thread.sleep(2000);
+                        doLeaveRequest();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         } else {
             handleLeaveGranted();
         }
     }
 
+    //(r) node on that. Called when somebody requests from us to leave (our pred...)
+    //returns true if this node is busy (this node will manage leave) and requester has to wait
     public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
         ServentInfo leaveInitiator = leaveRequestMessage.getSender();
+        if(!state.acquireBalancingLock(leaveInitiator.getChordId())) {
+            BusyMessage bm = new BusyMessage(myServentInfo, leaveInitiator);
+            bm.copyContextFrom(leaveRequestMessage);
+            MessageUtil.sendAndForgetMessage(bm);
+            return;
+        }
+        //We will be the last node once initiator leaves
         if(leaveInitiator.equals(state.getPredecessor()) && leaveInitiator.equals(state.getSuccessor(0)) ) {
             LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
             MessageUtil.sendAndForgetMessage(slm);
@@ -947,13 +984,17 @@ public class ChordState {
             SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
             MessageUtil.sendAndForgetMessage(slm);
         }
-
     }
 
-    public void handleSuccessorLeaving(ServentInfo leaveInitiator) {
+    // (p) node on that
+    public void handleSuccessorLeaving(ServentInfo nodeManagingLeave, ServentInfo leaveInitiator) {
         state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
         LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
+        if (!nodeManagingLeave.equals(myServentInfo)) {
+            ReleaseLockMessage rlm = new ReleaseLockMessage(myServentInfo, nodeManagingLeave, leaveInitiator);
+            MessageUtil.sendAndForgetMessage(rlm);
+        }
         if (state.getSuccessor(0) != null) { //if there is at least somebody to receive an update
             UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
             MessageUtil.sendTrackedMessageAwaitingResponse(update, new UpdateHandler(null)); //TODO: change null to unlock

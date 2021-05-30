@@ -20,7 +20,7 @@ public class SuccLeavingHandler implements MessageHandler {
 		if (clientMessage.getMessageType() == MessageType.SUCC_LEAVING) {
 			SuccessorLeavingMessage message = (SuccessorLeavingMessage) clientMessage;
 
-			AppConfig.chordState.handleSuccessorLeaving(message.getLeaveInitiator());
+			AppConfig.chordState.handleSuccessorLeaving(message.getSender(), message.getLeaveInitiator());
 		} else {
 			Logger.timestampedErrorPrint("Welcome handler got a message that is not WELCOME");
 		}
