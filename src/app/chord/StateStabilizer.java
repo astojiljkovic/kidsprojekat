@@ -92,7 +92,7 @@ public class StateStabilizer {
     }
 
     private synchronized void rescheduleForNode(ServentInfo node) {
-        if (shouldStop) {
+        if (!shouldStop) {
             Timer t = serventsToPing.get(node);
             if (t != null) {
                 t.schedule(timerTask(node), 1000);

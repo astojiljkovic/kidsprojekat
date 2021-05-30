@@ -381,7 +381,7 @@ public class ChordState {
             if (chordId == myServentInfo.getChordId()) {
                 return true;
             }
-            for (ServentInfo serventInfo : allNodeInfo) { // TODO: node might stay in allNode info for non direct succis
+            for (ServentInfo serventInfo : allNodeInfo) {
                 if (serventInfo.getChordId() == chordId) {
                     return true;
                 }
@@ -515,12 +515,6 @@ public class ChordState {
         TimerTask tt = new TimerTask() {
             ReplicationTracker tracker1 = new ReplicationTracker();
             ReplicationTracker tracker2 = new ReplicationTracker();
-//            List<SillyGitStorageFile> previousS1Files = new ArrayList<>();
-//            List<SillyGitStorageFile> previousS2Files = new ArrayList<>();
-
-//            ServentInfo previousS1;
-//            ServentInfo previousS2;
-
             @Override
             public void run() {
 //                System.out.println("NOOOODE" + myServentInfo);
@@ -558,7 +552,6 @@ public class ChordState {
      */
     public void init(WelcomeMessage welcomeMsg) {
         AppConfig.chordState.state.addNodes(welcomeMsg.getSuccessors(), Collections.emptyList());
-//            state.setSuccessors(welcomeMsg.getSuccessors());
 
         storage.addTransferedFiles(welcomeMsg.getFiles());
 
