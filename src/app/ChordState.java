@@ -190,9 +190,14 @@ public class ChordState {
             removedNodes.forEach(allNodeInfo::remove);
 
             updateSuccessors();
-//			fingerTable[0] = successors[0]; //TODO: fix generation of finger table
             updatePredecessor();
             updateFingerTable();
+
+            //if some nodes are gone, remove replica for them
+            //but first set predecessor to have a chance to copy data
+            for(ServentInfo node: removedNodes) {
+                storage.purgeReplicaForNodeId(node.getChordId());
+            }
         }
 
         private void updateSuccessors() {
