@@ -82,6 +82,25 @@ public class ChordState {
 
         private final StateStabilizer stateStabilizer;
 
+//        private boolean isBalancing = false;
+        private int lockHoldingId = -1;
+
+        public synchronized boolean acquireBalancingLock(int chordId) {
+            if (lockHoldingId == -1) {
+                lockHoldingId = chordId;
+                return true;
+            }
+            return false;
+        }
+
+        public int getBalancingLockHoldingId() {
+            return lockHoldingId;
+        }
+
+        public synchronized void releaseBalancingLock() {
+            lockHoldingId = -1;
+        }
+
         private State() {
             int tmpChordLvl = 1;
             int tmp = CHORD_SIZE;
@@ -557,7 +576,7 @@ public class ChordState {
 
         //tell bootstrap this node is not a collider
         try {
-            Socket bsSocket = new Socket("localhost", AppConfig.BOOTSTRAP_PORT);
+            Socket bsSocket = new Socket(BOOTSTRAP_IP, AppConfig.BOOTSTRAP_PORT);
 
             PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
             bsWriter.write("New\n" + myServentInfo.getNetworkLocation().getIp() + "\n" + myServentInfo.getNetworkLocation().getPort() + "\n");

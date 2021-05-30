@@ -6,7 +6,11 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
+import com.ibm.jvm.trace.format.api.Message;
+import servent.handler.ResponseMessageHandler;
+import servent.handler.WelcomeHandler;
 import servent.message.NewNodeMessage;
+import servent.message.chord.BusyMessage;
 import servent.message.util.MessageUtil;
 
 public class ServentInitializer implements Runnable {
@@ -88,9 +92,28 @@ public class ServentInitializer implements Runnable {
 			String someServentIp = someServentLocation.split(":")[0];
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
 
-			NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
-			MessageUtil.sendAndForgetMessage(nnm);
+			initiateNewNodeMsg(someServentIp, someServentPort);
 		}
+	}
+
+	private void initiateNewNodeMsg(String someServentIp, int someServentPort) {
+		NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
+		MessageUtil.sendTrackedMessageAwaitingResponse(nnm, new ResponseMessageHandler() {
+			@Override
+			public void run() {
+				try {
+					if ( message instanceof BusyMessage) {
+						Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
+						Thread.sleep(10000);
+						initiateNewNodeMsg(someServentIp, someServentPort);
+					} else { //Welcome message
+						new WelcomeHandler(message);
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 
 }

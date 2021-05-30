@@ -3,6 +3,7 @@ package servent.handler;
 import app.*;
 import app.storage.SillyGitStorageFile;
 import servent.message.*;
+import servent.message.chord.BusyMessage;
 import servent.message.util.MessageUtil;
 
 import java.util.*;
@@ -22,6 +23,14 @@ public class NewNodeHandler implements MessageHandler {
 	public void run() {
 		if (clientMessage.getMessageType() == MessageType.NEW_NODE) {
 			ServentInfo newNodeInfo = clientMessage.getSender();
+
+			boolean getBalancingLock = AppConfig.chordState.state.acquireBalancingLock(newNodeInfo.getChordId());
+			if (!getBalancingLock) { //lock acquired
+				BusyMessage bm = new BusyMessage(AppConfig.myServentInfo, newNodeInfo);
+				bm.copyContextFrom((TrackedMessage) clientMessage);
+				MessageUtil.sendAndForgetMessage(bm);
+				return;
+			}
 			
 			//check if the new node collides with another existing node.
 			if (AppConfig.chordState.state.isCollision(newNodeInfo.getChordId())) {
@@ -114,6 +123,7 @@ public class NewNodeHandler implements MessageHandler {
 			} else { //if he is not my predecessor, let someone else take care of it
 				ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(newNodeInfo.getChordId());
 				NewNodeMessage nnm = new NewNodeMessage(newNodeInfo, nextNode);
+				nnm.copyContextFrom((NewNodeMessage)clientMessage);
 				MessageUtil.sendAndForgetMessage(nnm);
 			}
 			

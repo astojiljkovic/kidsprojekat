@@ -26,6 +26,7 @@ public class UpdateHandler implements MessageHandler {
 			UpdateMessage message = (UpdateMessage) clientMessage;
 
 			if (clientMessage.getSender().getNetworkLocation().equals(AppConfig.myServentInfo.getNetworkLocation()) == false) {
+				//it was not us who initiated the update
 				List<ServentInfo> newNodes = new ArrayList<>(message.getNodes());
 
 				newNodes = newNodes.stream().filter(serventInfo -> {
@@ -38,8 +39,13 @@ public class UpdateHandler implements MessageHandler {
 
 				UpdateMessage nextUpdate = new UpdateMessage(clientMessage.getSender(), AppConfig.chordState.state.getClosestSuccessor(), newNodes, message.getRemovedNodes());
 				MessageUtil.sendAndForgetMessage(nextUpdate);
-			} else {
 
+				ServentInfo updateInitiator = newNodes.get(0);
+				//If initiator holds balancing lock (we just added it), release the lock so others (if any waiting) can also be added
+				if(updateInitiator.getChordId() == AppConfig.chordState.state.getBalancingLockHoldingId()) {
+					AppConfig.chordState.state.releaseBalancingLock();
+				}
+			} else {
 				List<ServentInfo> newNodes = new ArrayList<>(message.getNodes());
 				newNodes = newNodes.stream().filter(serventInfo -> {
 					return serventInfo.getChordId() != AppConfig.myServentInfo.getChordId();

@@ -1,18 +1,10 @@
-08:14:49 - Starting servent [0|localhost|1600]
-08:14:49 - Pausing for 10000 ms
-08:14:50 - Sending message [0|1600|0||NEW_NODE|1300|4]
-08:14:51 - Got message [4|1300|4||WELCOME|1600|0]
-08:14:53 - Sending message [0|1600|1||UPDATE|1300|4]
-08:14:57 - Got message [0|1600|4|1300,1400,1100,1200|UPDATE|1600|0]
-08:14:59 - Pausing for 4000 ms
-08:14:59 - Sending message [0|1600|2|25:3|PUT|1400|24]
-08:15:01 - Got message [48|1200|5|2:5|PUT|1600|0]
-08:15:02 - Sending message [0|1600|3|2:5|PUT|1300|4]
-08:15:03 - Please wait...
-08:15:03 - Pausing for 6000 ms
-08:15:04 - Sending message [0|1600|4|25|ASK_GET|1400|24]
-08:15:05 - Got message [48|1200|6|2|ASK_GET|1600|0]
-08:15:06 - Got message [28|1100|8|25:3|TELL_GET|1600|0]
-08:15:06 - 25:3
-08:15:06 - Sending message [48|1200|5|2|ASK_GET|1300|4]
-08:15:09 - Stopping...
+Hash -150292312
+17:13:11 - Starting servent [40(raketa)|localhost:1600]
+17:13:11 - Pausing for 10000 ms
+BRZI TEST: localhost:1400
+17:13:11 - Sending message [40(raketa)|localhost:1600|0|||NEW_NODE|localhost:1400|-1(UNKNOWN)] C:[0|[40(raketa)|localhost:1600]]
+17:13:11 - Got message [12(raketa)|localhost:1200|67|||ACQUIRE_LOCK_RESPONSE|localhost:1600|40(raketa)] C:[0|[40(raketa)|localhost:1600]]
+17:13:11 - Node currently busy, will retry in 2s localhost:1400
+17:13:21 - Pausing for 4000 ms
+17:13:25 - Pausing for 6000 ms
+17:13:31 - Stopping...

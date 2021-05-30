@@ -27,7 +27,12 @@ public class WelcomeHandler implements MessageHandler {
 			AppConfig.chordState.init(welcomeMsg);
 
 			System.out.println("My Servent info in Welcome handler " + AppConfig.myServentInfo);
-			
+
+//			try { //Sleep to have more time to activate two cvors at the same time
+//				Thread.sleep(10000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.state.getClosestSuccessor(), List.of(AppConfig.myServentInfo), Collections.emptyList());
 			MessageUtil.sendAndForgetMessage(um);
 			

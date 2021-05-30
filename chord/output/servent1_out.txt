@@ -1,21 +1,148 @@
-08:14:19 - Starting servent [48|localhost|1200]
-08:14:19 - Pausing for 40000 ms
-08:14:20 - Sending message [48|1200|0||NEW_NODE|1100|28]
-08:14:21 - Got message [28|1100|0||WELCOME|1200|48]
-08:14:22 - Sending message [48|1200|1||UPDATE|1100|28]
-08:14:23 - Got message [48|1200|1|1100|UPDATE|1200|48]
-08:14:32 - Got message [4|1300|3|1100|UPDATE|1200|48]
-08:14:33 - Sending message [4|1300|2|1100,1200|UPDATE|1300|4]
-08:14:43 - Got message [24|1400|5|1100|UPDATE|1200|48]
-08:14:43 - Sending message [24|1400|3|1100,1200|UPDATE|1300|4]
-08:14:56 - Got message [0|1600|6|1300,1400,1100|UPDATE|1200|48]
-08:14:57 - Sending message [0|1600|4|1300,1400,1100,1200|UPDATE|1600|0]
-08:14:59 - Pausing for 5000 ms
-08:15:00 - Got message [28|1100|7|2:5|PUT|1200|48]
-08:15:01 - Sending message [48|1200|5|2:5|PUT|1600|0]
-08:15:04 - Please wait...
-08:15:04 - Pausing for 5000 ms
-08:15:05 - Sending message [48|1200|6|2|ASK_GET|1600|0]
-08:15:07 - Got message [4|1300|6|2:5|TELL_GET|1200|48]
-08:15:07 - 2:5
-08:15:09 - Stopping...
+Hash -1142801660
+17:12:41 - Starting servent [12(raketa)|localhost:1200]
+17:12:41 - Pausing for 40000 ms
+BRZI TEST: localhost:1100
+17:12:41 - Sending message [12(raketa)|localhost:1200|0|||NEW_NODE|localhost:1100|-1(UNKNOWN)] C:[0|[12(raketa)|localhost:1200]]
+17:12:41 - Got message [54(raketa)|localhost:1100|0|||WELCOME|localhost:1200|12(raketa)]
+Curr Succis
+null
+null
+null
+---Nodes to ping---
+[54(raketa)|localhost:1100]
+New Succis
+[54(raketa)|localhost:1100]
+null
+null
+Old predecessor null
+New predecessor [54(raketa)|localhost:1100]
+--- New finger table ---
+13 [54(raketa)|localhost:1100]
+14 [54(raketa)|localhost:1100]
+16 [54(raketa)|localhost:1100]
+20 [54(raketa)|localhost:1100]
+28 [54(raketa)|localhost:1100]
+44 [54(raketa)|localhost:1100]
+My Servent info in Welcome handler [12(raketa)|localhost:1200]
+17:12:41 - Sending message [12(raketa)|localhost:1200|1|||UPDATE|localhost:1100|54(raketa)]
+17:12:42 - Got message [12(raketa)|localhost:1200|1|||UPDATE|localhost:1200|12(raketa)]
+Curr Succis
+[54(raketa)|localhost:1100]
+null
+null
+---Nodes to ping---
+[54(raketa)|localhost:1100]
+New Succis
+[54(raketa)|localhost:1100]
+null
+null
+Old predecessor [54(raketa)|localhost:1100]
+New predecessor [54(raketa)|localhost:1100]
+--- New finger table ---
+13 [54(raketa)|localhost:1100]
+14 [54(raketa)|localhost:1100]
+16 [54(raketa)|localhost:1100]
+20 [54(raketa)|localhost:1100]
+28 [54(raketa)|localhost:1100]
+44 [54(raketa)|localhost:1100]
+17:12:42 - Got message [54(raketa)|localhost:1100|2|||REDUNDANT_COPY|localhost:1200|12(raketa)] C:[2|[54(raketa)|localhost:1100]]
+received files for replication
+17:12:42 - Sending message [12(raketa)|localhost:1200|2|||REDUNDANT_COPY|localhost:1100|54(raketa)] C:[2|[12(raketa)|localhost:1200]]
+17:13:01 - Got message [58(raketa)|localhost:1400|0|||NEW_NODE|localhost:1200|-1(UNKNOWN)] C:[0|[58(raketa)|localhost:1400]]
+Curr Succis
+[54(raketa)|localhost:1100]
+null
+null
+---Nodes to ping---
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+New Succis
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+null
+Old predecessor [54(raketa)|localhost:1100]
+New predecessor [58(raketa)|localhost:1400]
+--- New finger table ---
+13 [54(raketa)|localhost:1100]
+14 [54(raketa)|localhost:1100]
+16 [54(raketa)|localhost:1100]
+20 [54(raketa)|localhost:1100]
+28 [54(raketa)|localhost:1100]
+44 [54(raketa)|localhost:1100]
+* * * MY files * * *
+*** His paths ***
+allFilesInStorageWithRelativePaths
+Paths requested for deleting::
+Paths for deleting::
+17:13:01 - Sending message [12(raketa)|localhost:1200|33|||WELCOME|localhost:1400|58(raketa)]
+17:13:01 - Got message [58(raketa)|localhost:1400|1|||UPDATE|localhost:1200|12(raketa)]
+Curr Succis
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+null
+---Nodes to ping---
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+New Succis
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+null
+Old predecessor [58(raketa)|localhost:1400]
+New predecessor [58(raketa)|localhost:1400]
+--- New finger table ---
+13 [54(raketa)|localhost:1100]
+14 [54(raketa)|localhost:1100]
+16 [54(raketa)|localhost:1100]
+20 [54(raketa)|localhost:1100]
+28 [54(raketa)|localhost:1100]
+44 [54(raketa)|localhost:1100]
+17:13:01 - Sending message [58(raketa)|localhost:1400|34|||UPDATE|localhost:1100|54(raketa)]
+17:13:02 - Got message [58(raketa)|localhost:1400|2|||REDUNDANT_COPY|localhost:1200|12(raketa)] C:[2|[58(raketa)|localhost:1400]]
+received files for replication
+17:13:02 - Got message [54(raketa)|localhost:1100|37|||REDUNDANT_COPY|localhost:1200|12(raketa)] C:[37|[54(raketa)|localhost:1100]]
+received files for replication
+17:13:02 - Sending message [12(raketa)|localhost:1200|36|||REDUNDANT_COPY|localhost:1400|58(raketa)] C:[36|[12(raketa)|localhost:1200]]
+17:13:11 - Got message [40(raketa)|localhost:1600|32|||NEW_NODE|localhost:1200|12(raketa)] C:[0|[40(raketa)|localhost:1600]]
+17:13:11 - Sending message [12(raketa)|localhost:1200|67|||ACQUIRE_LOCK_RESPONSE|localhost:1600|40(raketa)] C:[0|[40(raketa)|localhost:1600]]
+17:13:21 - Pausing for 5000 ms
+17:13:26 - Pausing for 5000 ms
+17:13:31 - Stopping...
+allFilesInStorageWithRelativePaths
+Paths requested for deleting::
+Paths for deleting::
+17:13:31 - Sending message [12(raketa)|localhost:1200|129|||LEAVE_REQUEST|localhost:1100|54(raketa)]
+17:13:31 - Got message [58(raketa)|localhost:1400|95|||LEAVE_REQUEST|localhost:1200|12(raketa)]
+Curr Succis
+[54(raketa)|localhost:1100]
+[58(raketa)|localhost:1400]
+null
+---Nodes to ping---
+[54(raketa)|localhost:1100]
+New Succis
+[54(raketa)|localhost:1100]
+null
+null
+Old predecessor [58(raketa)|localhost:1400]
+New predecessor [54(raketa)|localhost:1100]
+--- New finger table ---
+13 [54(raketa)|localhost:1100]
+14 [54(raketa)|localhost:1100]
+16 [54(raketa)|localhost:1100]
+20 [54(raketa)|localhost:1100]
+28 [54(raketa)|localhost:1100]
+44 [54(raketa)|localhost:1100]
+17:13:31 - Got message [58(raketa)|localhost:1400|97|||SUCC_LEAVING|localhost:1200|12(raketa)]
+Curr Succis
+[54(raketa)|localhost:1100]
+null
+null
+---Nodes to ping---
+New Succis
+null
+null
+null
+Old predecessor [54(raketa)|localhost:1100]
+New predecessor null
+17:13:31 - Sending message [12(raketa)|localhost:1200|130|||SUCC_LEAVING|localhost:1100|54(raketa)]
+17:13:31 - Sending message [12(raketa)|localhost:1200|131|||LEAVE_GRANTED|localhost:1100|54(raketa)]
+17:13:31 - Got message [58(raketa)|localhost:1400|98|||LEAVE_GRANTED|localhost:1200|12(raketa)]
