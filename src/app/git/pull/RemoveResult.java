@@ -1,6 +1,6 @@
 package app.git.pull;
 
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 
 import java.io.Serializable;
 import java.util.List;

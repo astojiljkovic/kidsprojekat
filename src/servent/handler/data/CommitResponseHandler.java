@@ -3,7 +3,7 @@ package servent.handler.data;
 import app.AppConfig;
 import app.Logger;
 import app.SillyGitFile;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 import app.git.commit.CommitResult;
 import app.merge.UnespectedPushResponseException;
 import servent.handler.ResponseMessageHandler;

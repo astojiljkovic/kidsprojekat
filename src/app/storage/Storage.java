@@ -1,8 +1,8 @@
-package app;
+package app.storage;
 
-import app.storage.CommitConflictStorageException;
-import app.storage.FileAlreadyAddedStorageException;
-import app.storage.FileDoesntExistStorageException;
+import app.AppConfig;
+import app.FileSystemUtils;
+import app.Logger;
 
 import java.io.*;
 import java.nio.file.*;
@@ -10,6 +10,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static app.AppConfig.deleteDirectoryJava8;
 
 public class Storage {
     public class GetResult {
@@ -32,15 +35,29 @@ public class Storage {
 
     public static final int LATEST_STORAGE_FILE_VERSION = -1;
 
-    private final File root;
+//    private final File storageRoot;
+//    private final File replicationRoot;
+
+    private final Path storageRoot;// = Path.of("storage");
+    private final Path replicationRoot;// = Path.of("replication");
 
     public Storage(File root) {
-        this.root = root;
+        storageRoot = Path.of(root.toString(), "storage");
+        replicationRoot = Path.of(root.toString(), "replication");
+        try {
+            Files.createDirectories(storageRoot);
+            Files.createDirectories(replicationRoot);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+//        this.storageRoot = new File(root, "storage");
+//        this.replicationRoot = new File(root, "replication");
     }
 
     public SillyGitStorageFile add(String path, String content) throws FileAlreadyAddedStorageException {
         try {
-            save(path, content, 0);
+            save(storageRoot, path, content, 0);
             return createSillyGitStorageFile(path, content, 0);
         } catch (FileAlreadyExistsException e) {
             throw new FileAlreadyAddedStorageException(path);
@@ -48,22 +65,56 @@ public class Storage {
     }
 
     public void addTransferedFiles(List<SillyGitStorageFile> list) {
+        saveTransferedFilesRelativeTo(list, storageRoot);
+    }
+
+    private void saveTransferedFilesRelativeTo(List<SillyGitStorageFile> list, Path root) {
         for(SillyGitStorageFile file: list) {
             try {
-                save(file.getPathInStorageDir(), file.getContent(), file.getVersion());
+                save(root, file.getPathInStorageDir(), file.getContent(), file.getVersion());
             } catch (FileAlreadyExistsException e) {
                 Logger.timestampedStandardPrint("Adding transfered file failed but it's all good - file already exists");
             }
         }
     }
 
-    public List<SillyGitStorageFile> dumbAllStoredFiles (){
+    public List<SillyGitStorageFile> dumpAllStoredFiles(){
         return getAllStoredFilesRelativeTo(Path.of(""));
     }
 
-    private void save(String path, String content, int version) throws FileAlreadyExistsException {
+    public void storeReplicationData(int nodeId, List<SillyGitStorageFile> allData) {
+        Path rootPath = Path.of(replicationRoot.toString(), getReplicationPathForNodeId(nodeId).toString());
+
+        try {
+            if (Files.exists(rootPath)) { //If storage folder exists
+                Files.walk(rootPath) //Delete it
+                        .sorted(Comparator.reverseOrder())
+                        .filter(path -> !path.equals(rootPath))
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                Logger.timestampedStandardPrint("Issue deleting file in replication (shouldn't really happen)" + e);
+                            }
+                        });
+            }
+        } catch (IOException e) {
+            Logger.timestampedStandardPrint("Issue deleting folder in replication (shouldn't really happen)" + e);
+        }
+        saveTransferedFilesRelativeTo(allData, rootPath);
+    }
+
+    private Path getReplicationPathForNodeId(int nodeId) {
+        return Path.of("" + nodeId);
+    }
+
+    private void save(Path root, String path, String content, int version) throws FileAlreadyExistsException {
         String versionedFilename = filenameWithVersion(path, version);
-        File fileForSillyFile = fileForRelativePathToWorkDir(versionedFilename);
+//        Path.of(root.toString(), versionedFilename);
+
+//        return new File(storageRoot, storagePath);
+        File fileForSillyFile = new File(root.toString(), versionedFilename); //TODO: this might not work
+//        File fileForSillyFile = fileForRelativePathToStorageDir(versionedFilename);
 
         if (fileForSillyFile.exists()) {
             throw new FileAlreadyExistsException(path);
@@ -102,7 +153,7 @@ public class Storage {
         }
 
         try {
-            save(pathInStorageDir,  content, newVersion);
+            save(storageRoot, pathInStorageDir,  content, newVersion);
             return createSillyGitStorageFile(pathInStorageDir, content, newVersion);
         } catch (FileAlreadyExistsException e) {
             throw new CommitConflictStorageException(pathInStorageDir, newVersion);
@@ -115,26 +166,12 @@ public class Storage {
         //dir/bananica.txt -> dir <- WAT DA FUK?
         //dir -> dir
         //bananica -> bananica.txt
-//        Path dirOrFileOnFirstPath = Path.of(pathInStorageDir).getName(0);
-//        File fileForPotentialFolder = fileForRelativePathToWorkDir(dirOrFileOnFirstPath.toString());
 
-        File fileForPotentialFolder = fileForRelativePathToWorkDir(pathInStorageDir);
+        File fileForPotentialFolder = fileForRelativePathToStorageDir(pathInStorageDir);
 
         if (fileForPotentialFolder.isDirectory()) {
-//            Path storageRootPath = Path.of("");
             Path dirPathRelativeToRoot = Path.of(pathInStorageDir);
-//            Path dirPathRelativeToRoot = dirOrFileOnFirstPath;
 
-//            List<String> filesToRetrieve;
-
-//            Path filePath = Path.of(pathInStorageDir);
-
-//            if (filePath.getNameCount() == 2) {
-//                String specificFile = filePath.getName(1).toString();
-//                filesToRetrieve = List.of(specificFile);
-//            } else {
-//                filesToRetrieve = getAllStoredUnversionedFileNamesRelativeTo(dirPathRelativeToRoot); //bananica.txt, dir/jogurt.txt (koji su u folderu "fileToGet")
-//            }
             System.out.println("Files to retrieve in storage");
             //Get all files in storage, with path relative to it
             List<String> filesToRetrieve = getAllStoredUnversionedFileNamesRelativeToRoot(dirPathRelativeToRoot); //bananica.txt, dir/jogurt.txt (koji su u folderu "fileToGet")
@@ -180,7 +217,7 @@ public class Storage {
 
         String p = Path.of(belongingFolder.toString(), versionedFilename).toString();
         System.out.println("File to open in getOneFile " + p);
-        File fileForSillyFile = fileForRelativePathToWorkDir(p);
+        File fileForSillyFile = fileForRelativePathToStorageDir(p);
 
         if (!fileForSillyFile.exists()) {
             System.out.println("File doesn't exist");
@@ -205,7 +242,7 @@ public class Storage {
     }
 
     private List<SillyGitStorageFile> getAllStoredFilesRelativeTo(Path folderRelativeToRoot) {
-        File folder = fileForRelativePathToWorkDir(folderRelativeToRoot.toString());
+        File folder = fileForRelativePathToStorageDir(folderRelativeToRoot.toString());
         try {
             return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
                     .sorted(Comparator.reverseOrder())
@@ -213,7 +250,7 @@ public class Storage {
                     .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, dir/jogurt.txt_version_0
                         return folder.toPath().relativize(path).toString();
                     }).map(s -> {
-                        Path pathForWorkingWithFileSystem = fileForRelativePathToWorkDir(s).toPath();
+                        Path pathForWorkingWithFileSystem = fileForRelativePathToStorageDir(s).toPath();
                         String content = null;
                         try {
                             content = Files.readString(pathForWorkingWithFileSystem);
@@ -222,13 +259,10 @@ public class Storage {
                         }
                         String fileName = filenameFromVersionedFilename(s);
                         int version = versionFromVersionedFilename(s);
-//                        Files.delete(pathForWorkingWithFileSystem);
 
                         return createSillyGitStorageFile(fileName, content, version);
                     })
-//                    .filter(path -> { // bananica.txt_version_0, dir/jogurt.txt_version_1
-//                        return path.endsWith("_0");
-//                    })
+
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -236,7 +270,7 @@ public class Storage {
     }
 
     private List<String> getAllUnversionedStoredFilesRelativeTo(Path folderRelativeToRoot) {
-        File folder = fileForRelativePathToWorkDir(folderRelativeToRoot.toString());
+        File folder = fileForRelativePathToStorageDir(folderRelativeToRoot.toString());
         try {
             return Files.walk(folder.toPath()) //aleksa/xyz/s1_storage/bananica.txt_version_0, /aleksa/xyz/s1_storage/bananica.txt_version_1, /aleksa/xyz/s1_storage/dir/jogurt.txt_version_0
                     .sorted(Comparator.reverseOrder())
@@ -257,24 +291,18 @@ public class Storage {
 
     private List<String> getAllStoredUnversionedFileNamesRelativeToRoot(Path folderRelativeToRoot) {
         return getAllUnversionedStoredFilesRelativeTo(folderRelativeToRoot);
-//                .stream()
-//                .map(path -> { // bananica.txt, dir/jogurt.txt
-//                    return filenameFromVersionedFilename(path);
-//                }).collect(Collectors.toList());
     }
 
     //Used before transfering files to others
     public List<SillyGitStorageFile> removeFilesOnRelativePathsReturningGitFiles(List<String> paths) {
         Set<String> requestedDeletePaths = new HashSet<>(paths);
         //paths => dir, dir/dir, dir/bananica.txt, dir/dir/jogurt.txt
-        Path storageRoot = Path.of("");
-        List<SillyGitStorageFile> allFilesInStorageWithRelativePaths = getAllStoredFilesRelativeTo(storageRoot);
+        Path storageRootPath = Path.of("");
+        List<SillyGitStorageFile> allFilesInStorageWithRelativePaths = getAllStoredFilesRelativeTo(storageRootPath);
         // dir/dir/bananica.txt_version_0, /dir/jogurt.txt_version_0, samofajl.txt_version_0, bananica.txt_version_0
 
         List<SillyGitStorageFile> sgfs = allFilesInStorageWithRelativePaths
                 .stream()
-//                .map(SillyGitStorageFile::getPathInStorageDir)
-//                .map(Path::of)
                 .filter(sillyGitStorageFile -> {
                     for(String requestedPathToDelete: requestedDeletePaths) {
                         if (sillyGitStorageFile.getPathInStorageDir().startsWith(requestedPathToDelete)) {
@@ -303,11 +331,8 @@ public class Storage {
                 .forEach(sillyGitStorageFile -> {
                     try {
                         String pathWithVersion = filenameWithVersion(sillyGitStorageFile.getPathInStorageDir(),sillyGitStorageFile.getVersion());
-                        Path pathForWorkingWithFileSystem = fileForRelativePathToWorkDir(pathWithVersion).toPath();
+                        Path pathForWorkingWithFileSystem = fileForRelativePathToStorageDir(pathWithVersion).toPath();
 
-//                        String content = Files.readString(pathForWorkingWithFileSystem);
-//                        String fileName = filenameFromVersionedFilename(path.toString());
-//                        int version = versionFromVersionedFilename(path.toString());
                         Files.delete(pathForWorkingWithFileSystem);
 
                     } catch (IOException e) {
@@ -316,7 +341,7 @@ public class Storage {
                 });
 
         //Clean up empty dirs
-        FileSystemUtils.removeEmptyDirsInPath(root.toPath());
+        FileSystemUtils.removeEmptyDirsInPath(storageRoot);
 
         return sgfs;
     }
@@ -329,7 +354,7 @@ public class Storage {
         }
         String fileName = filePath.getFileName().toString();
 
-        File fileForSearchRoot = fileForRelativePathToWorkDir(belongingFolder.toString());
+        File fileForSearchRoot = fileForRelativePathToStorageDir(belongingFolder.toString());
         try {
             return Files.list(fileForSearchRoot.toPath())
                     .map(path -> { // bananica.txt_version_0, bananica.txt_version_1, jogurt.txt
@@ -370,8 +395,11 @@ public class Storage {
         return versionedFileName.split("_version_")[0];
     }
 
-    private File fileForRelativePathToWorkDir(String storagePath) { //bananica.txt_version_0 -> /aleksa/xyz/storage_1/bananica.txt_version_0
-        return new File(root, storagePath);
+    private File fileForRelativePathToStorageDir(String storagePath) { //bananica.txt_version_0 -> /aleksa/xyz/storage_1/bananica.txt_version_0
+        return new File(storageRoot.toString(), storagePath);
     }
 
+    private File fileForRelativePathToReplicationDir(String storagePath) { //bananica.txt_version_0 -> /aleksa/xyz/storage_1/bananica.txt_version_0
+        return new File(replicationRoot.toString(), storagePath);
+    }
 }

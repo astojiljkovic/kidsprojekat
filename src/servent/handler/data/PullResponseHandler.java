@@ -3,7 +3,7 @@ package servent.handler.data;
 import app.AppConfig;
 import app.Logger;
 import app.PullType;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 import app.git.pull.RemoveResult;
 import app.merge.UnexpectedPullResponseException;
 import servent.handler.ResponseMessageHandler;

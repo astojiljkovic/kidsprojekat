@@ -1,7 +1,7 @@
 package app.git.commit;
 
 import app.SillyGitFile;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 
 import java.io.Serializable;
 import java.util.List;

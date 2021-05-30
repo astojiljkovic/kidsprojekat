@@ -1,6 +1,7 @@
-package app;
+package app.storage;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class SillyGitStorageFile implements Serializable {
     private final String pathInStorageDir;
@@ -34,5 +35,18 @@ public class SillyGitStorageFile implements Serializable {
     @Override
     public String toString() {
         return "SGFS{" + pathInStorageDir + "|" + content + "|" + version + "|" + versionHash + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SillyGitStorageFile that = (SillyGitStorageFile) o;
+        return version == that.version && pathInStorageDir.equals(that.pathInStorageDir) && content.equals(that.content) && versionHash.equals(that.versionHash);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pathInStorageDir, content, version, versionHash);
     }
 }

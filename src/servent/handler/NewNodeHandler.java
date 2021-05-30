@@ -1,6 +1,7 @@
 package servent.handler;
 
 import app.*;
+import app.storage.SillyGitStorageFile;
 import servent.message.*;
 import servent.message.util.MessageUtil;
 

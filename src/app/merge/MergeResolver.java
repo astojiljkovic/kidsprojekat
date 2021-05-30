@@ -3,6 +3,7 @@ package app.merge;
 import app.*;
 import app.git.commit.CommitResult;
 import app.git.pull.RemoveResult;
+import app.storage.SillyGitStorageFile;
 
 import java.util.ArrayList;
 import java.util.List;

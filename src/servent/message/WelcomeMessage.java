@@ -1,10 +1,9 @@
 package servent.message;
 
 import java.util.List;
-import java.util.Map;
+
 import app.ServentInfo;
-import app.SillyGitFile;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 
 public class WelcomeMessage extends SendAndForgetMessage {
 

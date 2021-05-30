@@ -2,14 +2,11 @@ package cli.command.data;
 
 import app.AppConfig;
 import app.Logger;
-import app.SillyGitFile;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 import app.git.add.AddResult;
-import app.storage.FileAlreadyAddedStorageException;
 import cli.command.CLICommand;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 

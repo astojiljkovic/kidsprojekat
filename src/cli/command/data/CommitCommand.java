@@ -2,12 +2,9 @@ package cli.command.data;
 
 import app.*;
 import app.git.commit.CommitResult;
-import app.storage.CommitConflictStorageException;
-import app.storage.FileAlreadyAddedStorageException;
-import app.storage.FileDoesntExistStorageException;
+import app.storage.SillyGitStorageFile;
 import cli.command.CLICommand;
 
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

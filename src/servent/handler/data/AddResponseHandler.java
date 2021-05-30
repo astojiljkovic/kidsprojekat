@@ -2,7 +2,7 @@ package servent.handler.data;
 
 import app.AppConfig;
 import app.Logger;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 import app.git.add.AddResult;
 import servent.handler.ResponseMessageHandler;
 import servent.message.data.AddResponseMessage;

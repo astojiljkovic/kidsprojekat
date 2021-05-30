@@ -1,7 +1,7 @@
 package servent.message.chord.leave;
 
 import app.ServentInfo;
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 import servent.message.MessageType;
 import servent.message.SendAndForgetMessage;
 

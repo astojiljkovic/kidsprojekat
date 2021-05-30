@@ -3,6 +3,7 @@ package cli.command.data;
 import app.*;
 import app.git.pull.RemoveResult;
 import app.merge.NotReadyForInputException;
+import app.storage.Storage;
 import cli.command.CLICommand;
 
 import java.util.Optional;

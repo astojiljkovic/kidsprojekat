@@ -18,9 +18,7 @@ import app.chord.SuspiciousNode;
 import app.git.add.AddResult;
 import app.git.commit.CommitResult;
 import app.git.pull.RemoveResult;
-import app.storage.CommitConflictStorageException;
-import app.storage.FileAlreadyAddedStorageException;
-import app.storage.FileDoesntExistStorageException;
+import app.storage.*;
 import servent.handler.ResponseMessageHandler;
 import servent.handler.data.AddResponseHandler;
 import servent.handler.data.CommitResponseHandler;
@@ -36,6 +34,8 @@ import servent.message.chord.stabilize.QuestionExistenceMessage;
 import servent.message.chord.stabilize.QuestionExistenceResponseMessage;
 import servent.message.data.*;
 import servent.message.util.MessageUtil;
+
+import javax.print.attribute.standard.Severity;
 
 import static app.AppConfig.*;
 import static java.lang.System.exit;
@@ -436,6 +436,68 @@ public class ChordState {
         return -1;
     }
 
+    class ReplicationTracker {
+        private ServentInfo servent;
+        private List<SillyGitStorageFile> previousFiles = new ArrayList<>();
+
+        boolean shouldSendFor(ServentInfo s, List<SillyGitStorageFile> files) {
+            if(servent == null) {
+                return true;
+            }
+            if (!servent.equals(s)) {
+                return true;
+            }
+            if (!previousFiles.equals(files)) {
+                return true;
+            }
+            return false;
+        }
+
+        void update(ServentInfo s, List<SillyGitStorageFile> files) {
+            this.servent = s;
+            this.previousFiles = files;
+        }
+    }
+    private final Timer storageReplicatorTimer = new Timer();
+    {
+        TimerTask tt = new TimerTask() {
+            ReplicationTracker tracker1 = new ReplicationTracker();
+            ReplicationTracker tracker2 = new ReplicationTracker();
+//            List<SillyGitStorageFile> previousS1Files = new ArrayList<>();
+//            List<SillyGitStorageFile> previousS2Files = new ArrayList<>();
+
+//            ServentInfo previousS1;
+//            ServentInfo previousS2;
+
+            @Override
+            public void run() {
+//                System.out.println("NOOOODE" + myServentInfo);
+                ServentInfo s1 = state.getSuccessor(0);
+                if(s1 != null && !s1.equals(myServentInfo)) {
+//                    System.out.println("Rep if1");
+                    replicateStorageTo(s1, tracker1);
+                }
+
+                ServentInfo s2 = state.getSuccessor(1);
+//                System.out.println("Rep sucs " + s1 + "|" + s2);
+
+                if(s1 != null && s2 != null && !s2.equals(myServentInfo) && !s1.equals(s2)) {
+//                    System.out.println("Rep if 2");
+                    replicateStorageTo(s2, tracker2);
+                }
+            }
+
+            private void replicateStorageTo(ServentInfo replicationTarget, ReplicationTracker tracker) {
+                List<SillyGitStorageFile> allFiles = storage.dumpAllStoredFiles();
+                if (tracker.shouldSendFor(replicationTarget, allFiles)) {
+                    RedundantCopyMessage rcp = new RedundantCopyMessage(myServentInfo, replicationTarget, myServentInfo, replicationTarget , allFiles);
+                    MessageUtil.sendAndForgetMessage(rcp);
+                    tracker.update(replicationTarget, allFiles);
+                }
+            }
+        };
+        storageReplicatorTimer.schedule(tt, 1000, 1000);
+    }
     /**
      * This should be called once after we get <code>WELCOME</code> message.
      * It sets up our initial value map and our first successor so we can send <code>UPDATE</code>.
@@ -461,6 +523,9 @@ public class ChordState {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+
     }
 
     //Add
@@ -774,6 +839,13 @@ public class ChordState {
 
     public Optional<RemoveResult> getViewFile(String resolvingConflictPath) {
         return pullFileForUs(resolvingConflictPath, Storage.LATEST_STORAGE_FILE_VERSION, PullType.VIEW);
+    }
+
+    // Storage replication
+
+
+    public void storeReplicaData(int chordId, List<SillyGitStorageFile> data) {
+        storage.storeReplicationData(chordId, data);
     }
 
     // Chord maintenance

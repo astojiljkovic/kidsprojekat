@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import app.*;
+import app.storage.SillyGitStorageFile;
 import servent.handler.*;
 import servent.handler.chord.leave.LeaveGrantedHandler;
 import servent.handler.chord.leave.LeaveRequestHandler;
@@ -23,6 +24,7 @@ import servent.message.Message;
 import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
 import servent.message.chord.stabilize.*;
+import servent.message.data.RedundantCopyMessage;
 import servent.message.util.MessageUtil;
 
 import javax.sound.midi.Track;
@@ -134,22 +136,30 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									QuestionExistenceMessage qm = (QuestionExistenceMessage) clientMessage;
-									ServentInfo softDeadNode = qm.getSoftDeadNode();
-									PingMessage ping = new PingMessage(AppConfig.myServentInfo, softDeadNode);
-									MessageUtil.sendTrackedMessageAwaitingResponse(ping, new ResponseMessageHandler() {
-											@Override
-											public void run() {
-												QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), false, softDeadNode);
-												response.copyContextFrom(qm);
-												MessageUtil.sendAndForgetMessage(response);
-											}
-										}, 10000,
-										invocation -> { //timeout
-											QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), true, softDeadNode);
-											response.copyContextFrom(qm);
-											MessageUtil.sendAndForgetMessage(response);
-											return -1;
-										});
+									if(qm.getReceiver().equals(AppConfig.myServentInfo)) {
+
+										ServentInfo softDeadNode = qm.getSoftDeadNode();
+										PingMessage ping = new PingMessage(AppConfig.myServentInfo, softDeadNode);
+										MessageUtil.sendTrackedMessageAwaitingResponse(ping, new ResponseMessageHandler() {
+													@Override
+													public void run() {
+														QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), false, softDeadNode);
+														response.copyContextFrom(qm);
+														MessageUtil.sendAndForgetMessage(response);
+													}
+												}, 10000,
+												invocation -> { //timeout
+													QuestionExistenceResponseMessage response = new QuestionExistenceResponseMessage(AppConfig.myServentInfo, qm.getSender(), true, softDeadNode);
+													response.copyContextFrom(qm);
+													MessageUtil.sendAndForgetMessage(response);
+													return -1;
+												});
+									} else {
+										ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(qm.getReceiver().getChordId());
+										QuestionExistenceMessage forwarded = new QuestionExistenceMessage(qm.getSender(), nextNode, qm.getSoftDeadNode());
+										forwarded.copyContextFrom(qm);
+										MessageUtil.sendAndForgetMessage(forwarded);
+									}
 								}
 							};
 							break;
@@ -158,26 +168,52 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									NewPredecessorMessage npm = (NewPredecessorMessage) clientMessage;
+									if(npm.getReceiver().equals(AppConfig.myServentInfo)) {
+										ServentInfo currentPred = AppConfig.chordState.state.getPredecessor();
 
-									ServentInfo currentPred = AppConfig.chordState.state.getPredecessor();
+										AppConfig.chordState.state.addNodes(Collections.emptyList(), List.of(currentPred));
+	//									AppConfig.chordState.state.setPredecessor(npm.getNewPredecessor());
 
-									AppConfig.chordState.state.addNodes(Collections.emptyList(), List.of(currentPred));
-//									AppConfig.chordState.state.setPredecessor(npm.getNewPredecessor());
+										//TODO: don't return null successors
+										List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
 
-									//TODO: don't return null successors
-									List<ServentInfo> mySuccs = new ArrayList<>(Arrays.asList(AppConfig.chordState.state.getSuccessors()));
+										mySuccs.add(0, AppConfig.myServentInfo);
 
-									mySuccs.add(0, AppConfig.myServentInfo);
+										if (mySuccs.size() > ChordState.State.MAX_SUCCESSORS) {
+											mySuccs.remove(mySuccs.size() - 1);
+										}
 
-									if (mySuccs.size() > ChordState.State.MAX_SUCCESSORS) {
-										mySuccs.remove(mySuccs.size() - 1);
+										List<ServentInfo> succis = mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList());
+										NewPredecessorResponseMessage response = new NewPredecessorResponseMessage(AppConfig.myServentInfo, clientMessage.getSender(),
+												succis);
+										response.copyContextFrom(npm);
+										MessageUtil.sendAndForgetMessage(response);
+									} else {
+										ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(npm.getReceiver().getChordId());
+										NewPredecessorMessage forwarded = new NewPredecessorMessage(npm.getSender(), nextNode, npm.getNewPredecessor());
+										forwarded.copyContextFrom(npm);
+										MessageUtil.sendAndForgetMessage(forwarded);
 									}
-
-									List<ServentInfo> succis = mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList());
-									NewPredecessorResponseMessage response = new NewPredecessorResponseMessage(AppConfig.myServentInfo, clientMessage.getSender(),
-											succis);
-									response.copyContextFrom(npm);
-									MessageUtil.sendAndForgetMessage(response);
+								}
+							};
+							break;
+						case REDUNDANT_COPY:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									RedundantCopyMessage npm = (RedundantCopyMessage) clientMessage;
+									if(npm.getReceiver().equals(AppConfig.myServentInfo)) {
+										System.out.println("received files for replication");
+										for(SillyGitStorageFile file: npm.getData()) {
+											System.out.println("" + file);
+										}
+										AppConfig.chordState.storeReplicaData(npm.getMainNode().getChordId(), npm.getData());
+									} else {
+										ServentInfo nextNode = AppConfig.chordState.state.getNextNodeForKey(npm.getReceiver().getChordId());
+										RedundantCopyMessage forwarded = new RedundantCopyMessage(npm.getSender(), nextNode, npm.getMainNode(), npm.getReplicationTarget(), npm.getData());
+										forwarded.copyContextFrom(npm);
+										MessageUtil.sendAndForgetMessage(forwarded);
+									}
 								}
 							};
 							break;

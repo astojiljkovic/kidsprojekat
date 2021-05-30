@@ -1,16 +1,14 @@
 package app;
 
 import app.merge.MergeResolver;
+import app.storage.Storage;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -185,7 +183,7 @@ public class AppConfig {
 	}
 
 
-	private static void deleteDirectoryJava8(Path path) throws IOException {
+	public static void deleteDirectoryJava8(Path path) throws IOException {
 		// read java doc, Files.walk need close the resources.
 		// try-with-resources to ensure that the stream's open directories are closed
 		try (Stream<Path> walk = Files.walk(path)) {

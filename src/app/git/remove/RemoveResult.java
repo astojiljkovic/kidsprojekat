@@ -1,6 +1,6 @@
 package app.git.remove;
 
-import app.SillyGitStorageFile;
+import app.storage.SillyGitStorageFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
