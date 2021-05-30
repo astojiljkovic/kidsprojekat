@@ -24,12 +24,10 @@ public class StopCommand implements CLICommand {
 	@Override
 	public void execute(String args) {
 		Logger.timestampedStandardPrint("Stopping...");
-
 		AppConfig.chordState.requestLeave(integer -> {
 			listener.stop();
 		});
 
 		parser.stop();
 	}
-
 }

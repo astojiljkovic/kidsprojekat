@@ -24,17 +24,16 @@ public class StateStabilizer {
     private final NotAnsweringNotification notificationHandler;
     private final AnsweredNotification answeredNotificationHandler;
 
+    private boolean shouldStop = false;
+
     public StateStabilizer(AnsweredNotification answeredNotificationHandler, NotAnsweringNotification notificationHandler) {
         this.answeredNotificationHandler = answeredNotificationHandler;
         this.notificationHandler = notificationHandler;
     }
 
-//    public synchronized void stopPingingNodeAndStartPingingAnother(ServentInfo nodeToStop, ServentInfo nodeToStart) {
-//        serventsToPing.remove(nodeToStop);
-//        serventsToPing.add(nodeToStart);
-//
-//        initiatePing(nodeToStart);
-//    }
+    public synchronized void stopStabilizer() {
+        shouldStop = true;
+    }
 
     public synchronized void pingNodes(List<ServentInfo> newServentsToPing) {
         List<ServentInfo> toRemove = new ArrayList<>();
@@ -66,37 +65,38 @@ public class StateStabilizer {
     }
 
     private synchronized TimerTask timerTask(ServentInfo node) {
-
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                PingMessage pingMessage = new PingMessage(AppConfig.myServentInfo, node);
-                MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
-                    @Override
-                    public void run() {
-                        answeredNotificationHandler.nodeAnswered(node);
-                        rescheduleForNode(node);
-                    }
-                }, 1000, invocation -> {
-                    if (invocation == 0) {
-                        notifyNodeNotAnswering(true, node);
-                        return 9000;
-                    }
-                    notifyNodeNotAnswering(false, node);
-                    return 10000;
-                });
+                if(!shouldStop) {
+                    PingMessage pingMessage = new PingMessage(AppConfig.myServentInfo, node);
+                    MessageUtil.sendTrackedMessageAwaitingResponse(pingMessage, new ResponseMessageHandler() {
+                        @Override
+                        public void run() {
+                            answeredNotificationHandler.nodeAnswered(node);
+                            rescheduleForNode(node);
+                        }
+                    }, 1000, invocation -> {
+                        if (invocation == 0) {
+                            notifyNodeNotAnswering(true, node);
+                            return 9000;
+                        }
+                        notifyNodeNotAnswering(false, node);
+                        return 10000;
+                    });
+                }
             }
         };
 
         return timerTask;
-//        Timer timer = new Timer();
-//        timer.schedule(timerTask, 1000);
     }
 
     private synchronized void rescheduleForNode(ServentInfo node) {
-        Timer t = serventsToPing.get(node);
-        if (t != null) {
-            t.schedule(timerTask(node), 1000);
+        if (shouldStop) {
+            Timer t = serventsToPing.get(node);
+            if (t != null) {
+                t.schedule(timerTask(node), 1000);
+            }
         }
     }
 

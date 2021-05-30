@@ -924,6 +924,8 @@ public class ChordState {
 
     public void handleLeaveGranted() {
         ServentInitializer.notifyBootstrapAboutLeaving();
+        storageReplicatorTimer.cancel();
+        state.stateStabilizer.stopStabilizer();
         leaveHandler.accept(5);
     }
 
