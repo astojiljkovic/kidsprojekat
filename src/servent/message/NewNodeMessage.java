@@ -1,7 +1,6 @@
 package servent.message;
 
 import app.ServentInfo;
-import servent.message.chord.stabilize.PingMessage;
 
 public class NewNodeMessage extends TrackedMessage {
 

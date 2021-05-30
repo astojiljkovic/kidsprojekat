@@ -34,7 +34,7 @@ public class WelcomeHandler implements MessageHandler {
 //				e.printStackTrace();
 //			}
 			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.state.getClosestSuccessor(), List.of(AppConfig.myServentInfo), Collections.emptyList());
-			MessageUtil.sendAndForgetMessage(um);
+			MessageUtil.sendTrackedMessageAwaitingResponse(um, new UpdateHandler(welcomeMsg.getSender()));
 			
 		} else {
 			Logger.timestampedErrorPrint("Welcome handler got a message that is not WELCOME");

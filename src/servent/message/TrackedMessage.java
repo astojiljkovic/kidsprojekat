@@ -27,6 +27,10 @@ public abstract class TrackedMessage extends BasicMessage {
         return context.initiatorMessageId;
     }
 
+    public ServentInfo getInitiator() {
+        return context.initiator;
+    }
+
     public abstract TrackedMessage newMessageFor(ServentInfo next);
 
     public void copyContextFrom(TrackedMessage trackedMessage) {

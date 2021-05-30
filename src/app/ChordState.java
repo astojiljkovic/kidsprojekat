@@ -20,6 +20,7 @@ import app.git.commit.CommitResult;
 import app.git.pull.RemoveResult;
 import app.storage.*;
 import servent.handler.ResponseMessageHandler;
+import servent.handler.UpdateHandler;
 import servent.handler.data.AddResponseHandler;
 import servent.handler.data.CommitResponseHandler;
 import servent.handler.data.PullResponseHandler;
@@ -97,8 +98,12 @@ public class ChordState {
             return lockHoldingId;
         }
 
-        public synchronized void releaseBalancingLock() {
-            lockHoldingId = -1;
+        public synchronized void releaseBalancingLock(int chordId) {
+            if (chordId == lockHoldingId) {
+                lockHoldingId = -1;
+            } else {
+                Logger.timestampedErrorPrint("Chord id asking to release lock that was not locked by him " + chordId);
+            }
         }
 
         private State() {
@@ -220,7 +225,7 @@ public class ChordState {
 //                        addNodes(Collections.emptyList(), new ArrayList<>(removedSuccis));
                         addNodes(response.getSuccessors(), new ArrayList<>(removedSuccis));
                         UpdateMessage um = new UpdateMessage(myServentInfo, getClosestSuccessor(), List.of(myServentInfo), new ArrayList<>(removedSuccis));
-                        MessageUtil.sendAndForgetMessage(um);
+                        MessageUtil.sendTrackedMessageAwaitingResponse(um, new UpdateHandler(null)); //TODO: change null to something else to unlock node in recovery
                     }
                 });
             } else if (didDie && sn.get().getState() == SuspiciousNode.State.SOFT_DEAD) { //We just wait for either all good or DEAD from our stabilizer
@@ -951,7 +956,8 @@ public class ChordState {
         MessageUtil.sendAndForgetMessage(slm);
         if (state.getSuccessor(0) != null) { //if there is at least somebody to receive an update
             UpdateMessage update = new UpdateMessage(myServentInfo, state.getClosestSuccessor(), List.of(myServentInfo), List.of(leaveInitiator));
-            MessageUtil.sendAndForgetMessage(update);
+            MessageUtil.sendTrackedMessageAwaitingResponse(update, new UpdateHandler(null)); //TODO: change null to unlock
+//            MessageUtil.sendAndForgetMessage(update);
         }
     }
 

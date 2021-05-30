@@ -23,11 +23,15 @@ import servent.handler.data.RemoveHandler;
 import servent.message.Message;
 import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
+import servent.message.UpdateMessage;
+import servent.message.chord.ReleaseLockMessage;
 import servent.message.chord.stabilize.*;
 import servent.message.data.RedundantCopyMessage;
 import servent.message.util.MessageUtil;
 
 import javax.sound.midi.Track;
+
+import static servent.message.MessageType.UPDATE;
 
 public class SimpleServentListener implements Runnable, Cancellable {
 
@@ -71,13 +75,21 @@ public class SimpleServentListener implements Runnable, Cancellable {
 				if (clientMessage instanceof ResponseMessage) {
 					ResponseMessage trackedMessage = (ResponseMessage) clientMessage;
 
-					Optional<ResponseMessageHandler> handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId());
-					if(handler.isPresent()) {
-						handler.get().setMessage(trackedMessage);
-						messageHandler = handler.get();
-					} else {
-						Logger.timestampedStandardPrint("Handler picked message that was already timedOut " + clientMessage);
-						continue;
+					if(trackedMessage.getInitiator().equals(AppConfig.myServentInfo)) {
+						Optional<ResponseMessageHandler> handler = MessageUtil.removeHandlerForId(trackedMessage.getInitialId());
+						if(handler.isPresent()) {
+							handler.get().setMessage(trackedMessage);
+							messageHandler = handler.get();
+						} else {
+							Logger.timestampedStandardPrint("Handler picked message that was already timedOut " + clientMessage);
+							continue;
+						}
+					} else { //Message is "Response", but I was not who initiated the question for response (Update)
+						if (clientMessage.getMessageType() == UPDATE) {
+							ResponseMessageHandler updateHandler = new UpdateHandler(null);
+							updateHandler.setMessage((TrackedMessage) clientMessage);
+							messageHandler = updateHandler;
+						}
 					}
 				}
 				else {
@@ -97,9 +109,11 @@ public class SimpleServentListener implements Runnable, Cancellable {
 						case SORRY:
 							messageHandler = new SorryHandler(clientMessage);
 							break;
-						case UPDATE:
-							messageHandler = new UpdateHandler(clientMessage);
-							break;
+//						case UPDATE:
+//							ResponseMessageHandler updateHandler = new UpdateHandler(null);
+//							updateHandler.setMessage((TrackedMessage) clientMessage);
+//							messageHandler = updateHandler;
+//							break;
 						case ADD:
 							messageHandler = new AddHandler(clientMessage);
 							break;
@@ -214,6 +228,21 @@ public class SimpleServentListener implements Runnable, Cancellable {
 										forwarded.copyContextFrom(npm);
 										MessageUtil.sendAndForgetMessage(forwarded);
 									}
+								}
+							};
+							break;
+						case RELEASE_LOCK:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									//Is this welcome update we sent???!?!?! //TODO: FIX
+//				ServentInfo updateInitiator = newNodes.get(0);
+//				//If initiator holds balancing lock (we just added it), release the lock so others (if any waiting) can also be added
+//				if(updateInitiator.getChordId() == AppConfig.chordState.state.getBalancingLockHoldingId()) {
+//					AppConfig.chordState.state.releaseBalancingLock();
+//				}
+									ReleaseLockMessage rlm = (ReleaseLockMessage) clientMessage;
+									AppConfig.chordState.state.releaseBalancingLock(rlm.getLockInitiator().getChordId());
 								}
 							};
 							break;

@@ -99,7 +99,8 @@ public class BootstrapServer {
 						socketWriter.write(String.valueOf(-1) + "\n");
 						activeServents.add(new ServentLocation(newServentIp, newServentPort)); //first one doesn't need to confirm
 					} else {
-						ServentLocation randServent = activeServents.get(rand.nextInt(activeServents.size()));
+//						ServentLocation randServent = activeServents.get(rand.nextInt(activeServents.size()));
+						ServentLocation randServent = activeServents.get(0);
 						socketWriter.write(String.valueOf(randServent.getPort()) + "\n");
 						socketWriter.write(randServent.getIp() + "\n");
 					}

@@ -4,7 +4,7 @@ import app.ServentInfo;
 
 import java.util.List;
 
-public class UpdateMessage extends SendAndForgetMessage {
+public class UpdateMessage extends ResponseMessage {
 
 	private static final long serialVersionUID = 3586102505319194978L;
 	private final List<ServentInfo> nodes;
@@ -22,5 +22,12 @@ public class UpdateMessage extends SendAndForgetMessage {
 
 	public List<ServentInfo> getNodes() {
 		return nodes;
+	}
+
+	@Override
+	public UpdateMessage newMessageFor(ServentInfo next) {
+		UpdateMessage am = new UpdateMessage(getSender(), next, nodes, removedNodes);
+		am.copyContextFrom(this);
+		return am;
 	}
 }

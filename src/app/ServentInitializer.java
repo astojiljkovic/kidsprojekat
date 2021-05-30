@@ -98,7 +98,7 @@ public class ServentInitializer implements Runnable {
 
 	private void initiateNewNodeMsg(String someServentIp, int someServentPort) {
 		NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
-		MessageUtil.sendTrackedMessageAwaitingResponse(nnm, new ResponseMessageHandler() {
+		MessageUtil.sendTrackedMessageAwaitingResponse(nnm, new ResponseMessageHandler() { //Handles Busy message, WelcomeHandler still goes to old HandlerListener (SimpleServentListener)
 			@Override
 			public void run() {
 				try {
@@ -106,7 +106,7 @@ public class ServentInitializer implements Runnable {
 						Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
 						Thread.sleep(10000);
 						initiateNewNodeMsg(someServentIp, someServentPort);
-					} else { //Welcome message
+					} else { //Welcome message <= never enters here (see comment ^)
 						new WelcomeHandler(message);
 					}
 				} catch (InterruptedException e) {
