@@ -24,13 +24,17 @@ import servent.message.Message;
 import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
 import servent.message.UpdateMessage;
+import servent.message.chord.BusyMessage;
+import servent.message.chord.LockGrantedMessage;
 import servent.message.chord.ReleaseLockMessage;
+import servent.message.chord.RequestLockMessage;
 import servent.message.chord.stabilize.*;
 import servent.message.data.RedundantCopyMessage;
 import servent.message.util.MessageUtil;
 
 import javax.sound.midi.Track;
 
+import static app.AppConfig.myServentInfo;
 import static servent.message.MessageType.UPDATE;
 
 public class SimpleServentListener implements Runnable, Cancellable {
@@ -235,17 +239,27 @@ public class SimpleServentListener implements Runnable, Cancellable {
 							messageHandler = new MessageHandler() {
 								@Override
 								public void run() {
-									//Is this welcome update we sent???!?!?! //TODO: FIX
-//				ServentInfo updateInitiator = newNodes.get(0);
-//				//If initiator holds balancing lock (we just added it), release the lock so others (if any waiting) can also be added
-//				if(updateInitiator.getChordId() == AppConfig.chordState.state.getBalancingLockHoldingId()) {
-//					AppConfig.chordState.state.releaseBalancingLock();
-//				}
 									ReleaseLockMessage rlm = (ReleaseLockMessage) clientMessage;
 									AppConfig.chordState.state.releaseBalancingLock(rlm.getLockInitiator().getChordId());
 								}
 							};
 							break;
+						case REQUEST_LOCK:
+							messageHandler = new MessageHandler() {
+								@Override
+								public void run() {
+									RequestLockMessage message = (RequestLockMessage) clientMessage;
+									if (AppConfig.chordState.state.acquireBalancingLock(message.getLockInitiator().getChordId())) {
+										LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
+										lgm.copyContextFrom(message);
+										MessageUtil.sendAndForgetMessage(lgm);
+									} else {
+										BusyMessage bm = new BusyMessage(myServentInfo, message.getLockInitiator());
+										bm.copyContextFrom(message);
+										MessageUtil.sendAndForgetMessage(bm);
+									}
+								}
+							};
 						case POISON:
 							break;
 					}

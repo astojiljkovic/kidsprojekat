@@ -30,6 +30,7 @@ import servent.handler.data.RemoveResponseHandler;
 import servent.message.*;
 import servent.message.chord.BusyMessage;
 import servent.message.chord.ReleaseLockMessage;
+import servent.message.chord.RequestLockMessage;
 import servent.message.chord.leave.LeaveGrantedMessage;
 import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.chord.leave.SuccessorLeavingMessage;
@@ -87,7 +88,8 @@ public class ChordState {
 
         private final StateStabilizer stateStabilizer;
 
-//        private boolean isBalancing = false;
+        private ServentInfo forwardToNode;
+
         private int lockHoldingId = -1;
         private LocalDateTime lockTimestamp;
 
@@ -329,6 +331,10 @@ public class ChordState {
          * Returns true if we are the owner of the specified key.
          */
         public boolean isKeyMine(int key) {
+            if(forwardToNode != null) {
+                return false;
+            }
+
             if (predecessorInfo == null) {
                 return true;
             }
@@ -355,6 +361,10 @@ public class ChordState {
          * We can only be certain we have found the required node when it is our first next node.
          */
         public ServentInfo getNextNodeForKey(int key) {
+            if(forwardToNode != null) {
+                return forwardToNode;
+            }
+
             if (isKeyMine(key)) {
                 return myServentInfo;
             }
@@ -517,7 +527,7 @@ public class ChordState {
     }
 
 
-    public State state = new State();
+    public final State state = new State();
 
     public static int CHORD_SIZE;
 
@@ -965,20 +975,32 @@ public class ChordState {
 
     private void doLeaveRequest() {
         if(state.getSuccessor(0) != null) {
-            List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
-            List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-            LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, state.getClosestSuccessor(), state.getPredecessor(), data);
-            MessageUtil.sendTrackedMessageAwaitingResponse(lrm, new ResponseMessageHandler() {
-                @Override
-                public void run() { //Busy handler
-                    Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + state.getClosestSuccessor());
-                    try {
-                        Thread.sleep(2000);
-                        doLeaveRequest();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            ServentInfo nodeToHandleLeave = state.getClosestSuccessor();
+
+            RequestLockMessage rl = new RequestLockMessage(myServentInfo, nodeToHandleLeave, myServentInfo);
+            MessageUtil.sendTrackedMessageAwaitingResponse(rl, new ResponseMessageHandler() {
+                    @Override
+                    public void run() {
+                        if(message instanceof BusyMessage) { //Busy handler
+                            Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + state.getClosestSuccessor());
+                            try {
+                                Thread.sleep(2000);
+                                doLeaveRequest();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        } else { //OK, Lock granted
+                            synchronized (state) {
+                                synchronized (storage) {
+                                    List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
+                                    List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
+                                    state.forwardToNode = nodeToHandleLeave;
+                                    LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, nodeToHandleLeave, state.getPredecessor(), data);
+                                    MessageUtil.sendAndForgetMessage(lrm);
+                                }
+                            }
+                        }
                     }
-                }
             });
         } else {
             handleLeaveGranted();
@@ -989,12 +1011,12 @@ public class ChordState {
     //returns true if this node is busy (this node will manage leave) and requester has to wait
     public void handleLeave(LeaveRequestMessage leaveRequestMessage) { //ServentInfo leaveInitiator, ServentInfo sendersPredecessor) {
         ServentInfo leaveInitiator = leaveRequestMessage.getSender();
-        if(!state.acquireBalancingLock(leaveInitiator.getChordId())) {
-            BusyMessage bm = new BusyMessage(myServentInfo, leaveInitiator);
-            bm.copyContextFrom(leaveRequestMessage);
-            MessageUtil.sendAndForgetMessage(bm);
-            return;
-        }
+//        if(!state.acquireBalancingLock(leaveInitiator.getChordId())) {
+//            BusyMessage bm = new BusyMessage(myServentInfo, leaveInitiator);
+//            bm.copyContextFrom(leaveRequestMessage);
+//            MessageUtil.sendAndForgetMessage(bm);
+//            return;
+//        }
         //We will be the last node once initiator leaves
         if(leaveInitiator.equals(state.getPredecessor()) && leaveInitiator.equals(state.getSuccessor(0)) ) {
             LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
@@ -1003,6 +1025,11 @@ public class ChordState {
         }else{
             state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
             storage.addTransferedFiles(leaveRequestMessage.getData());
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
             MessageUtil.sendAndForgetMessage(slm);
         }
