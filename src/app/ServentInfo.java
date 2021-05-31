@@ -21,12 +21,12 @@ public class ServentInfo implements Serializable {
 		this.networkLocation = new NetworkLocation(ipAddress, listenerPort);
 		this.team = team;
 
-		if(team.equals("UNKNOWN")) {
-			this.chordId = -1;
-		}
-		else {
-			this.chordId = ChordState.hashForFilePath(ipAddress + listenerPort);//TODO: Ne radi
-		}
+//		if(team.equals("UNKNOWN")) { //Just in case when the first message is sent and we don't know the ID of receiver
+//			this.chordId = -1;
+//		}
+//		else {
+			this.chordId = ChordState.hashForFilePath(team + ipAddress + listenerPort);
+//		}
 		//hash(tim) ++ hash(ip:port)
 		// hash(tim:(ip:port))
 	}

@@ -5,10 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import app.AppConfig;
-import app.Logger;
 import app.ServentInfo;
-import servent.message.Message;
-import servent.message.MessageType;
 import servent.message.UpdateMessage;
 import servent.message.chord.ReleaseLockMessage;
 import servent.message.util.MessageUtil;
@@ -63,7 +60,8 @@ public class UpdateHandler extends ResponseMessageHandler {
 //					} catch (InterruptedException e) {
 //						e.printStackTrace();
 //					}
-					ReleaseLockMessage rlm = new ReleaseLockMessage(AppConfig.myServentInfo, unlockRemoteServent, AppConfig.myServentInfo);
+					//Tell my succ to release lock and stop forwarding messages to me
+					ReleaseLockMessage rlm = new ReleaseLockMessage(AppConfig.myServentInfo, unlockRemoteServent, AppConfig.myServentInfo, true);
 					MessageUtil.sendAndForgetMessage(rlm);
 				}
 			}

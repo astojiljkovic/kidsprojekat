@@ -119,7 +119,7 @@ public class NewNodeHandler implements MessageHandler {
                             mySuccs.remove(mySuccs.size() - 1);
                         }
 
-                        AppConfig.chordState.state.setNodeForwarding(newNodeInfo);
+                        AppConfig.chordState.state.setNodeForwarding(newNodeInfo, true);
 
                         //Don't return null successors
                         WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList()));

@@ -4,21 +4,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.List;
 import java.util.Scanner;
 
-import app.storage.SillyGitStorageFile;
 import servent.handler.ResponseMessageHandler;
-import servent.handler.WelcomeHandler;
 import servent.message.NewNodeMessage;
-import servent.message.WelcomeMessage;
 import servent.message.chord.BusyMessage;
 import servent.message.chord.RequestLockMessage;
-import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.util.MessageUtil;
-
-import static app.AppConfig.myServentInfo;
-import static app.AppConfig.storage;
 
 public class ServentInitializer implements Runnable {
 
@@ -59,7 +51,7 @@ public class ServentInitializer implements Runnable {
 			//Hail\n
 			//address\n
 			//port\n
-			bsWriter.write("Hail\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
+			bsWriter.write("Hail\n" + AppConfig.myServentInfo.getTeam() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getIp() + "\n" + AppConfig.myServentInfo.getNetworkLocation().getPort() + "\n");
 			bsWriter.flush();
 			
 			Scanner bsScanner = new Scanner(bsSocket.getInputStream());
@@ -70,7 +62,8 @@ public class ServentInitializer implements Runnable {
 				retVal = receivedFirstOrPort;
 			} else { // received port
 				String receivedIp = bsScanner.nextLine();
-				retVal = receivedIp + ":" + receivedFirstOrPort;
+				String receivedTeam = bsScanner.nextLine();
+				retVal = receivedIp + ":" + receivedFirstOrPort + ":" + receivedTeam;
 			}
 			
 			bsSocket.close();
@@ -98,21 +91,22 @@ public class ServentInitializer implements Runnable {
 
 			String someServentIp = someServentLocation.split(":")[0];
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
+			String someServentTeam = someServentLocation.split(":")[2];
 
-			initiateChordEntry(someServentIp, someServentPort);
+			initiateChordEntry(new ServentInfo(someServentIp, someServentPort, someServentTeam));
 		}
 	}
 
-	private void initiateChordEntry(String someServentIp, int someServentPort) {
-		RequestLockMessage rlm = new RequestLockMessage(AppConfig.myServentInfo, new ServentInfo(someServentIp, someServentPort, "UNKNOWN"), AppConfig.myServentInfo);
+	private void initiateChordEntry(ServentInfo serventInfo) {
+		RequestLockMessage rlm = new RequestLockMessage(AppConfig.myServentInfo, serventInfo, AppConfig.myServentInfo, serventInfo);
 		MessageUtil.sendTrackedMessageAwaitingResponse(rlm, new ResponseMessageHandler() {
 			@Override
 			public void run() {
 				if(message instanceof BusyMessage) { //Busy handler
-					Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
+					Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + serventInfo);
 					try {
 						Thread.sleep(2000);
-						initiateChordEntry(message.getSender().getNetworkLocation().getIp(), message.getSender().getNetworkLocation().getPort());
+						initiateChordEntry(serventInfo);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

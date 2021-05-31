@@ -23,7 +23,6 @@ import servent.handler.data.RemoveHandler;
 import servent.message.Message;
 import servent.message.ResponseMessage;
 import servent.message.TrackedMessage;
-import servent.message.UpdateMessage;
 import servent.message.chord.BusyMessage;
 import servent.message.chord.LockGrantedMessage;
 import servent.message.chord.ReleaseLockMessage;
@@ -31,8 +30,6 @@ import servent.message.chord.RequestLockMessage;
 import servent.message.chord.stabilize.*;
 import servent.message.data.RedundantCopyMessage;
 import servent.message.util.MessageUtil;
-
-import javax.sound.midi.Track;
 
 import static app.AppConfig.myServentInfo;
 import static servent.message.MessageType.UPDATE;
@@ -240,7 +237,16 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									ReleaseLockMessage rlm = (ReleaseLockMessage) clientMessage;
-									AppConfig.chordState.state.releaseBalancingLock(rlm.getLockInitiator().getChordId());
+									if(AppConfig.chordState.state.isKeyMine(rlm.getReceiver().getChordId())) {
+										AppConfig.chordState.state.releaseBalancingLock(rlm.getLockInitiator().getChordId());
+										if (rlm.isStopForwarding()) {
+											System.out.println("stop forwarding");
+											AppConfig.chordState.state.stopNodeForwarding();
+										}
+									} else {
+										ReleaseLockMessage rlToForward = rlm.newMessageFor(AppConfig.chordState.state.getNextNodeForKey(rlm.getReceiver().getChordId()));
+										MessageUtil.sendAndForgetMessage(rlToForward);
+									}
 								}
 							};
 							break;
@@ -249,15 +255,23 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									RequestLockMessage message = (RequestLockMessage) clientMessage;
-									if (AppConfig.chordState.state.acquireBalancingLock(message.getLockInitiator().getChordId())) {
-										LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
-										lgm.copyContextFrom(message);
-										MessageUtil.sendAndForgetMessage(lgm);
+									int lockTargetId = message.getLockTarget().getChordId();
+									if(AppConfig.chordState.state.isKeyMine(lockTargetId)) {
+										if (AppConfig.chordState.state.acquireBalancingLock(message.getLockInitiator().getChordId())) {
+											LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
+											lgm.copyContextFrom(message);
+											MessageUtil.sendAndForgetMessage(lgm);
+										} else {
+											BusyMessage bm = new BusyMessage(myServentInfo, message.getLockInitiator());
+											bm.copyContextFrom(message);
+											MessageUtil.sendAndForgetMessage(bm);
+										}
 									} else {
-										BusyMessage bm = new BusyMessage(myServentInfo, message.getLockInitiator());
-										bm.copyContextFrom(message);
-										MessageUtil.sendAndForgetMessage(bm);
+										RequestLockMessage rlmToForward = new RequestLockMessage(message.getSender(), AppConfig.chordState.state.getNextNodeForKey(lockTargetId), message.getLockInitiator(), message.getLockTarget());
+										rlmToForward.copyContextFrom(rlmToForward);
+										MessageUtil.sendAndForgetMessage(rlmToForward);
 									}
+
 								}
 							};
 						case POISON:

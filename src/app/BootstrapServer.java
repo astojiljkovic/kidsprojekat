@@ -11,12 +11,18 @@ import java.util.Scanner;
 public class BootstrapServer {
 
 	class ServentLocation {
+		private final String team;
 		private final String ip;
 		private final int port;
 
-		public ServentLocation(String ip, int port) {
+		public ServentLocation(String team, String ip, int port) {
+			this.team = team;
 			this.ip = ip;
 			this.port = port;
+		}
+
+		public String getTeam() {
+			return team;
 		}
 
 		public String getIp() {
@@ -89,20 +95,22 @@ public class BootstrapServer {
 				 * or -1 if he is the first one.
 				 */
 				if (message.equals("Hail")) {
+					String newServentTeam = socketScanner.nextLine();
 					String newServentIp = socketScanner.nextLine();
 					int newServentPort = socketScanner.nextInt();
 					
-					System.out.println("got " + newServentIp + ":" + newServentPort);
+					System.out.println("got " + newServentTeam + " " + newServentIp + ":" + newServentPort);
 					PrintWriter socketWriter = new PrintWriter(newServentSocket.getOutputStream());
 					
 					if (activeServents.size() == 0) {
 						socketWriter.write(String.valueOf(-1) + "\n");
-						activeServents.add(new ServentLocation(newServentIp, newServentPort)); //first one doesn't need to confirm
+						activeServents.add(new ServentLocation(newServentTeam, newServentIp, newServentPort)); //first one doesn't need to confirm
 					} else {
 //						ServentLocation randServent = activeServents.get(rand.nextInt(activeServents.size()));
-						ServentLocation randServent = activeServents.get(0);
+						ServentLocation randServent = activeServents.get(0); //TODO: remove after testing
 						socketWriter.write(String.valueOf(randServent.getPort()) + "\n");
 						socketWriter.write(randServent.getIp() + "\n");
+						socketWriter.write(randServent.getTeam() + "\n");
 					}
 					
 					socketWriter.flush();
@@ -111,12 +119,13 @@ public class BootstrapServer {
 					/**
 					 * When a servent is confirmed not to be a collider, we add him to the list.
 					 */
+					String newServentTeam = socketScanner.nextLine();
 					String newServentIp = socketScanner.nextLine();
 					int newServentPort = socketScanner.nextInt();
 					
-					System.out.println("adding " + newServentIp + ":" + newServentPort);
+					System.out.println("adding " + newServentTeam + " " + newServentIp + ":" + newServentPort);
 					
-					activeServents.add(new ServentLocation(newServentIp, newServentPort));
+					activeServents.add(new ServentLocation(newServentTeam, newServentIp, newServentPort));
 					newServentSocket.close();
 				} else if (message.equals("Bye")) {
 					/**

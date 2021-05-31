@@ -41,8 +41,6 @@ import servent.message.chord.stabilize.QuestionExistenceResponseMessage;
 import servent.message.data.*;
 import servent.message.util.MessageUtil;
 
-import javax.print.attribute.standard.Severity;
-
 import static app.AppConfig.*;
 import static java.lang.System.exit;
 
@@ -89,6 +87,7 @@ public class ChordState {
         private final StateStabilizer stateStabilizer;
 
         private ServentInfo forwardToNode;
+        private boolean forwardOnlySpecific;
 
         private int lockHoldingId = -1;
         private LocalDateTime lockTimestamp;
@@ -110,8 +109,14 @@ public class ChordState {
             return false;
         }
 
-        public void setNodeForwarding(ServentInfo nodeToForward) {
+        public void setNodeForwarding(ServentInfo nodeToForward, boolean forwardOnlySpecific) {
             forwardToNode = nodeToForward;
+            this.forwardOnlySpecific = forwardOnlySpecific;
+        }
+
+        public void stopNodeForwarding() {
+            forwardToNode = null;
+            this.forwardOnlySpecific = false;
         }
 
         public synchronized void releaseBalancingLock(int chordId) {
@@ -331,8 +336,14 @@ public class ChordState {
          * Returns true if we are the owner of the specified key.
          */
         public boolean isKeyMine(int key) {
-            if(forwardToNode != null) {
-                return false;
+            if(forwardToNode != null) { //forwarding enabled
+                if(!forwardOnlySpecific) { //forward everything
+                    return false;
+                } else { //case when entering (forward keys that belong between predecessor and new node we are forwarding to)
+                    if(key > getPredecessor().getChordId() && key <= forwardToNode.getChordId()) {
+                        return false;
+                    }
+                }
             }
 
             if (predecessorInfo == null) {
@@ -531,16 +542,19 @@ public class ChordState {
     public static int CHORD_SIZE;
 
     public static int chordHash(int value) {
-        System.out.println("Hash " + value);
-        int absValue = Math.abs(value) % 50000; // TODO: 25.5.21. Fix dirty cheat for positive values
-        return 61 * absValue % CHORD_SIZE;
+//        int absValue = Math.abs(value) % 50000; // TODO: 25.5.21. Fix dirty cheat for positive values
+        int absValue = Math.abs(value);
+//        return 61 * absValue % CHORD_SIZE;
+        return absValue % CHORD_SIZE;
     }
 
     public static int hashForFilePath(String pathInDir) {
         try {
             byte[] shaBytes = MessageDigest.getInstance("SHA-1").digest(Path.of(pathInDir).getName(0).toString().getBytes());
             ByteBuffer wrapped = ByteBuffer.wrap(shaBytes);
-            return chordHash(wrapped.getInt());
+            int value = chordHash(wrapped.getInt());
+            System.out.println("Hash " + value);
+            return value;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
@@ -622,7 +636,7 @@ public class ChordState {
             Socket bsSocket = new Socket(BOOTSTRAP_IP, AppConfig.BOOTSTRAP_PORT);
 
             PrintWriter bsWriter = new PrintWriter(bsSocket.getOutputStream());
-            bsWriter.write("New\n" + myServentInfo.getNetworkLocation().getIp() + "\n" + myServentInfo.getNetworkLocation().getPort() + "\n");
+            bsWriter.write("New\n" + myServentInfo.getTeam() + "\n" + myServentInfo.getNetworkLocation().getIp() + "\n" + myServentInfo.getNetworkLocation().getPort() + "\n");
 
             bsWriter.flush();
             bsSocket.close();
@@ -976,7 +990,7 @@ public class ChordState {
         if(state.getSuccessor(0) != null) {
             ServentInfo nodeToHandleLeave = state.getClosestSuccessor();
 
-            RequestLockMessage rl = new RequestLockMessage(myServentInfo, nodeToHandleLeave, myServentInfo);
+            RequestLockMessage rl = new RequestLockMessage(myServentInfo, nodeToHandleLeave, myServentInfo, nodeToHandleLeave);
             MessageUtil.sendTrackedMessageAwaitingResponse(rl, new ResponseMessageHandler() {
                     @Override
                     public void run() {
@@ -993,7 +1007,7 @@ public class ChordState {
                                 synchronized (storage) {
                                     List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
                                     List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-                                    state.setNodeForwarding(nodeToHandleLeave);
+                                    state.setNodeForwarding(nodeToHandleLeave, false);
                                     LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, nodeToHandleLeave, state.getPredecessor(), data);
                                     MessageUtil.sendAndForgetMessage(lrm);
                                 }
@@ -1040,7 +1054,7 @@ public class ChordState {
         LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
         if (!nodeManagingLeave.equals(myServentInfo)) {
-            ReleaseLockMessage rlm = new ReleaseLockMessage(myServentInfo, nodeManagingLeave, leaveInitiator);
+            ReleaseLockMessage rlm = new ReleaseLockMessage(myServentInfo, nodeManagingLeave, leaveInitiator, false); //in this case receiver doesn't forward anyway
             MessageUtil.sendAndForgetMessage(rlm);
         }
         if (state.getSuccessor(0) != null) { //if there is at least somebody to receive an update
