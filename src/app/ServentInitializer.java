@@ -4,14 +4,21 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Scanner;
 
-import com.ibm.jvm.trace.format.api.Message;
+import app.storage.SillyGitStorageFile;
 import servent.handler.ResponseMessageHandler;
 import servent.handler.WelcomeHandler;
 import servent.message.NewNodeMessage;
+import servent.message.WelcomeMessage;
 import servent.message.chord.BusyMessage;
+import servent.message.chord.RequestLockMessage;
+import servent.message.chord.leave.LeaveRequestMessage;
 import servent.message.util.MessageUtil;
+
+import static app.AppConfig.myServentInfo;
+import static app.AppConfig.storage;
 
 public class ServentInitializer implements Runnable {
 
@@ -92,29 +99,56 @@ public class ServentInitializer implements Runnable {
 			String someServentIp = someServentLocation.split(":")[0];
 			int someServentPort = Integer.parseInt(someServentLocation.split(":")[1]);
 
-			initiateNewNodeMsg(someServentIp, someServentPort);
+			initiateChordEntry(someServentIp, someServentPort);
 		}
 	}
 
-	private void initiateNewNodeMsg(String someServentIp, int someServentPort) {
-		NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
-		MessageUtil.sendTrackedMessageAwaitingResponse(nnm, new ResponseMessageHandler() { //Handles Busy message, WelcomeHandler still goes to old HandlerListener (SimpleServentListener)
+	private void initiateChordEntry(String someServentIp, int someServentPort) {
+		RequestLockMessage rlm = new RequestLockMessage(AppConfig.myServentInfo, new ServentInfo(someServentIp, someServentPort, "UNKNOWN"), AppConfig.myServentInfo);
+		MessageUtil.sendTrackedMessageAwaitingResponse(rlm, new ResponseMessageHandler() {
 			@Override
 			public void run() {
-				try {
-					if ( message instanceof BusyMessage) {
-						Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
+				if(message instanceof BusyMessage) { //Busy handler
+					Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
+					try {
 						Thread.sleep(2000);
-//						initiateNewNodeMsg(someServentIp, someServentPort);
-						initiateNewNodeMsg(message.getSender().getNetworkLocation().getIp(), message.getSender().getNetworkLocation().getPort());
-					} else { //Welcome message <= never enters here (see comment ^)
-						new WelcomeHandler(message);
+						initiateChordEntry(message.getSender().getNetworkLocation().getIp(), message.getSender().getNetworkLocation().getPort());
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				} else { //OK, Lock granted
+					NewNodeMessage newNodeMessage = new NewNodeMessage(AppConfig.myServentInfo, message.getSender());
+					MessageUtil.sendAndForgetMessage(newNodeMessage);//, new WelcomeHandler(message));
+//					synchronized (state) {
+//						synchronized (storage) {
+//							List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
+//							List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
+//							state.forwardToNode = nodeToHandleLeave;
+//							LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, nodeToHandleLeave, state.getPredecessor(), data);
+//							MessageUtil.sendAndForgetMessage(lrm);
+//						}
+//					}
 				}
 			}
 		});
+//		NewNodeMessage nnm = new NewNodeMessage(AppConfig.myServentInfo, someServentIp, someServentPort);
+//		MessageUtil.sendTrackedMessageAwaitingResponse(nnm, new ResponseMessageHandler() { //Handles Busy message, WelcomeHandler still goes to old HandlerListener (SimpleServentListener)
+//			@Override
+//			public void run() {
+//				try {
+//					if ( message instanceof BusyMessage) {
+//						Logger.timestampedStandardPrint("Node currently busy, will retry in 2s " + someServentIp + ":" + someServentPort);
+//						Thread.sleep(2000);
+////						initiateNewNodeMsg(someServentIp, someServentPort);
+//						initiateNewNodeMsg(message.getSender().getNetworkLocation().getIp(), message.getSender().getNetworkLocation().getPort());
+//					} else { //Welcome message <= never enters here (see comment ^)
+//						new WelcomeHandler(message);
+//					}
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
 	}
 
 }

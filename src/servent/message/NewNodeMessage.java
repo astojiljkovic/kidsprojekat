@@ -10,9 +10,9 @@ public class NewNodeMessage extends TrackedMessage {
 		super(MessageType.NEW_NODE, sender, receiver, "");
 	}
 
-	public NewNodeMessage(ServentInfo sender, String receiverIp, int receiverPort) {
-		this(sender, new ServentInfo(receiverIp, receiverPort, "UNKNOWN"));
-	}
+//	public NewNodeMessage(ServentInfo sender, String receiverIp, int receiverPort) {
+//		this(sender, new ServentInfo(receiverIp, receiverPort, "UNKNOWN"));
+//	}
 
 	@Override
 	public NewNodeMessage newMessageFor(ServentInfo next) {

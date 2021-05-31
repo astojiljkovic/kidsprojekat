@@ -110,9 +110,9 @@ public class ChordState {
             return false;
         }
 
-//        public int getBalancingLockHoldingId() {
-//            return lockHoldingId;
-//        }
+        public void setNodeForwarding(ServentInfo nodeToForward) {
+            forwardToNode = nodeToForward;
+        }
 
         public synchronized void releaseBalancingLock(int chordId) {
             if (chordId == lockHoldingId) {
@@ -361,11 +361,10 @@ public class ChordState {
          * We can only be certain we have found the required node when it is our first next node.
          */
         public ServentInfo getNextNodeForKey(int key) {
-            if(forwardToNode != null) {
-                return forwardToNode;
-            }
-
             if (isKeyMine(key)) {
+                if(forwardToNode != null) {
+                    return forwardToNode;
+                }
                 return myServentInfo;
             }
 
@@ -994,7 +993,7 @@ public class ChordState {
                                 synchronized (storage) {
                                     List<String> allFileNames = storage.getAllStoredUnversionedFileNamesRelativeToStorageRoot();
                                     List<SillyGitStorageFile> data = storage.removeFilesOnRelativePathsReturningGitFiles(allFileNames);
-                                    state.forwardToNode = nodeToHandleLeave;
+                                    state.setNodeForwarding(nodeToHandleLeave);
                                     LeaveRequestMessage lrm = new LeaveRequestMessage(myServentInfo, nodeToHandleLeave, state.getPredecessor(), data);
                                     MessageUtil.sendAndForgetMessage(lrm);
                                 }
