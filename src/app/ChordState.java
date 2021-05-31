@@ -87,6 +87,7 @@ public class ChordState {
         private final StateStabilizer stateStabilizer;
 
         private ServentInfo forwardToNode;
+        private ServentInfo currentPredInMomentOfForwarding;
         private boolean forwardOnlySpecific;
 
         private int lockHoldingId = -1;
@@ -111,11 +112,13 @@ public class ChordState {
 
         public void setNodeForwarding(ServentInfo nodeToForward, boolean forwardOnlySpecific) {
             forwardToNode = nodeToForward;
+            currentPredInMomentOfForwarding = getPredecessor();
             this.forwardOnlySpecific = forwardOnlySpecific;
         }
 
         public void stopNodeForwarding() {
             forwardToNode = null;
+            currentPredInMomentOfForwarding = null;
             this.forwardOnlySpecific = false;
         }
 
@@ -339,8 +342,13 @@ public class ChordState {
             if(forwardToNode != null) { //forwarding enabled
                 if(!forwardOnlySpecific) { //forward everything
                     return false;
-                } else { //case when entering (forward keys that belong between predecessor and new node we are forwarding to)
-                    if(key > getPredecessor().getChordId() && key <= forwardToNode.getChordId()) {
+                } else { //case when "entering" (forward keys that belong between predecessor and new node we are forwarding to)
+                    //when second node is entering the system, node that is handling the welcome message doesn't have a predecessor yet
+                    if (currentPredInMomentOfForwarding == null) {
+                        if(key > getPredecessor().getChordId() && key <= forwardToNode.getChordId()) {
+                            return false;
+                        }
+                    } else if(key > currentPredInMomentOfForwarding.getChordId() && key <= forwardToNode.getChordId()) {
                         return false;
                     }
                 }
@@ -373,10 +381,19 @@ public class ChordState {
          */
         public ServentInfo getNextNodeForKey(int key) {
             if (isKeyMine(key)) {
-                if(forwardToNode != null) {
+                if(forwardToNode != null) { //Forwarding for leave
                     return forwardToNode;
                 }
                 return myServentInfo;
+            } else {
+                //there is still a chance we have to forward it backwards (node joining)
+                if(forwardToNode != null) {
+                    if (currentPredInMomentOfForwarding != null) {
+                        if (key > currentPredInMomentOfForwarding.getChordId() && key <= forwardToNode.getChordId()) {
+                            return forwardToNode;
+                        }
+                    }
+                }
             }
 
             //normally we start the search from our first successor

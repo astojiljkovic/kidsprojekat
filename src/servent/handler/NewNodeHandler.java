@@ -50,6 +50,9 @@ public class NewNodeHandler implements MessageHandler {
                             hisPred = AppConfig.myServentInfo;
                         }
 
+                        //Capture current predecessor for following purposes
+                        AppConfig.chordState.state.setNodeForwarding(newNodeInfo, true);
+
                         AppConfig.chordState.state.addNodes(List.of(newNodeInfo), Collections.emptyList());
 
 //				AppConfig.chordState.state.setPredecessor(newNodeInfo);
@@ -119,7 +122,7 @@ public class NewNodeHandler implements MessageHandler {
                             mySuccs.remove(mySuccs.size() - 1);
                         }
 
-                        AppConfig.chordState.state.setNodeForwarding(newNodeInfo, true);
+
 
                         //Don't return null successors
                         WelcomeMessage wm = new WelcomeMessage(AppConfig.myServentInfo, newNodeInfo, hisFiles, mySuccs.stream().filter(Objects::nonNull).collect(Collectors.toList()));

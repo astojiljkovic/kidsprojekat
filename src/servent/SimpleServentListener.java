@@ -255,17 +255,13 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									RequestLockMessage message = (RequestLockMessage) clientMessage;
-									System.out.println("NEW REQUEST_LOCK - is True: " + message.isNewNodeLock());
 //									ServentInfo lockReceiver;
 									if(message.isNewNodeLock()) {
-										System.out.println("Is new node");
 										//if my predecessor
 										if (AppConfig.chordState.state.isKeyMine(message.getSender().getChordId())) {
-											System.out.println("My pred in is new node");
 											//handle (base on sender)
 											handleMyself(message, true);
 										} else {
-											System.out.println("Not my pred in is new node");
 											//forward (based on sender.choardId)
 											forward(message, true);
 										}

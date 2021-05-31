@@ -33,6 +33,13 @@ public class WelcomeHandler implements MessageHandler {
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
+			if(AppConfig.myServentInfo.getChordId() == 57) { //TODO: remove after testing
+				try { //Sleep to have more time to activate two cvors at the same time
+					Thread.sleep(60000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 			UpdateMessage um = new UpdateMessage(AppConfig.myServentInfo, AppConfig.chordState.state.getClosestSuccessor(), List.of(AppConfig.myServentInfo), Collections.emptyList());
 			MessageUtil.sendTrackedMessageAwaitingResponse(um, new UpdateHandler(welcomeMsg.getSender()));
 			
