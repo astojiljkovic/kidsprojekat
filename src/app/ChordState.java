@@ -123,7 +123,7 @@ public class ChordState {
             if (chordId == lockHoldingId) {
                 lockHoldingId = -1;
             } else {
-                Logger.timestampedErrorPrint("Chord id asking to release lock that was not locked by him " + chordId);
+                Logger.timestampedErrorPrint("Chord id asking to release lock that was not locked by him " + chordId + ", but by: " + lockHoldingId);
             }
         }
 
@@ -990,7 +990,7 @@ public class ChordState {
         if(state.getSuccessor(0) != null) {
             ServentInfo nodeToHandleLeave = state.getClosestSuccessor();
 
-            RequestLockMessage rl = new RequestLockMessage(myServentInfo, nodeToHandleLeave, myServentInfo, nodeToHandleLeave);
+            RequestLockMessage rl = new RequestLockMessage(myServentInfo, nodeToHandleLeave, myServentInfo, nodeToHandleLeave, false);
             MessageUtil.sendTrackedMessageAwaitingResponse(rl, new ResponseMessageHandler() {
                     @Override
                     public void run() {

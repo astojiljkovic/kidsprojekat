@@ -255,25 +255,62 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								@Override
 								public void run() {
 									RequestLockMessage message = (RequestLockMessage) clientMessage;
-									int lockTargetId = message.getLockTarget().getChordId();
-									if(AppConfig.chordState.state.isKeyMine(lockTargetId)) {
-										if (AppConfig.chordState.state.acquireBalancingLock(message.getLockInitiator().getChordId())) {
-											LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
-											lgm.copyContextFrom(message);
-											MessageUtil.sendAndForgetMessage(lgm);
+									System.out.println("NEW REQUEST_LOCK - is True: " + message.isNewNodeLock());
+//									ServentInfo lockReceiver;
+									if(message.isNewNodeLock()) {
+										System.out.println("Is new node");
+										//if my predecessor
+										if (AppConfig.chordState.state.isKeyMine(message.getSender().getChordId())) {
+											System.out.println("My pred in is new node");
+											//handle (base on sender)
+											handleMyself(message, true);
 										} else {
-											BusyMessage bm = new BusyMessage(myServentInfo, message.getLockInitiator());
-											bm.copyContextFrom(message);
-											MessageUtil.sendAndForgetMessage(bm);
+											System.out.println("Not my pred in is new node");
+											//forward (based on sender.choardId)
+											forward(message, true);
 										}
 									} else {
-										RequestLockMessage rlmToForward = new RequestLockMessage(message.getSender(), AppConfig.chordState.state.getNextNodeForKey(lockTargetId), message.getLockInitiator(), message.getLockTarget());
-										rlmToForward.copyContextFrom(rlmToForward);
-										MessageUtil.sendAndForgetMessage(rlmToForward);
+										if (message.getLockTarget().equals(myServentInfo)) {
+											//handle (based on lock target)
+											handleMyself(message, false);
+										} else {
+											//forward (based on lock target)
+											forward(message, false);
+										}
 									}
+								}
 
+								private void forward(RequestLockMessage message, boolean basedOnSender) {
+									ServentInfo nextNode;
+									if (basedOnSender) {
+										nextNode = AppConfig.chordState.state.getNextNodeForKey(message.getSender().getChordId());
+									} else {
+										nextNode = AppConfig.chordState.state.getNextNodeForKey(message.getLockTarget().getChordId());
+									}
+									RequestLockMessage rlmToForward = new RequestLockMessage(message.getSender(), nextNode, message.getLockInitiator(), message.getLockTarget(), message.isNewNodeLock());
+									rlmToForward.copyContextFrom(message);
+									MessageUtil.sendAndForgetMessage(rlmToForward);
+								}
+
+								private void handleMyself(RequestLockMessage message, boolean basedOnSender) {
+									ServentInfo node;
+									if (basedOnSender) {
+										node = message.getSender();
+									} else {
+										node = message.getLockTarget();
+									}
+									if (AppConfig.chordState.state.acquireBalancingLock(node.getChordId())) {
+										LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
+										lgm.copyContextFrom(message);
+										MessageUtil.sendAndForgetMessage(lgm);
+									} else {
+										BusyMessage bm = new BusyMessage(myServentInfo, message.getSender());
+										bm.copyContextFrom(message);
+										MessageUtil.sendAndForgetMessage(bm);
+									}
 								}
 							};
+							break;
 						case POISON:
 							break;
 					}

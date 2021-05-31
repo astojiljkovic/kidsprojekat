@@ -98,7 +98,7 @@ public class ServentInitializer implements Runnable {
 	}
 
 	private void initiateChordEntry(ServentInfo serventInfo) {
-		RequestLockMessage rlm = new RequestLockMessage(AppConfig.myServentInfo, serventInfo, AppConfig.myServentInfo, serventInfo);
+		RequestLockMessage rlm = new RequestLockMessage(AppConfig.myServentInfo, serventInfo, AppConfig.myServentInfo, serventInfo, true);
 		MessageUtil.sendTrackedMessageAwaitingResponse(rlm, new ResponseMessageHandler() {
 			@Override
 			public void run() {
