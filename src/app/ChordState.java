@@ -1051,15 +1051,18 @@ public class ChordState {
         if(leaveInitiator.equals(state.getPredecessor()) && leaveInitiator.equals(state.getSuccessor(0)) ) {
             LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
             MessageUtil.sendAndForgetMessage(slm);
+            //We have to unlock ourselves (because we were the ones handling the leave)
+            // i.e. both successor and predecessor for the leaving node - he locked us when initiating leave
+            state.releaseBalancingLock(leaveInitiator.getChordId());
             state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
         }else{
             state.addNodes(Collections.emptyList(), List.of(leaveInitiator));
             storage.addTransferedFiles(leaveRequestMessage.getData());
-            try {
-                Thread.sleep(60000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(60000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             SuccessorLeavingMessage slm = new SuccessorLeavingMessage(myServentInfo, state.getPredecessor(), leaveInitiator);
             MessageUtil.sendAndForgetMessage(slm);
         }
@@ -1071,7 +1074,8 @@ public class ChordState {
         LeaveGrantedMessage slm = new LeaveGrantedMessage(myServentInfo, leaveInitiator);
         MessageUtil.sendAndForgetMessage(slm);
         if (!nodeManagingLeave.equals(myServentInfo)) {
-            ReleaseLockMessage rlm = new ReleaseLockMessage(myServentInfo, nodeManagingLeave, leaveInitiator, false); //in this case receiver doesn't forward anyway
+            //in this case receiver doesn't forward anyway
+            ReleaseLockMessage rlm = new ReleaseLockMessage(myServentInfo, nodeManagingLeave, leaveInitiator, false);
             MessageUtil.sendAndForgetMessage(rlm);
         }
         if (state.getSuccessor(0) != null) { //if there is at least somebody to receive an update

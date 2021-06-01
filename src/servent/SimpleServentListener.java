@@ -289,13 +289,15 @@ public class SimpleServentListener implements Runnable, Cancellable {
 								}
 
 								private void handleMyself(RequestLockMessage message, boolean basedOnSender) {
-									ServentInfo node;
-									if (basedOnSender) {
-										node = message.getSender();
-									} else {
-										node = message.getLockTarget();
-									}
-									if (AppConfig.chordState.state.acquireBalancingLock(node.getChordId())) {
+									//TODO: remove based on sender boolean (lock is always given to the initiator)
+//									ServentInfo node;
+//									if (basedOnSender) {
+//										node = message.getSender();
+//									} else {
+//										node = message.getLockTarget();
+//									}
+//									if (AppConfig.chordState.state.acquireBalancingLock(node.getChordId())) {
+									if (AppConfig.chordState.state.acquireBalancingLock(message.getLockInitiator().getChordId())) {
 										LockGrantedMessage lgm = new LockGrantedMessage(AppConfig.myServentInfo, message.getSender(), AppConfig.myServentInfo);
 										lgm.copyContextFrom(message);
 										MessageUtil.sendAndForgetMessage(lgm);
